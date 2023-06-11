@@ -1,4 +1,5 @@
 import json
+import copy
 import torch
 import argparse
 import numpy as np
@@ -12,7 +13,8 @@ torch.manual_seed(0)
 
 @ex.automain
 def main(_config):
-    device = 'cpu'
+    _config = copy.deepcopy(_config)
+    pl.seed_everything(_config["seed"])
     model = VideoCLIP(_config)
     dataset_train = AnimalKingdomDataset(_config, split="train")
     dataset_valid = AnimalKingdomDataset(_config, split="val")
@@ -20,8 +22,8 @@ def main(_config):
     dataset_valid.produce_prompt_embedding(model.clip)
     model.set_text_feats(dataset_train.text_features)
 
-    train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=True) # TODO: DEBUG num_workers=4
-    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False) # TODO: DEBUG num_workers=4
+    train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=True, num_workers=_config["data_workers"]) # bugs on MACOS
+    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False, num_workers=_config["data_workers"]) # bugs on MACOS
 
     checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=_config["model_dir"], save_top_k=3, every_n_train_steps=1, verbose=True)
     # monitor="contrastive/train/loss", mode="min", save_last=_config["save_last"], ,
@@ -29,7 +31,9 @@ def main(_config):
     summary_callback = pl.callbacks.ModelSummary(max_depth=1)
 
     logger = pl.loggers.CSVLogger(_config["log_dir"], name=_config['name'], version=_config['version'])
-    trainer = pl.Trainer(max_epochs=_config['max_epochs'], logger=logger, callbacks=[checkpoint_callback, summary_callback])
+    trainer = pl.Trainer(max_epochs=_config['max_epochs'], 
+                         logger=logger, 
+                         callbacks=[checkpoint_callback, summary_callback])
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=valid_loader)
 
 

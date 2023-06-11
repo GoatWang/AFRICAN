@@ -122,7 +122,7 @@ if __name__ == "__main__":
     ]
 
     video_fp = video_fps[0]
-    temp_dir = os.path.join('temp', 'Transform')
+    temp_dir = os.path.join(os.path.dirname(__file__), 'temp', 'Transform')
     save_dir = os.path.join(temp_dir, os.path.basename(video_fp).split(".")[0] + "_" + datetime.now().strftime("%Y%m%d-%H%M%S"))
     Path(save_dir).mkdir(parents=True, exist_ok=True)
     

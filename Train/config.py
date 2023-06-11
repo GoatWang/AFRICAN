@@ -8,6 +8,7 @@ def config():
     # basic
     name = "AnimalKingdomCLIP"
     version = "0.0.1"
+    seed = 2023
 
     # for save
     log_dir = os.path.abspath(os.path.join(base_dir, "logs"))
@@ -18,9 +19,12 @@ def config():
     max_epochs = 10
     lr = 0.0001
     optimizer = "adamw" # adam or adamw
+    data_workers = 1
     
     # for model
     n_classes = 140
+    train_laryers = "vision_proj" # vision or vision_proj
+
     clip = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
     load_path = os.path.abspath(os.path.join(base_dir, "weights", "InternVideo", "models", "InternVideo-MM-L-14.ckpt"))
     num_frames = 8

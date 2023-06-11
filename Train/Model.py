@@ -129,9 +129,11 @@ class VideoCLIP(pl.LightningModule):
 
         self.load_state_dict(state_dict, strict=False)
 
-        # self.freeze_clip_evl()
+        if config['train_laryers'] == "vision":
+            self.freeze_text()
+        if config['train_laryers'] == "vision_proj":
+            self.freeze_clip_evl()
         # self.freeze_clip()
-        self.freeze_text()
 
     def set_text_feats(self, text_feats):
         self.text_feats = torch.tensor(text_feats)
@@ -183,7 +185,8 @@ class VideoCLIP(pl.LightningModule):
         video_feats = torch.nn.functional.normalize(video_feats, dim=1)
         text_feats = torch.nn.functional.normalize(self.text_feats, dim=1)
         t = self.clip.logit_scale.exp()
-        video_logits = ((video_feats @ text_feats.t()) * t).softmax(dim=-1)
+        video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1)
+        video_logits = torch.sigmoid(video_logits)
         return video_logits
         
     def training_step(self, batch, batch_idx):
@@ -355,8 +358,8 @@ if __name__ == "__main__":
     dataset_train.produce_prompt_embedding(model.clip)
     dataset_valid.produce_prompt_embedding(model.clip)
     model.set_text_feats(dataset_train.text_features)
-    train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=True) # TODO: DEBUG num_workers=4
-    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False) # TODO: DEBUG num_workers=4
+    train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=True, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
+    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
 
     # test otptimizer
     optimizer = model.configure_optimizers()
@@ -378,9 +381,9 @@ if __name__ == "__main__":
         # video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
         # video_logits = model((video_tensor, labels_onehot))
         # video_logits = video_logits.cpu().detach().numpy()
-        # np.save(os.path.join("temp", "video_logits.npy"), video_logits)
+        # np.save(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"), video_logits)
         # break
-    video_logits = np.load(os.path.join("temp", "video_logits.npy"))
+    video_logits = np.load(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"))
     y = np.where(labels_onehot[0])[0]
     y_pred = np.where(video_logits[0] > 0.05)[0]
 
