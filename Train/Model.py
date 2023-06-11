@@ -136,7 +136,7 @@ class VideoCLIP(pl.LightningModule):
         # self.freeze_clip()
 
     def set_text_feats(self, text_feats):
-        self.text_feats = torch.tensor(text_feats)
+        self.text_feats = text_feats.clone().requires_grad_(False)
 
     def freeze_clip_evl(self):
         for n, p in self.named_parameters():
@@ -343,7 +343,7 @@ class VideoCLIP(pl.LightningModule):
     # def configure_optimizers(self):
     #     return cotrain_utils.set_schedule(self)
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
     import numpy as np
     from torch import utils
     from config import config
@@ -358,8 +358,9 @@ if __name__ == "__main__":
     dataset_train.produce_prompt_embedding(model.clip)
     dataset_valid.produce_prompt_embedding(model.clip)
     model.set_text_feats(dataset_train.text_features)
-    train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=True, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
-    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
+
+    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True) # TODO: DEBUG num_workers=4, maybe MACOS bug
+    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False) # TODO: DEBUG num_workers=4, maybe MACOS bug
 
     # test otptimizer
     optimizer = model.configure_optimizers()

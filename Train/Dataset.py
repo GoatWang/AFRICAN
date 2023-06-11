@@ -15,8 +15,10 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.split = split
         self.metadata = None
         self.ans_lab_dict = dict()
+        self.device = config['device'] 
         self.data_dir = config['data_dir']
         self.n_classes = config['n_classes']
+        self.num_frames = config['num_frames']
 
         # self.text_column_name = "questions"
         self.video_transform = VideoTransformTorch(mode=self.split)  # train or val model
@@ -55,31 +57,28 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         npy_fp = os.path.join("temp", "text_features.npy")
         if not os.path.exists(npy_fp) or force:
             prompts = self.df_action['prompt'].tolist()
-            prompts = tokenize(prompts)#.cuda()        
+            prompts = tokenize(prompts).to(self.device)       
             with torch.no_grad():
                 text_features = clipmodel.encode_text(prompts)
                 text_features = torch.nn.functional.normalize(text_features, dim=1)
             Path(os.path.dirname(npy_fp)).mkdir(parents=True, exist_ok=True)
-            np.save(npy_fp, text_features)
+            np.save(npy_fp, text_features.cpu().detach().numpy())
             self.text_features = text_features
         else:
-            self.text_features = np.load(npy_fp)
+            self.text_features = torch.from_numpy(np.load(npy_fp)).to(self.device)
 
     def __getitem__(self, index):
         ret = None
         video_fp = self.video_fps[index]
-        video_tensor = read_frames_decord(video_fp)[0]
+        try:
+            video_tensor = read_frames_decord(video_fp, num_frames=self.num_frames)[0]
+        except:
+            print(video_fp)
+            assert False, "video_fp not exist"
         video_tensor = self.video_aug(video_tensor, self.video_transform)
         labels_onehot = torch.zeros(self.n_classes)
         labels_onehot[self.labels[index]] = 1
         return video_tensor, labels_onehot
-        # ret = {
-        #     "video_idx": index,
-        #     "video_fp": video_fp,
-        #     "video": video_tensor,
-        #     'labels': self.labels[index], # caption_idxs
-        # }
-        # return ret
     
     def __len__(self):
         return len(self.video_fps)
@@ -88,6 +87,21 @@ if __name__  == "__main__":
     from config import config
     from PromptEngineer import generate_prompt
     _config = config()
+    # # ===============run all data test
+    # from torch import utils
+    # dataset_train = AnimalKingdomDataset(_config, split="train")
+    # dataset_valid = AnimalKingdomDataset(_config, split="val")
+    # train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
+    # valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
+    # print(len(train_loader))
+    # for batch_idx, (video_tensor, labels_onehot) in enumerate(train_loader):
+    #   print(batch_idx, "success")
+
+    # print(len(valid_loader))
+    # for batch_idx, (video_tensor, labels_onehot) in enumerate(valid_loader):
+    #   print(batch_idx, "success")
+    # # ===============
+
     dataset = AnimalKingdomDataset(_config, split="train")
     df_action = dataset.df_action
     video_tensor, labels_onehot = dataset[0]

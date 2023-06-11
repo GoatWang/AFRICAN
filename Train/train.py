@@ -1,12 +1,8 @@
-import json
 import copy
 import torch
-import argparse
-import numpy as np
-from config import ex
 from torch import utils
-from config import config
 from Model import VideoCLIP
+from config import ex, config
 import pytorch_lightning as pl
 from Dataset import AnimalKingdomDataset
 torch.manual_seed(0)
@@ -22,10 +18,10 @@ def main(_config):
     dataset_valid.produce_prompt_embedding(model.clip)
     model.set_text_feats(dataset_train.text_features)
 
-    train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=True, num_workers=_config["data_workers"]) # bugs on MACOS
-    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False, num_workers=_config["data_workers"]) # bugs on MACOS
+    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True, num_workers=_config["data_workers"]) # bugs on MACOS
+    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"]) # bugs on MACOS
 
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=_config["model_dir"], save_top_k=3, every_n_train_steps=1, verbose=True)
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=_config["model_dir"], verbose=True) # , save_top_k=3, every_n_train_steps=1
     # monitor="contrastive/train/loss", mode="min", save_last=_config["save_last"], ,
     # lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
     summary_callback = pl.callbacks.ModelSummary(max_depth=1)
