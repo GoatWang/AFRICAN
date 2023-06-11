@@ -19,6 +19,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.data_dir = config['data_dir']
         self.n_classes = config['n_classes']
         self.num_frames = config['num_frames']
+        self.video_sampling = config['video_sampling']
 
         # self.text_column_name = "questions"
         self.video_transform = VideoTransformTorch(mode=self.split)  # train or val model
@@ -70,11 +71,12 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         ret = None
         video_fp = self.video_fps[index]
-        try:
-            video_tensor = read_frames_decord(video_fp, num_frames=self.num_frames)[0]
-        except:
-            print(video_fp)
-            assert False, "video_fp not exist"
+        video_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
+        # try:
+        #     video_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
+        # except:
+        #     print(video_fp)
+        #     assert False, "video_fp not exist"
         video_tensor = self.video_aug(video_tensor, self.video_transform)
         labels_onehot = torch.zeros(self.n_classes)
         labels_onehot[self.labels[index]] = 1

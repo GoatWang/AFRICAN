@@ -126,7 +126,7 @@ if __name__ == "__main__":
     save_dir = os.path.join(temp_dir, os.path.basename(video_fp).split(".")[0] + "_" + datetime.now().strftime("%Y%m%d-%H%M%S"))
     Path(save_dir).mkdir(parents=True, exist_ok=True)
     
-    frames, frame_idxs, vlen = read_frames_decord(video_fp, num_frames=8)
+    frames, frame_idxs, vlen = read_frames_decord(video_fp, num_frames=8, sample=_config['video_sampling'])
     transforms = VideoTransformTorch(mode='train')
     # transforms = VideoTransformSelfdefined(mode='train')
     frames_trans = video_aug(frames, transforms, byte=False)

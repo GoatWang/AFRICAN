@@ -11,7 +11,7 @@ torch.manual_seed(0)
 def main(_config):
     _config = copy.deepcopy(_config)
     pl.seed_everything(_config["seed"])
-    model = VideoCLIP(_config)
+    model = VideoCLIP(_config).to(_config['device'])
     dataset_train = AnimalKingdomDataset(_config, split="train")
     dataset_valid = AnimalKingdomDataset(_config, split="val")
     dataset_train.produce_prompt_embedding(model.clip)
@@ -27,6 +27,7 @@ def main(_config):
     summary_callback = pl.callbacks.ModelSummary(max_depth=1)
 
     logger = pl.loggers.CSVLogger(_config["log_dir"], name=_config['name'], version=_config['version'])
+    logger.log_hyperparams(_config)
     trainer = pl.Trainer(max_epochs=_config['max_epochs'], 
                          logger=logger, 
                          callbacks=[checkpoint_callback, summary_callback])

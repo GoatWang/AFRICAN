@@ -98,6 +98,7 @@ class VideoCLIP(pl.LightningModule):
         self.optimizer = config["optimizer"]
         self.train_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=config['n_classes'])
         self.valid_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=config['n_classes'])
+        self.final_fc = torch.nn.Linear(config['n_classes'], config['n_classes'])
 
         self.clip, self.clip_preprocess = clip_kc_new.load( # class VideoIntern(nn.Module):
             config["clip"], # /pathto/ViT-L-14.pt
@@ -182,10 +183,11 @@ class VideoCLIP(pl.LightningModule):
         video_feats, video_all_feats = self.clip.encode_video(
             video_tensor, return_all_feats=True, mode=mode
         )
-        video_feats = torch.nn.functional.normalize(video_feats, dim=1)
-        text_feats = torch.nn.functional.normalize(self.text_feats, dim=1)
+        video_feats = torch.nn.functional.normalize(video_feats, dim=1) # (n, 768)
+        text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
         t = self.clip.logit_scale.exp()
-        video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1)
+        video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
+        video_logits = self.final_fc(video_logits)
         video_logits = torch.sigmoid(video_logits)
         return video_logits
         

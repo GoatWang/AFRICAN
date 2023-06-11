@@ -11,13 +11,13 @@ def config():
     seed = 2023
     device = 'cpu'
 
-
     # for save
     log_dir = os.path.abspath(os.path.join(base_dir, "logs"))
     model_dir = os.path.abspath(os.path.join(base_dir, "ckpts"))
     data_dir = os.path.join(base_dir, "..", "..", "data", "AnimalKingdom", "action_recognition")
 
     # for training
+    video_sampling = 'sequence_rand'
     batch_size = 4
     max_epochs = 10
     lr = 0.0001
@@ -34,8 +34,6 @@ def config():
     clip_evl_dropout = 0.0
     clip_no_pretrain = False
     clip_init_zero = True
-    clip_dpr = 0.0
-    clip_dpr = 0.0
     clip_dpr = 0.0
     clip_use_checkpoint = False
     clip_checkpoint_num = [0, 0, 0]

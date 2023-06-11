@@ -7,11 +7,19 @@ wget -P ./Train/weights/ https://pjlab-gvm-data.oss-cn-shanghai.aliyuncs.com/int
 # Fail Videos
 - /Users/jeremywang/BristolCourses/Dissertation/data/AnimalKingdom/action_recognition/dataset/video/ZAKHHVKA.mp4
 
-# test
+# test script 
 ```
 python3 Model.py
 python3 Dataset.py
 python3 Transform.py
 python3 VideoReader.py
+```
 
+# Train
+```
+# mac
+python3 train.py
+
+# colab
+python3 train.py with 'device=cuda'
 ```
