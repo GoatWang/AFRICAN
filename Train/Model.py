@@ -94,10 +94,13 @@ from ModelUtil.clip_param_keys import clip_param_keys
 class VideoCLIP(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
+        self.save_hyperparameters()
         self.lr = config["lr"]
         self.optimizer = config["optimizer"]
-        self.train_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=config['n_classes'])
-        self.valid_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=config['n_classes'])
+        self.train_label_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=config['n_classes'])
+        self.valid_label_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=config['n_classes'])
+        self.train_match_acc = torchmetrics.ExactMatch(task='multilabel', num_labels=config['n_classes'])
+        self.valid_match_acc = torchmetrics.ExactMatch(task='multilabel', num_labels=config['n_classes'])
         self.final_fc = torch.nn.Linear(config['n_classes'], config['n_classes'])
 
         self.clip, self.clip_preprocess = clip_kc_new.load( # class VideoIntern(nn.Module):
@@ -135,6 +138,11 @@ class VideoCLIP(pl.LightningModule):
         if config['train_laryers'] == "vision_proj":
             self.freeze_clip_evl()
         # self.freeze_clip()
+
+    def load_ckpt(self, ckpt_fp):
+        ckpt = torch.load(ckpt_fp, map_location="cpu")
+        state_dict = ckpt["state_dict"]
+        self.load_state_dict(state_dict, strict=False)
 
     def set_text_feats(self, text_feats):
         self.text_feats = text_feats.clone().requires_grad_(False)
@@ -195,18 +203,22 @@ class VideoCLIP(pl.LightningModule):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
         loss = F.cross_entropy(video_logits, labels_onehot)
-        self.train_acc(video_logits, labels_onehot)
+        self.train_label_acc(video_logits, labels_onehot)
+        self.train_match_acc(video_logits, labels_onehot)
         self.log("train_loss", loss)
-        self.log('train_acc', self.train_acc, on_step=True, on_epoch=True)
+        self.log('train_label_acc', self.train_label_acc, on_step=True, on_epoch=True)
+        self.log('train_match_acc', self.train_match_acc, on_step=True, on_epoch=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
         loss = F.cross_entropy(video_logits, labels_onehot)
-        self.valid_acc(video_logits, labels_onehot)
+        self.valid_label_acc(video_logits, labels_onehot)
+        self.valid_match_acc(video_logits, labels_onehot)
         self.log("valid_loss", loss)
-        self.log('valid_acc', self.valid_acc, on_step=True, on_epoch=True)
+        self.log('valid_label_acc', self.valid_label_acc, on_step=False, on_epoch=True)
+        self.log('valid_match_acc', self.valid_match_acc, on_step=False, on_epoch=True)
 
     def configure_optimizers(self):
         # TODO: add parameter groups
@@ -219,9 +231,6 @@ class VideoCLIP(pl.LightningModule):
             assert False, f"Unknown optimizer: {optimizer}"
         return optimizer
     
-    
-
-
     # def infer(
     #     self,
     #     batch,
@@ -355,6 +364,11 @@ if __name__ == "__main__":
     device = 'cpu'
     _config = config()
     model = VideoCLIP(_config)
+
+    weight_fp = os.path.join(os.path.dirname(__file__), "weights", "epoch=2-step=9003.ckpt")
+    if os.path.exists(weight_fp):
+        model.load_ckpt(weight_fp)
+
     dataset_train = AnimalKingdomDataset(_config, split="train")
     dataset_valid = AnimalKingdomDataset(_config, split="val")
     dataset_train.produce_prompt_embedding(model.clip)
@@ -364,41 +378,43 @@ if __name__ == "__main__":
     train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True) # TODO: DEBUG num_workers=4, maybe MACOS bug
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False) # TODO: DEBUG num_workers=4, maybe MACOS bug
 
-    # test otptimizer
-    optimizer = model.configure_optimizers()
+    # # test otptimizer
+    # optimizer = model.configure_optimizers()
 
-    # test forward and train
-    for batch_idx, (video_tensor, labels_onehot) in enumerate(train_loader):
-        video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
-        loss = model.training_step((video_tensor, labels_onehot), batch_idx)
-        print(loss)
-        break
+    # # test forward and train
+    # for batch_idx, (video_tensor, labels_onehot) in enumerate(train_loader):
+    #     video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
+    #     loss = model.training_step((video_tensor, labels_onehot), batch_idx)
+    #     print(loss)
+    #     break
 
-    for batch_idx, (video_tensor, labels_onehot) in enumerate(valid_loader):
-        video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
-        model.validation_step((video_tensor, labels_onehot), batch_idx)
-        break
+    # for batch_idx, (video_tensor, labels_onehot) in enumerate(valid_loader):
+    #     video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
+    #     model.validation_step((video_tensor, labels_onehot), batch_idx)
+    #     break
 
     # test inference
-    # for batch_idx, (video_tensor, labels_onehot) in enumerate(val_loader):
-        # video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
-        # video_logits = model((video_tensor, labels_onehot))
-        # video_logits = video_logits.cpu().detach().numpy()
-        # np.save(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"), video_logits)
-        # break
-    video_logits = np.load(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"))
-    y = np.where(labels_onehot[0])[0]
-    y_pred = np.where(video_logits[0] > 0.05)[0]
+    for batch_idx, (video_tensor, labels_onehot) in enumerate(train_loader):
+        video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
+        video_logits = model((video_tensor, labels_onehot))
+        video_logits = video_logits.cpu().detach().numpy()
+        np.save(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"), video_logits)
+        break
+    # video_logits = np.load(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"))
+    
+    sameple_idx = 1
+    y = np.where(labels_onehot[sameple_idx])[0]
+    y_pred = np.where(video_logits[sameple_idx] > 0.5)[0]
 
     df_action = dataset_train.df_action
 
-    print("Prediction:")
+    print("Ground Truth:")    
     for idx, prompt in df_action.loc[y, 'prompt'].items():
         print(str(idx).zfill(3) + ":", prompt)
     print("====================================")
 
-    print("Ground Truth:")    
+    print("Prediction:")
     for idx, prompt in df_action.loc[y_pred, 'prompt'].items():
-        print(str(idx).zfill(3) + ":", prompt)
+        print(str(idx).zfill(3) + "(%.2f)"%video_logits[sameple_idx][idx] + ":", prompt)
     print("====================================")
 

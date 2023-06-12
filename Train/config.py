@@ -6,8 +6,7 @@ base_dir = os.path.dirname(__file__)
 @ex.config
 def config():
     # basic
-    name = "AnimalKingdomCLIP"
-    version = "0.0.1"
+    name = "AnimalKingdomCLIPVisionProj"
     seed = 2023
     device = 'cpu'
 
@@ -30,6 +29,7 @@ def config():
 
     clip = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
     load_path = os.path.abspath(os.path.join(base_dir, "weights", "InternVideo-MM-L-14.ckpt"))
+    animal_kingdom_clip_path = None
     num_frames = 8
     clip_evl_dropout = 0.0
     clip_no_pretrain = False

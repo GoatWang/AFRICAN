@@ -1,15 +1,22 @@
+import os
 import copy
 import torch
+from pathlib import Path
 from torch import utils
 from Model import VideoCLIP
 from config import ex, config
 import pytorch_lightning as pl
+from datetime import datetime
 from Dataset import AnimalKingdomDataset
 torch.manual_seed(0)
 
 @ex.automain
 def main(_config):
     _config = copy.deepcopy(_config)
+    _config['version'] = datetime.now().strftime("%Y%m%d-%H%M%S")
+    _config['models_dir'] = os.path.join(_config["model_dir"], _config["name"], _config['version'])
+    Path(_config['models_dir']).mkdir(parents=True, exist_ok=True)
+
     pl.seed_everything(_config["seed"])
     model = VideoCLIP(_config).to(_config['device'])
     dataset_train = AnimalKingdomDataset(_config, split="train")
@@ -21,18 +28,27 @@ def main(_config):
     train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True, num_workers=_config["data_workers"]) # bugs on MACOS
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"]) # bugs on MACOS
 
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=_config["model_dir"], verbose=True) # , save_top_k=3, every_n_train_steps=1
-    # monitor="contrastive/train/loss", mode="min", save_last=_config["save_last"], ,
+    # checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=_config['models_dir'], verbose=True) # 
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(
+        dirpath=_config['models_dir'], 
+        verbose=True,
+        save_top_k=3, 
+        every_n_epochs=1,
+        monitor="train_match_acc", 
+        mode="max", 
+        save_last=True)
     # lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
     summary_callback = pl.callbacks.ModelSummary(max_depth=1)
 
-    logger = pl.loggers.CSVLogger(_config["log_dir"], name=_config['name'], version=_config['version'])
-    logger.log_hyperparams(_config)
+    csv_logger = pl.loggers.CSVLogger(save_dir=_config["log_dir"], name=_config['name'], version=_config['version'])
+    csv_logger.log_hyperparams(_config)
+    # wandb_logger = pl.loggers.WandbLogger(project='AnimalKingdom', save_dir=_config["log_dir"], name=_config['name'], version=_config['version'])
+    # wandb_logger.experiment.config.update(_config)
     trainer = pl.Trainer(max_epochs=_config['max_epochs'], 
-                         logger=logger, 
-                         callbacks=[checkpoint_callback, summary_callback])
-    trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=valid_loader)
-
+                        logger=csv_logger, 
+                        #  logger=wandb_logger, 
+                        callbacks=[checkpoint_callback, summary_callback])
+    trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=valid_loader, ckpt_path=_config['animal_kingdom_clip_path'])
 
     # optimizer = model.configure_optimizers()
     # for batch_idx, (video_tensor, labels_onehot) in enumerate(val_loader):
