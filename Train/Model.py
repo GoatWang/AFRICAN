@@ -231,7 +231,7 @@ class VideoCLIP(pl.LightningModule):
         # self.log('train_map', self.train_map, on_step=False, on_epoch=True)
         return loss
 
-    def on_train_epoch_end(self, outs):
+    def on_train_epoch_end(self):
         _train_map_class = self.train_map_class.compute()
         for i in range(self.n_classes):
             self.log('train_map_' + self.class_names[i], _train_map_class[i])
@@ -252,7 +252,7 @@ class VideoCLIP(pl.LightningModule):
         # self.log('valid_match_acc', self.valid_match_acc, on_step=False, on_epoch=True)
         # self.log('valid_map', self.valid_map, on_step=False, on_epoch=True)
 
-    def on_validation_epoch_end(self, outs):
+    def on_validation_epoch_end(self):
         _valid_map_class = self.valid_map_class.compute()
         for i in range(self.n_classes):
             self.log('valid_map_' + self.class_names[i], _valid_map_class[i])
