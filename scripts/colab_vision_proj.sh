@@ -1,3 +1,4 @@
 # python3 AnimalKingdomCLIP/Train/train.py with "device=cuda" "batch_size=8" "log_dir=gdrive/MyDrive/AnimalKingdom/Training/logs" "model_dir=gdrive/MyDrive/AnimalKingdom/Training/ckpts"
 # python3 AnimalKingdomCLIP/Train/train.py with "device=cuda" "batch_size=32" "log_dir=gdrive/MyDrive/AnimalKingdom/Training/logs" "model_dir=gdrive/MyDrive/AnimalKingdom/Training/ckpts" "animal_kingdom_clip_path=/content/gdrive/MyDrive/AnimalKingdom/Training/ckpts/epoch=3-step=12004.ckpt"
-python3 AnimalKingdomCLIP/Train/train.py with "device=cuda" "batch_size=32" "training_test_size=1024" "log_dir=gdrive/MyDrive/AnimalKingdom/Training/logs" "model_dir=gdrive/MyDrive/AnimalKingdom/Training/ckpts"
+python3 AnimalKingdomCLIP/Train/train.py with "device=cuda" "batch_size=4" "training_test_size=128" "log_dir=gdrive/MyDrive/AnimalKingdom/Training/logs" "model_dir=gdrive/MyDrive/AnimalKingdom/Training/ckpts"
+python3 AnimalKingdomCLIP/Train/train.py with "device=cuda" "batch_size=32" "log_dir=gdrive/MyDrive/AnimalKingdom/Training/logs" "model_dir=gdrive/MyDrive/AnimalKingdom/Training/ckpts"
