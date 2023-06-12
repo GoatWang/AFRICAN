@@ -20,7 +20,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.n_classes = config['n_classes']
         self.num_frames = config['num_frames']
         self.video_sampling = config['video_sampling']
-        self.training_test_size = config['training_test_size'] if "training_test_size" in config else None
+        self.training_test_size = config['training_test_size']
 
         # self.text_column_name = "questions"
         self.video_transform = VideoTransformTorch(mode=self.split)  # train or val model

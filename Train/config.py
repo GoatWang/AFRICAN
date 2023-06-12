@@ -22,6 +22,7 @@ def config():
     lr = 0.0001
     optimizer = "adamw" # adam or adamw
     data_workers = 4
+    training_test_size = None
     
     # for model
     n_classes = 140
