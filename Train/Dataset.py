@@ -20,7 +20,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.n_classes = config['n_classes']
         self.num_frames = config['num_frames']
         self.video_sampling = config['video_sampling']
-        self.training_test_size = config['training_test_size']
+        self.training_test_size = config['training_test_size'] if "training_test_size" in config else None
 
         # self.text_column_name = "questions"
         self.video_transform = VideoTransformTorch(mode=self.split)  # train or val model
@@ -41,7 +41,8 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         df_out['video_fp'] = df_out['original_vido_id'].apply(video_id_mapping.get)
         df_out['labels'] = df_out['labels'].apply(lambda x: [int(l) for l in x.split(",")])
         df_out = df_out[df_out['video_fp'].notnull()].reset_index(drop=True)
-        return df_out['video_fp'].tolist(), df_out['labels'].tolist()
+        end_idx = self.training_test_size if self.training_test_size else len(df_out)
+        return df_out['video_fp'].loc[:end_idx].tolist(), df_out['labels'].loc[:end_idx].tolist()
 
     def load_metadata(self):
         self.df_action = pd.read_excel(os.path.join(self.data_dir, 'annotation', 'df_action.xlsx'))
