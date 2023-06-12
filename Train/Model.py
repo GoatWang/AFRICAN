@@ -108,7 +108,7 @@ class VideoCLIP(pl.LightningModule):
         self.metric_collection = torchmetrics.MetricCollection([
             torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes),
             torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes),
-            torchmetrics.MultilabelAveragePrecision(task='multilabel', num_labels=self.n_classes)
+            torchmetrics.classification.MultilabelAveragePrecision(task='multilabel', num_labels=self.n_classes)
         ])
         self.train_metrics = self.metric_collection.clone()
         self.valid_metrics = self.metric_collection.clone()
