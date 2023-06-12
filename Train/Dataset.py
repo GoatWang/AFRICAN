@@ -80,7 +80,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         #     print(video_fp)
         #     assert False, "video_fp not exist"
         video_tensor = self.video_aug(video_tensor, self.video_transform)
-        labels_onehot = torch.zeros(self.n_classes)
+        labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
         labels_onehot[self.labels[index]] = 1
         return video_tensor, labels_onehot
     
