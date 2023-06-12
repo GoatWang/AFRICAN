@@ -38,7 +38,7 @@ def main(_config):
         verbose=True,
         save_top_k=3, 
         every_n_epochs=1,
-        monitor="train_loss", 
+        monitor="valid_loss", 
         mode="min", 
         save_last=True)
     # lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
