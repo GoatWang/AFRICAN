@@ -1,4 +1,12 @@
 # TODO:
+1. unbalance training (focal loss (panelty on False Positive)) 
+    - Use BCELoss (sigmoid + cross entropy) is better than applying sigmoid and use crossentropy: https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html#torch.nn.BCEWithLogitsLoss
+    - AnimalKingdom uses its own loss: data/AnimalKingdom/action_recognition/code/code_new/slowfast/slowfast/models/losses.py
+    - different weight for different class (more weight for not frequent class)
+
+2. Add (M)AP as metrics
+2. Think about the similarity of each class's prompt (visualiz its distribution)
+3. sort metrics into collections
 
 # Next Steps
 5. do research on the evaluation

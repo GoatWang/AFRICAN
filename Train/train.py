@@ -1,6 +1,7 @@
 import os
 import copy
 import torch
+import numpy as np
 from pathlib import Path
 from torch import utils
 from Model import VideoCLIP
@@ -17,13 +18,16 @@ def main(_config):
     _config['models_dir'] = os.path.join(_config["model_dir"], _config["name"], _config['version'])
     Path(_config['models_dir']).mkdir(parents=True, exist_ok=True)
 
-    pl.seed_everything(_config["seed"])
     model = VideoCLIP(_config).to(_config['device'])
+    pl.seed_everything(_config["seed"])
     dataset_train = AnimalKingdomDataset(_config, split="train")
     dataset_valid = AnimalKingdomDataset(_config, split="val")
     dataset_train.produce_prompt_embedding(model.clip)
     dataset_valid.produce_prompt_embedding(model.clip)
+    model.set_class_names(dataset_train.df_action['action'].values)
     model.set_text_feats(dataset_train.text_features)
+    print("train baseline (140 classes):", (1 - np.bincount(np.hstack(dataset_train.labels)) / len(dataset_train)))
+    print("valid baseline (140 classes):", (1 - np.bincount(np.hstack(dataset_valid.labels)) / len(dataset_valid)))
 
     train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True, num_workers=_config["data_workers"]) # bugs on MACOS
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"]) # bugs on MACOS

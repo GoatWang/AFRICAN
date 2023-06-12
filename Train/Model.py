@@ -96,13 +96,26 @@ class VideoCLIP(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.lr = config["lr"]
+        self.n_classes = config["n_classes"]
         self.optimizer = config["optimizer"]
-        self.train_label_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=config['n_classes'])
-        self.valid_label_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=config['n_classes'])
-        self.train_match_acc = torchmetrics.ExactMatch(task='multilabel', num_labels=config['n_classes'])
-        self.valid_match_acc = torchmetrics.ExactMatch(task='multilabel', num_labels=config['n_classes'])
-        self.final_fc = torch.nn.Linear(config['n_classes'], config['n_classes'])
 
+        # self.train_label_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes)
+        # self.valid_label_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes)
+        # self.train_match_acc = torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes)
+        # self.valid_match_acc = torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes)
+        # self.train_map = torchmetrics.MultilabelAveragePrecision(task='multilabel', num_labels=self.n_classes)
+        # self.valid_map = torchmetrics.MultilabelAveragePrecision(task='multilabel', num_labels=self.n_classes)
+        self.metric_collection = torchmetrics.MetricCollection([
+            torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes),
+            torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes),
+            torchmetrics.MultilabelAveragePrecision(task='multilabel', num_labels=self.n_classes)
+        ])
+        self.train_metrics = self.metric_collection.clone()
+        self.valid_metrics = self.metric_collection.clone()
+        self.train_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
+        self.valid_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
+
+        self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
         self.clip, self.clip_preprocess = clip_kc_new.load( # class VideoIntern(nn.Module):
             config["clip"], # /pathto/ViT-L-14.pt
             t_size=config["num_frames"], # num_frames=8
@@ -146,6 +159,9 @@ class VideoCLIP(pl.LightningModule):
 
     def set_text_feats(self, text_feats):
         self.text_feats = text_feats.clone().requires_grad_(False)
+
+    def set_class_names(self, class_names):
+        self.class_names = class_names
 
     def freeze_clip_evl(self):
         for n, p in self.named_parameters():
@@ -202,23 +218,45 @@ class VideoCLIP(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
-        loss = F.cross_entropy(video_logits, labels_onehot)
-        self.train_label_acc(video_logits, labels_onehot)
-        self.train_match_acc(video_logits, labels_onehot)
+        loss = F.binary_cross_entropy_with_logits(video_logits, labels_onehot)
+        # self.train_label_acc(video_logits, labels_onehot)
+        # self.train_match_acc(video_logits, labels_onehot)
+        # self.train_map(video_logits, labels_onehot)
+        self.train_metrics(video_logits, labels_onehot)
+        self.train_map_class(video_logits, labels_onehot)
         self.log("train_loss", loss)
-        self.log('train_label_acc', self.train_label_acc, on_step=True, on_epoch=True)
-        self.log('train_match_acc', self.train_match_acc, on_step=True, on_epoch=True)
+        self.log("train_metrics", self.train_metrics)
+        # self.log('train_label_acc', self.train_label_acc, on_step=True, on_epoch=True)
+        # self.log('train_match_acc', self.train_match_acc, on_step=False, on_epoch=True)
+        # self.log('train_map', self.train_map, on_step=False, on_epoch=True)
         return loss
+
+    def training_epoch_end(self, outs):
+        _train_map_class = self.train_map_class.compute()
+        for i in range(self.n_classes):
+            self.log('train_map_' + self.class_names[i], _train_map_class[i])
+        self.train_map_class.reset()
 
     def validation_step(self, batch, batch_idx):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
         loss = F.cross_entropy(video_logits, labels_onehot)
-        self.valid_label_acc(video_logits, labels_onehot)
-        self.valid_match_acc(video_logits, labels_onehot)
+        # self.valid_label_acc(video_logits, labels_onehot)
+        # self.valid_match_acc(video_logits, labels_onehot)
+        # self.valid_map(video_logits, labels_onehot)
+        self.valid_metrics(video_logits, labels_onehot)
+        self.valid_map_class(video_logits, labels_onehot)
         self.log("valid_loss", loss)
-        self.log('valid_label_acc', self.valid_label_acc, on_step=False, on_epoch=True)
-        self.log('valid_match_acc', self.valid_match_acc, on_step=False, on_epoch=True)
+        self.log("valid_metrics", self.valid_metrics)
+        # self.log('valid_label_acc', self.valid_label_acc, on_step=False, on_epoch=True)
+        # self.log('valid_match_acc', self.valid_match_acc, on_step=False, on_epoch=True)
+        # self.log('valid_map', self.valid_map, on_step=False, on_epoch=True)
+
+    def validation_epoch_end(self, outs):
+        _valid_map_class = self.valid_map_class.compute()
+        for i in range(self.n_classes):
+            self.log('valid_map_' + self.class_names[i], _valid_map_class[i])
+        self.valid_map_class.reset()
 
     def configure_optimizers(self):
         # TODO: add parameter groups
