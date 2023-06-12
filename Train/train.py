@@ -39,7 +39,7 @@ def main(_config):
         save_top_k=3, 
         every_n_epochs=1,
         monitor="train_loss", 
-        mode="max", 
+        mode="min", 
         save_last=True)
     # lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
     summary_callback = pl.callbacks.ModelSummary(max_depth=1)
