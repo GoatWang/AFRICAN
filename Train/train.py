@@ -44,13 +44,13 @@ def main(_config):
     # lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
     summary_callback = pl.callbacks.ModelSummary(max_depth=1)
 
-    # csv_logger = pl.loggers.CSVLogger(save_dir=_config["log_dir"], name=_config['name'], version=_config['version'])
-    # csv_logger.log_hyperparams(_config)
-    wandb_logger = pl.loggers.WandbLogger(project='AnimalKingdom', save_dir=_config["log_dir"], name=_config['name'], version=_config['version'])
-    wandb_logger.experiment.config.update(_config)
+    csv_logger = pl.loggers.CSVLogger(save_dir=_config["log_dir"], name=_config['name'], version=_config['version'])
+    csv_logger.log_hyperparams(_config)
+    # wandb_logger = pl.loggers.WandbLogger(project='AnimalKingdom', save_dir=_config["log_dir"], name=_config['name'], version=_config['version'])
+    # wandb_logger.experiment.config.update(_config)
     trainer = pl.Trainer(max_epochs=_config['max_epochs'], 
-                        # logger=csv_logger, 
-                         logger=wandb_logger, 
+                        logger=csv_logger, 
+                        #  logger=wandb_logger, 
                         callbacks=[checkpoint_callback, summary_callback])
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=valid_loader, ckpt_path=_config['animal_kingdom_clip_path'])
 
