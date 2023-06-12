@@ -218,7 +218,7 @@ class VideoCLIP(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
-        loss = F.binary_cross_entropy_with_logits(video_logits, labels_onehot)
+        loss = F.binary_cross_entropy_with_logits(video_logits, labels_onehot.type(torch.float32))
         # self.train_label_acc(video_logits, labels_onehot)
         # self.train_match_acc(video_logits, labels_onehot)
         # self.train_map(video_logits, labels_onehot)
@@ -240,7 +240,7 @@ class VideoCLIP(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
-        loss = F.binary_cross_entropy_with_logits(video_logits, labels_onehot)
+        loss = F.binary_cross_entropy_with_logits(video_logits, labels_onehot.type(torch.float32))
         # self.valid_label_acc(video_logits, labels_onehot)
         # self.valid_match_acc(video_logits, labels_onehot)
         # self.valid_map(video_logits, labels_onehot)
