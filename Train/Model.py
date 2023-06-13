@@ -222,16 +222,20 @@ class VideoCLIP(pl.LightningModule):
         # self.train_label_acc(video_logits, labels_onehot)
         # self.train_match_acc(video_logits, labels_onehot)
         # self.train_map(video_logits, labels_onehot)
-        self.train_metrics(video_logits, labels_onehot)
-        self.train_map_class(video_logits, labels_onehot)
+        self.train_metrics.update(video_logits, labels_onehot)
+        self.train_map_class.update(video_logits, labels_onehot)
         self.log("train_loss", loss)
-        self.log_dict(self.train_metrics)
+        # self.log_dict(self.train_metrics)
         # self.log('train_label_acc', self.train_label_acc, on_step=True, on_epoch=True)
         # self.log('train_match_acc', self.train_match_acc, on_step=False, on_epoch=True)
         # self.log('train_map', self.train_map, on_step=False, on_epoch=True)
         return loss
 
     def on_train_epoch_end(self):
+        _train_metrics = self.train_metrics.compute()
+        self.log_dict(_train_metrics)
+        self.train_metrics.reset()
+
         _train_map_class = self.train_map_class.compute()
         for i in range(self.n_classes):
             self.log('train_map_' + self.class_names[i], _train_map_class[i])
@@ -244,15 +248,19 @@ class VideoCLIP(pl.LightningModule):
         # self.valid_label_acc(video_logits, labels_onehot)
         # self.valid_match_acc(video_logits, labels_onehot)
         # self.valid_map(video_logits, labels_onehot)
-        self.valid_metrics(video_logits, labels_onehot)
-        self.valid_map_class(video_logits, labels_onehot)
+        self.valid_metrics.update(video_logits, labels_onehot)
+        self.valid_map_class.update(video_logits, labels_onehot)
         self.log("valid_loss", loss)
-        self.log_dict(self.valid_metrics)
+        # self.log_dict(self.valid_metrics)
         # self.log('valid_label_acc', self.valid_label_acc, on_step=False, on_epoch=True)
         # self.log('valid_match_acc', self.valid_match_acc, on_step=False, on_epoch=True)
         # self.log('valid_map', self.valid_map, on_step=False, on_epoch=True)
 
     def on_validation_epoch_end(self):
+        _valid_metrics = self.valid_metrics.compute()
+        self.log_dict(_valid_metrics)
+        self.valid_metrics.reset()
+
         _valid_map_class = self.valid_map_class.compute()
         for i in range(self.n_classes):
             self.log('valid_map_' + self.class_names[i], _valid_map_class[i])
