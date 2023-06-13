@@ -99,12 +99,6 @@ class VideoCLIP(pl.LightningModule):
         self.n_classes = config["n_classes"]
         self.optimizer = config["optimizer"]
 
-        # self.train_label_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes)
-        # self.valid_label_acc = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes)
-        # self.train_match_acc = torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes)
-        # self.valid_match_acc = torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes)
-        # self.train_map = torchmetrics.MultilabelAveragePrecision(task='multilabel', num_labels=self.n_classes)
-        # self.valid_map = torchmetrics.MultilabelAveragePrecision(task='multilabel', num_labels=self.n_classes)
         self.metric_collection = torchmetrics.MetricCollection([
             torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes),
             torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes),
@@ -152,7 +146,7 @@ class VideoCLIP(pl.LightningModule):
             self.freeze_clip_evl()
         # self.freeze_clip()
 
-    def load_ckpt(self, ckpt_fp):
+    def load_ckpt_state_dict(self, ckpt_fp):
         ckpt = torch.load(ckpt_fp, map_location="cpu")
         state_dict = ckpt["state_dict"]
         self.load_state_dict(state_dict, strict=False)
@@ -219,16 +213,9 @@ class VideoCLIP(pl.LightningModule):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
         loss = F.binary_cross_entropy_with_logits(video_logits, labels_onehot.type(torch.float32))
-        # self.train_label_acc(video_logits, labels_onehot)
-        # self.train_match_acc(video_logits, labels_onehot)
-        # self.train_map(video_logits, labels_onehot)
         self.train_metrics.update(video_logits, labels_onehot)
         self.train_map_class.update(video_logits, labels_onehot)
         self.log("train_loss", loss)
-        # self.log_dict(self.train_metrics)
-        # self.log('train_label_acc', self.train_label_acc, on_step=True, on_epoch=True)
-        # self.log('train_match_acc', self.train_match_acc, on_step=False, on_epoch=True)
-        # self.log('train_map', self.train_map, on_step=False, on_epoch=True)
         return loss
 
     def on_train_epoch_end(self):
@@ -245,16 +232,9 @@ class VideoCLIP(pl.LightningModule):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
         loss = F.binary_cross_entropy_with_logits(video_logits, labels_onehot.type(torch.float32))
-        # self.valid_label_acc(video_logits, labels_onehot)
-        # self.valid_match_acc(video_logits, labels_onehot)
-        # self.valid_map(video_logits, labels_onehot)
         self.valid_metrics.update(video_logits, labels_onehot)
         self.valid_map_class.update(video_logits, labels_onehot)
         self.log("valid_loss", loss)
-        # self.log_dict(self.valid_metrics)
-        # self.log('valid_label_acc', self.valid_label_acc, on_step=False, on_epoch=True)
-        # self.log('valid_match_acc', self.valid_match_acc, on_step=False, on_epoch=True)
-        # self.log('valid_map', self.valid_map, on_step=False, on_epoch=True)
 
     def on_validation_epoch_end(self):
         _valid_metrics = self.valid_metrics.compute()
