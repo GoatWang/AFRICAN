@@ -4,8 +4,8 @@ from copy import deepcopy
 
 import torch
 import torchmetrics
+from Loss import get_loss_func
 import pytorch_lightning as pl
-import torch.nn.functional as F
 import InternVideo as clip_kc_new
 from ModelUtil.clip_param_keys import clip_param_keys
 # from CoTrain.modules import heads, cotrain_utils
@@ -99,13 +99,13 @@ class VideoCLIP(pl.LightningModule):
         self.n_classes = config["n_classes"]
         self.optimizer = config["optimizer"]
 
-        self.metric_collection = torchmetrics.MetricCollection([
+        metric_collection = torchmetrics.MetricCollection([
             torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes),
             torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes),
             torchmetrics.classification.MultilabelAveragePrecision(num_labels=self.n_classes)
         ])
-        self.train_metrics = self.metric_collection.clone()
-        self.valid_metrics = self.metric_collection.clone()
+        self.train_metrics = metric_collection.clone()
+        self.valid_metrics = metric_collection.clone()
         self.train_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
         self.valid_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
 
@@ -157,6 +157,10 @@ class VideoCLIP(pl.LightningModule):
     def set_class_names(self, class_names):
         self.class_names = class_names
 
+    def set_loss_func(self, loss_name, class_frequency):
+        class_frequency = list(map(float, class_frequency))
+        self.loss_func = get_loss_func(loss_name, class_frequency)
+
     def freeze_clip_evl(self):
         for n, p in self.named_parameters():
             if (
@@ -206,13 +210,13 @@ class VideoCLIP(pl.LightningModule):
         t = self.clip.logit_scale.exp()
         video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
         video_logits = self.final_fc(video_logits)
-        video_logits = torch.sigmoid(video_logits)
+        # video_logits = torch.sigmoid(video_logits)
         return video_logits
         
     def training_step(self, batch, batch_idx):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
-        loss = F.binary_cross_entropy_with_logits(video_logits, labels_onehot.type(torch.float32))
+        loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.train_metrics.update(video_logits, labels_onehot)
         self.train_map_class.update(video_logits, labels_onehot)
         self.log("train_loss", loss)
@@ -231,7 +235,7 @@ class VideoCLIP(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
-        loss = F.binary_cross_entropy_with_logits(video_logits, labels_onehot.type(torch.float32))
+        loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.valid_metrics.update(video_logits, labels_onehot)
         self.valid_map_class.update(video_logits, labels_onehot)
         self.log("valid_loss", loss)
