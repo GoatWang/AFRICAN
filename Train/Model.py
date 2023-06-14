@@ -159,7 +159,7 @@ class VideoCLIP(pl.LightningModule):
 
     def set_loss_func(self, loss_name, class_frequency):
         class_frequency = list(map(float, class_frequency))
-        self.loss_func = get_loss_func(loss_name, class_frequency)
+        self.loss_func = get_loss_func(loss_name)(class_frequency, self.device)
 
     def freeze_clip_evl(self):
         for n, p in self.named_parameters():
@@ -216,9 +216,10 @@ class VideoCLIP(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
+        video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-        self.train_metrics.update(video_logits, labels_onehot)
-        self.train_map_class.update(video_logits, labels_onehot)
+        self.train_metrics.update(video_pred, labels_onehot)
+        self.train_map_class.update(video_pred, labels_onehot)
         self.log("train_loss", loss)
         return loss
 
@@ -235,9 +236,10 @@ class VideoCLIP(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
+        video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-        self.valid_metrics.update(video_logits, labels_onehot)
-        self.valid_map_class.update(video_logits, labels_onehot)
+        self.valid_metrics.update(video_pred, labels_onehot)
+        self.valid_map_class.update(video_pred, labels_onehot)
         self.log("valid_loss", loss)
 
     def on_validation_epoch_end(self):
