@@ -17,7 +17,7 @@ def main(_config):
     if _config['animal_kingdom_clip_path'] is None:
         _config['version'] = datetime.now().strftime("%Y%m%d-%H%M%S")
     else:
-        _config['version'] = os.path.basename(os.path.dirname(_config['animal_kingdom_clip_path']))[-2]
+        _config['version'] = os.path.basename(os.path.dirname(_config['animal_kingdom_clip_path']))
     _config['models_dir'] = os.path.join(_config["model_dir"], _config["name"], _config['version'])
     Path(_config['models_dir']).mkdir(parents=True, exist_ok=True)
 
