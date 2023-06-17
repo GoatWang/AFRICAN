@@ -70,7 +70,7 @@ class FocalLoss(nn.Module):
     def __init__(self, class_frequency, device, logits=True, reduction="mean"):
         super(FocalLoss, self).__init__()
         self.alpha = 1 
-        self.gamma = 0 
+        self.gamma = 5 # adjusted from 0 to 5
         self.logits = logits
         self.reduction = reduction
 
