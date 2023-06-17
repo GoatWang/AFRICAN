@@ -19,8 +19,14 @@ def config():
     video_sampling = 'sequence_rand'
     batch_size = 32
     max_epochs = 50
-    lr = 0.0001
+    lr = 0.00015
     optimizer = "adamw" # adam or adamw
+    decay_power = "cosine" # poly
+    warmup_steps = 10000
+    # end_lr = 0.0 # for poly decay
+    # poly_decay_power = 1 # for poly decay
+
+
     data_workers = 4
     training_test_size = None
     

@@ -30,6 +30,7 @@ def main(_config):
     print("train baseline (140 classes):", (1 - np.bincount(np.hstack(dataset_train.labels)) / len(dataset_train)))
     print("valid baseline (140 classes):", (1 - np.bincount(np.hstack(dataset_valid.labels)) / len(dataset_valid)))
 
+    _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
     train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True, num_workers=_config["data_workers"]) # bugs on MACOS
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"]) # bugs on MACOS
 
@@ -44,6 +45,7 @@ def main(_config):
         save_last=True)
     # lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
     summary_callback = pl.callbacks.ModelSummary(max_depth=1)
+    lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
 
     csv_logger = pl.loggers.CSVLogger(save_dir=_config["log_dir"], name=_config['name'], version=_config['version'])
     csv_logger.log_hyperparams(_config)
@@ -52,7 +54,7 @@ def main(_config):
     trainer = pl.Trainer(max_epochs=_config['max_epochs'], 
                         logger=csv_logger, 
                         #  logger=wandb_logger, 
-                        callbacks=[checkpoint_callback, summary_callback])
+                        callbacks=[checkpoint_callback, lr_callback, summary_callback])
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=valid_loader, ckpt_path=_config['animal_kingdom_clip_path'])
 
     # optimizer = model.configure_optimizers()

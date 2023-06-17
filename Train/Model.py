@@ -8,6 +8,11 @@ from Loss import get_loss_func
 import pytorch_lightning as pl
 import InternVideo as clip_kc_new
 from ModelUtil.clip_param_keys import clip_param_keys
+from transformers import (
+    get_polynomial_decay_schedule_with_warmup,
+    get_cosine_schedule_with_warmup,
+)
+
 # from CoTrain.modules import heads, cotrain_utils
 # from CoTrain.modules import objectives as objectives
 # from CoTrain.modules import base_vision_transformer as vit
@@ -98,6 +103,11 @@ class VideoCLIP(pl.LightningModule):
         self.lr = config["lr"]
         self.n_classes = config["n_classes"]
         self.optimizer = config["optimizer"]
+
+        self.warmup_steps = config['warmup_steps']
+        self.max_steps = config['max_steps']
+        self.end_lr = config['end_lr']
+        self.poly_decay_power = config['poly_decay_power']
 
         metric_collection = torchmetrics.MetricCollection([
             torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes),
@@ -261,7 +271,24 @@ class VideoCLIP(pl.LightningModule):
             optimizer = torch.optim.AdamW([p for p in self.parameters() if p.requires_grad], lr=self.lr, eps=1e-6, betas=(0.9, 0.98))
         else:
             assert False, f"Unknown optimizer: {optimizer}"
-        return optimizer
+
+        if self.decay_power == "cosine":
+            scheduler = get_cosine_schedule_with_warmup(
+                optimizer,
+                num_warmup_steps=self.warmup_steps,
+                num_training_steps=self.max_steps,
+            )
+        elif self.decay_power == "poly":
+            scheduler = get_polynomial_decay_schedule_with_warmup(
+                optimizer,
+                num_warmup_steps=self.warmup_steps,
+                num_training_steps=self.max_steps,
+                lr_end=self.end_lr,
+                power=self.poly_decay_power,
+            )
+        sched = {"scheduler": scheduler, "interval": "step"}
+
+        return optimizer, sched
     
     # def infer(
     #     self,
