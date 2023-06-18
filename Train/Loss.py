@@ -110,13 +110,13 @@ class LDAM(nn.Module):
         self.step_epoch = step_epoch
         self.weight = None
 
-    def reset_epoch(self, epoch):
-        idx = epoch // self.step_epoch
-        betas = [0, 0.9999]
-        effective_num = 1.0 - np.power(betas[idx], self.class_frequency)
-        per_cls_weights = (1.0 - betas[idx]) / np.array(effective_num)
-        per_cls_weights = per_cls_weights / np.sum(per_cls_weights) * len(self.class_frequency)
-        self.weight = torch.FloatTensor(per_cls_weights).to(self.device)
+    # def reset_epoch(self, epoch):
+    #     idx = epoch // self.step_epoch
+    #     betas = [0, 0.9999]
+    #     effective_num = 1.0 - np.power(betas[idx], self.class_frequency)
+    #     per_cls_weights = (1.0 - betas[idx]) / np.array(effective_num)
+    #     per_cls_weights = per_cls_weights / np.sum(per_cls_weights) * len(self.class_frequency)
+    #     self.weight = torch.FloatTensor(per_cls_weights).to(self.device)
 
     def forward(self, inputs, targets):
         targets = targets.to(torch.float32)
@@ -124,7 +124,7 @@ class LDAM(nn.Module):
         batch_m = batch_m.view((-1, 1))
         inputs_m = inputs - batch_m
 
-        output = torch.where(targets.type(torch.uint8)>1, inputs_m, inputs) # torch.where(targets.type(torch.uint8))
+        output = torch.where(targets.type(torch.bool), inputs_m, inputs) # TODO: should be tested
         if self.logits:
             loss = F.binary_cross_entropy_with_logits(self.s * output, targets, reduction=self.reduction,
                                                     weight=self.weight)
