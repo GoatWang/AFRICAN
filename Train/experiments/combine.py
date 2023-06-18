@@ -4,7 +4,7 @@ import pandas as pd
 
 dirs = [d for d in os.listdir() if os.path.isdir(d)]
 for d in dirs[:]:
-    csv_fps_src = glob.glob(d + "/**/*.csv", recursive=True)
+    csv_fps_src = glob.glob(d + "/*/*.csv")
     csv_fp_dst = os.path.join(d, d+'.csv')
     df = pd.concat([pd.read_csv(csv_fp) for csv_fp in csv_fps_src])
     columns = ['epoch', 'step', 'valid_loss', 'MultilabelAccuracy', 'MultilabelExactMatch', 'MultilabelAveragePrecision']
