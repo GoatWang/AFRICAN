@@ -109,16 +109,6 @@ class VideoCLIP(pl.LightningModule):
         self.end_lr = config['end_lr']
         self.poly_decay_power = config['poly_decay_power']
 
-        metric_collection = torchmetrics.MetricCollection([
-            torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes),
-            torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes),
-            torchmetrics.classification.MultilabelAveragePrecision(num_labels=self.n_classes)
-        ])
-        self.train_metrics = metric_collection.clone()
-        self.valid_metrics = metric_collection.clone()
-        self.train_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
-        self.valid_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
-
         self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
         self.clip, self.clip_preprocess = clip_kc_new.load( # class VideoIntern(nn.Module):
             config["clip"], # /pathto/ViT-L-14.pt
@@ -170,6 +160,29 @@ class VideoCLIP(pl.LightningModule):
     def set_loss_func(self, loss_name, class_frequency):
         class_frequency = list(map(float, class_frequency))
         self.loss_func = get_loss_func(loss_name)(class_frequency, self.device)
+
+    def set_metrics(self, classes_head, classes_middle, classes_tail):
+        metric_collection = torchmetrics.MetricCollection([
+            torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes),
+            torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes),
+            torchmetrics.classification.MultilabelAveragePrecision(num_labels=self.n_classes), # total
+        ])
+        self.train_metrics = metric_collection.clone()
+        self.valid_metrics = metric_collection.clone()
+
+        self.classes_head = classes_head
+        self.classes_middle = classes_middle
+        self.classes_tail = classes_tail
+        
+        self.train_map_head = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_head)), # head
+        self.train_map_middle = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_middle)), # middle
+        self.train_map_tail = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_tail)), # tail
+
+        self.valid_map_head = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_head)), # head
+        self.valid_map_middle = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_middle)), # middle
+        self.valid_map_tail = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_tail)), # tail
+        # self.train_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
+        # self.valid_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
 
     def freeze_clip_evl(self):
         for n, p in self.named_parameters():
@@ -229,7 +242,9 @@ class VideoCLIP(pl.LightningModule):
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.train_metrics.update(video_pred, labels_onehot)
-        self.train_map_class.update(video_pred, labels_onehot)
+        self.train_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
+        self.train_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
+        self.train_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
         self.log("train_loss", loss)
         return loss
 
@@ -238,10 +253,17 @@ class VideoCLIP(pl.LightningModule):
         self.log_dict(_train_metrics)
         self.train_metrics.reset()
 
-        _train_map_class = self.train_map_class.compute()
-        for i in range(self.n_classes):
-            self.log('train_map_' + self.class_names[i], _train_map_class[i])
-        self.train_map_class.reset()
+        _train_map_head = self.train_map_head.compute()
+        self.log("map_head", _train_map_head)
+        self.train_map_head.reset()
+
+        _train_map_middle = self.train_map_middle.compute()
+        self.log("map_middle", _train_map_middle)
+        self.train_map_middle.reset()
+
+        _train_map_tail = self.train_map_tail.compute()
+        self.log("map_tail", _train_map_tail)
+        self.train_map_tail.reset()
 
     def validation_step(self, batch, batch_idx):
         video_tensor, labels_onehot = batch
@@ -249,7 +271,9 @@ class VideoCLIP(pl.LightningModule):
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.valid_metrics.update(video_pred, labels_onehot)
-        self.valid_map_class.update(video_pred, labels_onehot)
+        self.valid_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
+        self.valid_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
+        self.valid_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
         self.log("valid_loss", loss)
 
     def on_validation_epoch_end(self):
@@ -257,10 +281,17 @@ class VideoCLIP(pl.LightningModule):
         self.log_dict(_valid_metrics)
         self.valid_metrics.reset()
 
-        _valid_map_class = self.valid_map_class.compute()
-        for i in range(self.n_classes):
-            self.log('valid_map_' + self.class_names[i], _valid_map_class[i])
-        self.valid_map_class.reset()
+        _valid_map_head = self.valid_map_head.compute()
+        self.log("map_head", _valid_map_head)
+        self.valid_map_head.reset()
+
+        _valid_map_middle = self.valid_map_middle.compute()
+        self.log("map_middle", _valid_map_middle)
+        self.valid_map_middle.reset()
+
+        _valid_map_tail = self.valid_map_tail.compute()
+        self.log("map_tail", _valid_map_tail)
+        self.valid_map_tail.reset()
 
     def configure_optimizers(self):
         # TODO: add parameter groups
