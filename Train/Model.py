@@ -104,6 +104,7 @@ class VideoCLIP(pl.LightningModule):
         self.n_classes = config["n_classes"]
         self.optimizer = config["optimizer"]
 
+        self.decay_power = config['decay_power']
         self.warmup_steps = config['warmup_steps']
         self.max_steps = config['max_steps']
         self.end_lr = config['end_lr']
