@@ -23,8 +23,8 @@ def config():
     optimizer = "adamw" # adam or adamw
     decay_power = "cosine" # poly
     warmup_steps = 10000
-    # end_lr = 0.0 # for poly decay
-    # poly_decay_power = 1 # for poly decay
+    end_lr = 0.0 # for poly decay
+    poly_decay_power = 1 # for poly decay
 
 
     data_workers = 4
