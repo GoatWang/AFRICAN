@@ -320,7 +320,7 @@ class VideoCLIP(pl.LightningModule):
             )
         sched = {"scheduler": scheduler, "interval": "step"}
 
-        return optimizer, sched
+        return ([optimizer], [sched])    
     
     # def infer(
     #     self,
