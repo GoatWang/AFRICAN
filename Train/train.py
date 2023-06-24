@@ -15,7 +15,7 @@ torch.manual_seed(0)
 def main(_config):
     _config = copy.deepcopy(_config)
     datestime_tr = datetime.now().strftime("%Y%m%d-%H%M%S")
-    model_version = _config['version'] if 'version' in _config else datestime_tr
+    model_version = _config['version'] if _config['version'] is None else datestime_tr
     _config['models_dir'] = os.path.join(_config["model_dir"], _config["name"], model_version)
     Path(_config['models_dir']).mkdir(parents=True, exist_ok=True)
 
