@@ -14,8 +14,9 @@ torch.manual_seed(0)
 @ex.automain
 def main(_config):
     _config = copy.deepcopy(_config)
-    _config['version'] = datetime.now().strftime("%Y%m%d-%H%M%S")
-    _config['models_dir'] = os.path.join(_config["model_dir"], _config["name"], _config['version'])
+    datestime_tr = datetime.now().strftime("%Y%m%d-%H%M%S")
+    model_version = _config['version'] if 'version' in _config else datestime_tr
+    _config['models_dir'] = os.path.join(_config["model_dir"], _config["name"], model_version)
     Path(_config['models_dir']).mkdir(parents=True, exist_ok=True)
 
     pl.seed_everything(_config["seed"])
@@ -53,7 +54,7 @@ def main(_config):
     summary_callback = pl.callbacks.ModelSummary(max_depth=1)
     lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
 
-    csv_logger = pl.loggers.CSVLogger(save_dir=_config["log_dir"], name=_config['name'], version=_config['version'])
+    csv_logger = pl.loggers.CSVLogger(save_dir=_config["log_dir"], name=_config['name'], version=datestime_tr)
     csv_logger.log_hyperparams(_config)
     # wandb_logger = pl.loggers.WandbLogger(project='AnimalKingdom', save_dir=_config["log_dir"], name=_config['name'], version=_config['version'])
     # wandb_logger.experiment.config.update(_config)

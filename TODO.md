@@ -1,8 +1,6 @@
 # TODO:
-- check is the batch_size (32 -> 128) or the learning rate (0.0001 -> 0.00015)cause the poor performance of the model training.
 - ask for BlueCrystol
-- reimplement the map metrics logging for each prompt
- 
+
 # Next Steps
 - test vision train_laryers (A100)
 - contrastive learn on sequence order of the frames (survey & model building)
@@ -126,6 +124,9 @@
         loss = F.binary_cross_entropy_with_logits(self.inputs, targets, reduction=self.reduction, weight=eql_w)
         ```
 - implement segment specific map metric log
+- reimplement the map metrics logging for each prompt
+- specify the model version using 'version' config
+- check is the batch_size (32 -> 128) or the learning rate (0.0001 -> 0.00015)cause the poor performance of the model training. => batch_size count
 
 ## Suspended
 - test rand sampling of video frames
