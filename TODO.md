@@ -126,7 +126,7 @@
 - implement segment specific map metric log
 - reimplement the map metrics logging for each prompt
 - specify the model version using 'version' config
-- check is the batch_size (32 -> 128) or the learning rate (0.0001 -> 0.00015)cause the poor performance of the model training. => batch_size count
+- check is the batch_size (32 -> 128) or the learning rate (0.0001 -> 0.00015)cause the poor performance of the model training. => batch_size count (32 better)
 
 ## Suspended
 - test rand sampling of video frames

@@ -43,7 +43,7 @@ def main(_config):
     # checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=_config['models_dir'], verbose=True) # 
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         dirpath=_config['models_dir'], 
-        filename='{epoch}-{MultilabelAveragePrecision:.2f}-{valid_map_head:.2f}-{valid_map_middle:.2f}-{valid_map_tail:.2f}',
+        filename='{epoch}-{MultilabelAveragePrecision:.3f}-{valid_map_head:.3f}-{valid_map_middle:.3f}-{valid_map_tail:.3f}',
         verbose=True,
         save_top_k=3, 
         every_n_epochs=1,
