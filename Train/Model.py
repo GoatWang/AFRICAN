@@ -263,9 +263,9 @@ if __name__ == "__main__":
     _config = config()
     model = VideoCLIP(_config)
 
-    weight_fp = os.path.join(os.path.dirname(__file__), "weights", "epoch=2-step=9003.ckpt")
-    if os.path.exists(weight_fp):
-        model.load_ckpt(weight_fp)
+    ckpt_fp = os.path.join(os.path.dirname(__file__), "weights", "epoch=2-step=9003.ckpt")
+    if os.path.exists(ckpt_fp):
+        model.load_ckpt_state_dict(ckpt_fp)
 
     dataset_train = AnimalKingdomDataset(_config, split="train")
     dataset_valid = AnimalKingdomDataset(_config, split="val")
