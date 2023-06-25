@@ -40,17 +40,15 @@ def main(_config):
     train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True, num_workers=_config["data_workers"]) # bugs on MACOS
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"]) # bugs on MACOS
 
-    # checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=_config['models_dir'], verbose=True) # 
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         dirpath=_config['models_dir'], 
-        filename='{epoch}-{MultilabelAveragePrecision:.3f}-{valid_map_head:.3f}-{valid_map_middle:.3f}-{valid_map_tail:.3f}',
+        filename='{epoch}-{valid_MultilabelAveragePrecision:.3f}-{valid_map_head:.3f}-{valid_map_middle:.3f}-{valid_map_tail:.3f}',
         verbose=True,
         save_top_k=3, 
         every_n_epochs=1,
-        monitor="MultilabelAveragePrecision", 
+        monitor="valid_MultilabelAveragePrecision", 
         mode="max", 
         save_last=True)
-    # lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
     summary_callback = pl.callbacks.ModelSummary(max_depth=1)
     lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
 

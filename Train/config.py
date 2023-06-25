@@ -21,7 +21,7 @@ def config():
     max_epochs = 100
     lr = 0.0001
     optimizer = "adamw" # adam or adamw
-    decay_power = "cosine" # poly
+    decay_power = "cosine" # no_decay, poly, cosine
     warmup_steps = 10000
     end_lr = 0.0 # for poly decay
     poly_decay_power = 1 # for poly decay
