@@ -59,7 +59,7 @@ def main(_config):
     trainer = pl.Trainer(max_epochs=_config['max_epochs'], 
                         logger=csv_logger, 
                         #  logger=wandb_logger, 
-                        log_every_n_steps=(len(dataset_train) // _config['batch_size']) // 5,
+                        log_every_n_steps=(len(dataset_train) // _config['batch_size']) // 3,
                         callbacks=[checkpoint_callback, lr_callback, summary_callback])
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=valid_loader, ckpt_path=_config['animal_kingdom_clip_path'])
 
