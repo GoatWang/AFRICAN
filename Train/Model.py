@@ -164,7 +164,7 @@ class VideoCLIP(pl.LightningModule):
         self.train_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
         self.train_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
         self.train_map_class.update(video_pred, labels_onehot)
-        self.log("train_loss", loss)
+        self.log("train_loss", loss, on_step=False, on_epoch=True)
         return loss
 
     def on_train_epoch_end(self):
@@ -189,7 +189,6 @@ class VideoCLIP(pl.LightningModule):
             self.log('train_map_' + self.class_names[i], _train_map_class[i])
         self.train_map_class.reset()
 
-
     def validation_step(self, batch, batch_idx):
         video_tensor, labels_onehot = batch
         video_logits = self(batch)
@@ -200,7 +199,7 @@ class VideoCLIP(pl.LightningModule):
         self.valid_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
         self.valid_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
         self.valid_map_class.update(video_pred, labels_onehot)
-        self.log("valid_loss", loss)
+        self.log("valid_loss", loss, on_step=False, on_epoch=True)
 
     def on_validation_epoch_end(self):
         _valid_metrics = self.valid_metrics.compute()
@@ -208,7 +207,7 @@ class VideoCLIP(pl.LightningModule):
         self.valid_metrics.reset()
 
         _valid_map_head = self.valid_map_head.compute()
-        self.log("train_map_head", _valid_map_head)
+        self.log("valid_map_head", _valid_map_head)
         self.valid_map_head.reset()
 
         _valid_map_middle = self.valid_map_middle.compute()

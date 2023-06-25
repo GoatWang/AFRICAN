@@ -2,7 +2,6 @@
 - use BlueCrystol
 
 - sort code, remove notes
-
 - try Focal Loss with fixed lr & the training result of Cosine Learning Rate seems not work
 - Monitor mAP on validation result not training result
 - saving ckpt filename metric (head, middle, tail) name error
