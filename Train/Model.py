@@ -164,6 +164,7 @@ class VideoCLIP(pl.LightningModule):
         self.train_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
         self.train_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
         self.train_map_class.update(video_pred, labels_onehot)
+        on_step = batch_idx
         self.log("train_loss", loss, on_step=False, on_epoch=True)
         return loss
 
