@@ -262,14 +262,17 @@ if __name__ == "__main__":
 
     device = 'cpu'
     _config = config()
+
+    dataset_train = AnimalKingdomDataset(_config, split="train")
+    dataset_valid = AnimalKingdomDataset(_config, split="val")
+
+    _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
     model = VideoCLIP(_config)
 
     ckpt_fp = os.path.join(os.path.dirname(__file__), "weights", "epoch=2-step=9003.ckpt")
     if os.path.exists(ckpt_fp):
         model.load_ckpt_state_dict(ckpt_fp)
 
-    dataset_train = AnimalKingdomDataset(_config, split="train")
-    dataset_valid = AnimalKingdomDataset(_config, split="val")
     dataset_train.produce_prompt_embedding(model.clip)
     dataset_valid.produce_prompt_embedding(model.clip)
     model.set_text_feats(dataset_train.text_features)
