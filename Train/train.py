@@ -54,7 +54,7 @@ def main(_config):
 
     csv_logger = pl.loggers.CSVLogger(save_dir=_config["log_dir"], name=_config['name'], version=datestime_tr)
     csv_logger.log_hyperparams(_config)
-    wandb_logger = pl.loggers.WandbLogger(project='AnimalKingdom', save_dir=_config["log_dir"], name=_config['name'], version=model_version)
+    wandb_logger = pl.loggers.WandbLogger(project='AnimalKingdom', save_dir=_config["log_dir"], name=_config['name'], version=datestime_tr)
     wandb_logger.experiment.config.update(_config, allow_val_change=True)
     trainer = pl.Trainer(max_epochs=_config['max_epochs'], 
                         logger=[csv_logger, wandb_logger], 
