@@ -76,7 +76,7 @@ class VideoCLIP(pl.LightningModule):
 
     def set_loss_func(self, loss_name, class_frequency):
         class_frequency = list(map(float, class_frequency))
-        self.loss_func = get_loss_func(loss_name)(class_frequency, self.device)
+        self.loss_func = get_loss_func(loss_name, class_frequency, self.device)
 
     def set_metrics(self, classes_head, classes_middle, classes_tail):
         metric_collection = torchmetrics.MetricCollection([

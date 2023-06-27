@@ -42,7 +42,7 @@ class BCELoss(nn.Module):
         bceloss
     '''
 
-    def __init__(self, class_frequency, device, logits=True, reduction="mean"):
+    def __init__(self, logits=True, reduction="mean"):
         super(BCELoss, self).__init__()
         self.logits = logits
         self.reduction = reduction
@@ -67,10 +67,10 @@ class FocalLoss(nn.Module):
     Original: https://github.com/facebookresearch/Detectron
     '''
 
-    def __init__(self, class_frequency, device, logits=True, reduction="mean"):
+    def __init__(self, gamma=2, logits=True, reduction="mean"):
         super(FocalLoss, self).__init__()
         self.alpha = 1 
-        self.gamma = 5 # adjusted from 0 to 5
+        self.gamma = gamma # adjusted from 0 to 5
         self.logits = logits
         self.reduction = reduction
 
@@ -80,6 +80,7 @@ class FocalLoss(nn.Module):
         else:
             BCE_loss = F.binary_cross_entropy(inputs, targets, reduction="none")
         pt = torch.exp(-BCE_loss)
+        print(self.gamma)
         F_loss = self.alpha * (1 - pt) ** self.gamma * BCE_loss
 
         if self.reduction == "mean":
@@ -188,19 +189,31 @@ _LOSSES = {
     "EQL": EQL,
 }
 
-def get_loss_func(loss_name):
+def get_loss_func(loss_name, class_frequency, device):
     """
     Retrieve the loss given the loss name.
     Args (int):
         loss_name: the name of the loss to use.
     """
-    if loss_name not in _LOSSES.keys():
+    loss_name = loss_name.split("_")[0].upper()
+    if "BCE" in loss_name:
+        return BCELoss()
+    elif "FOCAL" in loss_name:
+        gamma = 2
+        parameters = loss_name.split("_")[1:]
+        if len(parameters) > 0:
+            gamma = int(parameters[0])
+        return FocalLoss(gamma=gamma)
+    elif "LDAM" in loss_name:
+        return LDAM(class_frequency, device)
+    elif "EQL" in loss_name:
+        return EQL(class_frequency, device)
+    else:
         raise NotImplementedError("Loss {} is not supported".format(loss_name))
-    return _LOSSES[loss_name]
 
 if __name__ == "__main__":
     def test_focal_loss():
-        focal_loss = FocalLoss([], 'cpu')
+        focal_loss = FocalLoss(gamma=2)
 
         # Scenario 1: low loss case
         # We take logits (model's raw outputs) to be very close to targets

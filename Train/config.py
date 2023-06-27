@@ -32,7 +32,7 @@ def config():
     training_test_size = None
     
     # for model
-    loss = "BCE" # "BCE", "FOCAL", "LDAM", "EQL"
+    loss = "BCE" # "BCE", "FOCAL_2", "LDAM", "EQL"
     n_classes = 140
     train_laryers = "vision_proj" # vision or vision_proj
 
