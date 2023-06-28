@@ -192,11 +192,9 @@ class Charades(torch.utils.data.Dataset):
     #     # print("seq", seq)
     #     return seq
     
-    def get_seq_frames(self, index):
+    def get_seq_frames_self(self, video_length):
         step_size = np.random.randint(1, 6)
         num_frames = self.cfg.DATA.NUM_FRAMES
-        video_length = len(self._path_to_videos[index])
-
         num_frames_steps = num_frames * step_size
         if video_length > num_frames_steps:
             st_idx = np.random.choice(list(range(video_length - num_frames_steps)))
@@ -270,35 +268,31 @@ class Charades(torch.utils.data.Dataset):
                 "Does not support {} mode".format(self.mode)
             )
 
-        seq = self.get_seq_frames(index)
         # TODO: change video reader
+        # seq = self.get_seq_frames(index)
         # frames = torch.as_tensor(
         #     utils.retry_load_images(
         #         [self._path_to_videos[index][frame] for frame in seq],
         #         self._num_retries,
         #     )
         # ) # 8, 360, 640, 3 (RGB)
-        def read_frames_decord(video_path, num_frames, seq):
+        def read_frames_decord(video_path, num_frames):
+            """combine read video and get_seq_frames"""
             import decord
             from decord import cpu
             video_reader = decord.VideoReader(video_path, num_threads=1, ctx=cpu(0))
             decord.bridge.set_bridge('torch')
-            try:
-                frames = video_reader.get_batch(seq).byte() # 8, 360, 640, 3 (RGB)
-            except:
-                print("video_path", video_path)
-                print("num_frames", num_frames)
-                print("seq", seq)
-                print("len(video_reader)", len(video_reader))
+            seq = self.get_seq_frames_self(len(video_reader))      
+            frames = video_reader.get_batch(seq).byte() # 8, 360, 640, 3 (RGB)
             # frames = frames.permute(0, 3, 1, 2).cpu() # 8, 3, 360, 640
             if frames.shape[0] < num_frames:
                 pad_n_frames = num_frames - frames.shape[0]
                 pad_frames = torch.stack([torch.zeros_like(frames[0])] * pad_n_frames)
                 frames = torch.cat([frames, pad_frames], dim=0)
-            return frames
+            return seq, frames
         video_path = self._path_to_videos[index][0]
         video_path = os.path.dirname(video_path.replace("image", "video")) + ".mp4"
-        frames = read_frames_decord(video_path, self.cfg.DATA.NUM_FRAMES, seq)
+        seq, frames = read_frames_decord(video_path, self.cfg.DATA.NUM_FRAMES)
 
         label = utils.aggregate_labels(
             [self._labels[index][i] for i in range(seq[0], seq[-1] + 1)]
