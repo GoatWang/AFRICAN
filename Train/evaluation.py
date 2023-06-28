@@ -1,5 +1,6 @@
 import os
 import torch
+from tqdm import tqdm
 from torch import utils
 from Model import VideoCLIP
 from config import ex, config
@@ -67,7 +68,7 @@ def main(_config):
     testmeter = TestMeter(len(dataset_charades), num_clips, num_cls, overall_iters=1, multi_label=True)
 
     # evaluate
-    for batch_idx, (frames, label, index, _) in enumerate(loader_charades):
+    for frames, label, index, _ in tqdm(loader_charades):
         frames, label = frames.to(_config['device']), label
         video_logits = model((frames, label))
         video_pred = torch.sigmoid(video_logits).detach().cpu()
@@ -94,7 +95,7 @@ def main(_config):
         # for i in range(140):
         #     print(i, "%.2f, %.2f"%(video_pred[0][i].item(), label[0][i].item()))
         # break
-        
+
     # dataset_charades.get_seq_frames(0)
     # print("====================================")
     # dataset_charades.get_seq_frames(1)

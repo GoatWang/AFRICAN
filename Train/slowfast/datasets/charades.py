@@ -289,8 +289,6 @@ class Charades(torch.utils.data.Dataset):
                 pad_frames = torch.stack([torch.zeros_like(frames[0])] * pad_n_frames)
                 frames = torch.cat([frames, pad_frames], dim=0)
             return frames
-        
-        # assert False, "TODO: change video reader"
         video_path = self._path_to_videos[index][0]
         video_path = os.path.dirname(video_path.replace("image", "video")) + ".mp4"
         frames = read_frames_decord(video_path, self.cfg.DATA.NUM_FRAMES, seq)
