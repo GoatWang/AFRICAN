@@ -276,13 +276,14 @@ class Charades(torch.utils.data.Dataset):
         #         self._num_retries,
         #     )
         # ) # 8, 360, 640, 3 (RGB)
-        def read_frames_decord(video_path, num_frames):
+        def read_frames_decord(video_path, video_length, num_frames):
             """combine read video and get_seq_frames"""
             import decord
             from decord import cpu
             video_reader = decord.VideoReader(video_path, num_threads=1, ctx=cpu(0))
             decord.bridge.set_bridge('torch')
-            seq = self.get_seq_frames_self(len(video_reader))      
+            video_length = len(video_reader) if len(video_reader) < video_length else video_length
+            seq = self.get_seq_frames_self(video_length)
             frames = video_reader.get_batch(seq).byte() # 8, 360, 640, 3 (RGB)
             # frames = frames.permute(0, 3, 1, 2).cpu() # 8, 3, 360, 640
             if frames.shape[0] < num_frames:
@@ -292,7 +293,7 @@ class Charades(torch.utils.data.Dataset):
             return seq, frames
         video_path = self._path_to_videos[index][0]
         video_path = os.path.dirname(video_path.replace("image", "video")) + ".mp4"
-        seq, frames = read_frames_decord(video_path, self.cfg.DATA.NUM_FRAMES)
+        seq, frames = read_frames_decord(video_path, len(self._path_to_videos[index]), self.cfg.DATA.NUM_FRAMES)
 
         label = utils.aggregate_labels(
             [self._labels[index][i] for i in range(seq[0], seq[-1] + 1)]
