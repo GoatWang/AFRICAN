@@ -280,7 +280,7 @@ class Charades(torch.utils.data.Dataset):
             """combine read video and get_seq_frames"""
             import decord
             from decord import cpu
-            video_reader = decord.VideoReader(video_path, num_threads=1, ctx=cpu(0))
+            video_reader = decord.VideoReader(video_path, num_threads=1, width=256, height=256, ctx=cpu(0))
             decord.bridge.set_bridge('torch')
             video_length = len(video_reader) if len(video_reader) < video_length else video_length
             seq = self.get_seq_frames_self(video_length)
