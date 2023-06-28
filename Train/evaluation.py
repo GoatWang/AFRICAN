@@ -47,7 +47,7 @@ class Cfg:
 def main(_config):
 
     # load model
-    model = VideoCLIP(_config)
+    model = VideoCLIP(_config).to(_config['device'])
     model.load_ckpt_state_dict(os.path.join(os.path.dirname(__file__), "weights/epoch=355-step=66928.ckpt"))
     dataset_train = AnimalKingdomDataset(_config, split="train")
     dataset_train.produce_prompt_embedding(model.clip)
@@ -60,16 +60,7 @@ def main(_config):
     cfg_charades = Cfg(path_to_data_dir, path_prefix)
     dataset_charades = Charades(cfg_charades, mode='test')
     loader_charades = utils.data.DataLoader(dataset_charades, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"])
-    # # dataset_charades[0]
-    # dataset_charades.get_seq_frames(0)
-    # print("====================================")
-    # dataset_charades.get_seq_frames(1)
-    # print("====================================")
-    # dataset_charades.get_seq_frames(2)
-    # print("====================================")
-    # dataset_charades.get_seq_frames(3)
-    # print("====================================")
-    
+
     # load meter
     num_cls = cfg_charades.MODEL.NUM_CLASSES
     num_clips = cfg_charades.TEST.NUM_ENSEMBLE_VIEWS * cfg_charades.TEST.NUM_SPATIAL_CROPS
@@ -77,13 +68,10 @@ def main(_config):
 
     # evaluate
     for batch_idx, (frames, label, index, _) in enumerate(loader_charades):
-        frames, label = frames.to(_config['device']), label.to(_config['device'])
+        frames, label = frames.to(_config['device']), label
         video_logits = model((frames, label))
-        video_pred = torch.sigmoid(video_logits)
+        video_pred = torch.sigmoid(video_logits).detach().cpu()
         testmeter.update_stats(video_pred, label, index)
-        for i in range(140):
-            print(i, "%.2f, %.2f"%(video_pred[0][i].item(), label[0][i].item()))
-        break
 
     # do stat & print metric
     testmeter.finalize_metrics()
@@ -101,5 +89,25 @@ def main(_config):
     # print(frames.shape)
     # print(len(label))
     # print(index)
+
+    # for batch_idx, (frames, label, index, _) in enumerate(loader_charades):
+        # for i in range(140):
+        #     print(i, "%.2f, %.2f"%(video_pred[0][i].item(), label[0][i].item()))
+        # break
+        
+    # dataset_charades.get_seq_frames(0)
+    # print("====================================")
+    # dataset_charades.get_seq_frames(1)
+    # print("====================================")
+    # dataset_charades.get_seq_frames(2)
+    # print("====================================")
+    # dataset_charades.get_seq_frames(3)
+    # print("====================================")
+    # dataset_charades.get_seq_frames(4)
+    # print("====================================")
+    # dataset_charades.get_seq_frames(5)
+    # print("====================================")
+    # assert False, "Test"
+
 
 

@@ -25,7 +25,7 @@ def main(_config):
     dataset_train.produce_prompt_embedding(model.clip)
     dataset_valid.produce_prompt_embedding(model.clip)
     model.set_class_names(dataset_train.df_action['action'].values)
-    model.set_text_feats(dataset_train.text_features, )
+    model.set_text_feats(dataset_train.text_features)
     model.set_loss_func(_config['loss'], dataset_train.df_action['count'].tolist())
     print("train baseline (140 classes):", (1 - np.bincount(np.hstack(dataset_train.labels)) / len(dataset_train)))
     print("valid baseline (140 classes):", (1 - np.bincount(np.hstack(dataset_valid.labels)) / len(dataset_valid)))

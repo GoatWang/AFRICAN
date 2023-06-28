@@ -3,6 +3,7 @@
 
 import os
 import random
+import numpy as np
 from itertools import chain as chain
 import torch
 import torch.utils.data
@@ -141,45 +142,74 @@ class Charades(torch.utils.data.Dataset):
         #     )
         # )
 
+    # def get_seq_frames(self, index):
+    #     """
+    #     Given the video index, return the list of indexs of sampled frames.
+    #     Args:
+    #         index (int): the video index.
+    #     Returns:
+    #         seq (list): the indexes of sampled frames from the video.
+    #     """
+    #     temporal_sample_index = (
+    #         -1
+    #         if self.mode in ["train", "val"]
+    #         else self._spatial_temporal_idx[index]
+    #         // self.cfg.TEST.NUM_SPATIAL_CROPS # 3 => 0, 1, 2
+    #     )
+    #     num_frames = self.cfg.DATA.NUM_FRAMES
+    #     sampling_rate = utils.get_random_sampling_rate(
+    #         self.cfg.MULTIGRID.LONG_CYCLE_SAMPLING_RATE,
+    #         self.cfg.DATA.SAMPLING_RATE, 
+    #     ) # 8
+    #     video_length = len(self._path_to_videos[index])
+    #     assert video_length == len(self._labels[index])
+
+    #     clip_length = (num_frames - 1) * sampling_rate + 1
+    #     if temporal_sample_index == -1:
+    #         if clip_length > video_length:
+    #             start = random.randint(video_length - clip_length, 0)
+    #         else:
+    #             start = random.randint(0, video_length - clip_length)
+    #     else:
+    #         gap = float(max(video_length - clip_length, 0)) / (
+    #             self.cfg.TEST.NUM_ENSEMBLE_VIEWS - 1
+    #         )
+    #         start = int(round(gap * temporal_sample_index))
+    #     seq = [
+    #         max(min(start + i * sampling_rate, video_length - 1), 0)
+    #         for i in range(num_frames)
+    #     ]
+
+    #     # for testing
+    #     # print("clip_length", clip_length)
+    #     # print("gap", gap)
+    #     # print("start", start)
+    #     # print("video_length - 1", video_length - 1)
+    #     # print("start + 0 * sampling_rate", start + 0 * sampling_rate)
+    #     # print("start + 1 * sampling_rate", start + 1 * sampling_rate)
+    #     # print("start + 2 * sampling_rate", start + 2 * sampling_rate)
+    #     # print("start + 8 * sampling_rate", start + 8 * sampling_rate)
+    #     # print("seq", seq)
+    #     return seq
+    
     def get_seq_frames(self, index):
-        """
-        Given the video index, return the list of indexs of sampled frames.
-        Args:
-            index (int): the video index.
-        Returns:
-            seq (list): the indexes of sampled frames from the video.
-        """
-        temporal_sample_index = (
-            -1
-            if self.mode in ["train", "val"]
-            else self._spatial_temporal_idx[index]
-            // self.cfg.TEST.NUM_SPATIAL_CROPS # 3 => 0, 1, 2
-        )
+        step_size = np.random.randint(1, 6)
         num_frames = self.cfg.DATA.NUM_FRAMES
-        sampling_rate = utils.get_random_sampling_rate(
-            self.cfg.MULTIGRID.LONG_CYCLE_SAMPLING_RATE,
-            self.cfg.DATA.SAMPLING_RATE, 
-        ) # 8
         video_length = len(self._path_to_videos[index])
-        assert video_length == len(self._labels[index])
-
-        clip_length = (num_frames - 1) * sampling_rate + 1
-        if temporal_sample_index == -1:
-            if clip_length > video_length:
-                start = random.randint(video_length - clip_length, 0)
-            else:
-                start = random.randint(0, video_length - clip_length)
+        num_frames_steps = num_frames * step_size
+        if video_length > num_frames_steps:
+            st_idx = np.random.choice(list(range(video_length - num_frames_steps)))
+            end_idx = st_idx + num_frames_steps
+        elif video_length == num_frames_steps:
+            st_idx = 0
+            end_idx = st_idx + num_frames_steps
         else:
-            gap = float(max(video_length - clip_length, 0)) / (
-                self.cfg.TEST.NUM_ENSEMBLE_VIEWS - 1
-            )
-            start = int(round(gap * temporal_sample_index))
+            st_idx = 0
+            end_idx = video_length
+        seq = range(st_idx, end_idx)[::step_size]
 
-        seq = [
-            max(min(start + i * sampling_rate, video_length - 1), 0)
-            for i in range(num_frames)
-        ]
-
+        # for testing
+        # print("seq", seq)
         return seq
 
     def __getitem__(self, index):
