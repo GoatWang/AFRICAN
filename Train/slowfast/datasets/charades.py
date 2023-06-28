@@ -196,6 +196,7 @@ class Charades(torch.utils.data.Dataset):
         step_size = np.random.randint(1, 6)
         num_frames = self.cfg.DATA.NUM_FRAMES
         video_length = len(self._path_to_videos[index])
+
         num_frames_steps = num_frames * step_size
         if video_length > num_frames_steps:
             st_idx = np.random.choice(list(range(video_length - num_frames_steps)))
@@ -206,7 +207,7 @@ class Charades(torch.utils.data.Dataset):
         else:
             st_idx = 0
             end_idx = video_length
-        seq = range(st_idx, end_idx)[::step_size]
+        seq = list(range(st_idx, end_idx)[::step_size])
 
         # for testing
         # print("seq", seq)
@@ -282,7 +283,13 @@ class Charades(torch.utils.data.Dataset):
             from decord import cpu
             video_reader = decord.VideoReader(video_path, num_threads=1, ctx=cpu(0))
             decord.bridge.set_bridge('torch')
-            frames = video_reader.get_batch(seq).byte() # 8, 360, 640, 3 (RGB)
+            try:
+                frames = video_reader.get_batch(seq).byte() # 8, 360, 640, 3 (RGB)
+            except:
+                print("video_path", video_path)
+                print("num_frames", num_frames)
+                print("seq", seq)
+                print("len(video_reader)", len(video_reader))
             # frames = frames.permute(0, 3, 1, 2).cpu() # 8, 3, 360, 640
             if frames.shape[0] < num_frames:
                 pad_n_frames = num_frames - frames.shape[0]
