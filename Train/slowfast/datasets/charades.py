@@ -164,7 +164,6 @@ class Charades(torch.utils.data.Dataset):
         assert video_length == len(self._labels[index])
 
         clip_length = (num_frames - 1) * sampling_rate + 1
-        print("clip_length", clip_length)
         if temporal_sample_index == -1:
             if clip_length > video_length:
                 start = random.randint(video_length - clip_length, 0)
@@ -174,15 +173,8 @@ class Charades(torch.utils.data.Dataset):
             gap = float(max(video_length - clip_length, 0)) / (
                 self.cfg.TEST.NUM_ENSEMBLE_VIEWS - 1
             )
-            print("gap", gap)
             start = int(round(gap * temporal_sample_index))
-            print("start", start)
 
-        print("video_length - 1", video_length - 1)
-        print("start + 0 * sampling_rate", start + 0 * sampling_rate)
-        print("start + 1 * sampling_rate", start + 1 * sampling_rate)
-        print("start + 2 * sampling_rate", start + 2 * sampling_rate)
-        print("start + 8 * sampling_rate", start + 8 * sampling_rate)
         seq = [
             max(min(start + i * sampling_rate, video_length - 1), 0)
             for i in range(num_frames)
@@ -248,7 +240,6 @@ class Charades(torch.utils.data.Dataset):
             )
 
         seq = self.get_seq_frames(index)
-        print("index, seq", index, seq)
         # TODO: change video reader
         # frames = torch.as_tensor(
         #     utils.retry_load_images(
