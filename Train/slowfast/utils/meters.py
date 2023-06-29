@@ -316,7 +316,7 @@ class TestMeter(object):
                 )
             self.video_labels[vid_id] = labels[ind]
             if self.ensemble_method == "sum":
-                self.video_preds[vid_id] += preds[ind]
+                self.video_preds[vid_id] += preds[ind] / self.num_clips
             elif self.ensemble_method == "max":
                 self.video_preds[vid_id] = torch.max(
                     self.video_preds[vid_id], preds[ind]
