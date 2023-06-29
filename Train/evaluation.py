@@ -64,16 +64,17 @@ def main(_config):
     loader_charades = utils.data.DataLoader(dataset_charades, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"])
 
     # load meter
-    num_cls = cfg_charades.MODEL.NUM_CLASSES
-    num_clips = cfg_charades.TEST.NUM_ENSEMBLE_VIEWS * cfg_charades.TEST.NUM_SPATIAL_CROPS
-    testmeter = TestMeter(len(dataset_charades), num_clips, num_cls, overall_iters=1, multi_label=True)
+    # num_cls = cfg_charades.MODEL.NUM_CLASSES
+    # num_clips = cfg_charades.TEST.NUM_ENSEMBLE_VIEWS * cfg_charades.TEST.NUM_SPATIAL_CROPS
+    # testmeter = TestMeter(len(dataset_charades), num_clips, num_cls, overall_iters=1, multi_label=True)
+    testmeter = TestMeter(len(dataset_charades), 1, 140, overall_iters=1, multi_label=True)
 
     # evaluate
     # for frames, label, index, _ in tqdm(loader_charades):
     for frames, label, index in tqdm(loader_charades):
-        frames, label = frames.to(_config['device']), label.type(torch.float32)
+        frames, label = frames.to(_config['device']), label
         video_logits = model((frames, label, index))
-        video_pred = torch.sigmoid(video_logits).detach().cpu().type(torch.float32)
+        video_pred = torch.sigmoid(video_logits).detach().cpu()
         testmeter.update_stats(video_pred, label, index)
 
     # do stat & print metric
