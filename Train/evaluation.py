@@ -56,19 +56,24 @@ def main(_config):
     model.set_text_feats(dataset_train.text_features)
     model.eval()
 
+
     # load dataset
     path_to_data_dir = os.path.join(_config['data_dir'], "annotation")
     path_prefix = os.path.join(_config['data_dir'], 'dataset', 'image')
     cfg_charades = Cfg(path_to_data_dir, path_prefix)
-    # dataset_charades = Charades(cfg_charades, mode='test')
-    dataset_charades = AnimalKingdomDataset(_config, split="val")
+    cfg_charades.DATA.training_test_size = None
+    if _config['training_test_size'] is not None:
+        cfg_charades.DATA.training_test_size = _config['training_test_size']
+    dataset_charades = Charades(cfg_charades, mode='test')
+    # dataset_charades = AnimalKingdomDataset(_config, split="val")
     loader_charades = utils.data.DataLoader(dataset_charades, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"])
 
     # load meter
-    # num_cls = cfg_charades.MODEL.NUM_CLASSES
-    # num_clips = cfg_charades.TEST.NUM_ENSEMBLE_VIEWS * cfg_charades.TEST.NUM_SPATIAL_CROPS
-    # testmeter = TestMeter(len(dataset_charades), num_clips, num_cls, overall_iters=1, multi_label=True)
-    testmeter = TestMeter(len(dataset_charades), 1, 140, overall_iters=1, multi_label=True)
+    num_cls = cfg_charades.MODEL.NUM_CLASSES
+    num_clips = cfg_charades.TEST.NUM_ENSEMBLE_VIEWS * cfg_charades.TEST.NUM_SPATIAL_CROPS
+    testmeter = TestMeter(len(dataset_charades), num_clips, num_cls, overall_iters=1, multi_label=True)
+    # TODO: modified
+    # testmeter = TestMeter(len(dataset_charades), 1, 140, overall_iters=1, multi_label=True)
     torch_map = torchmetrics.classification.MultilabelAveragePrecision(num_labels=140)
 
     # evaluate
@@ -78,10 +83,12 @@ def main(_config):
         video_logits = model((frames, label, index))
         video_pred = torch.sigmoid(video_logits).detach().cpu()
         testmeter.update_stats(video_pred, label, index)
+        # TODO: modified
         torch_map.update(video_pred, label)
 
     # do stat & print metric
     testmeter.finalize_metrics()
+    # TODO: modified
     print("mAP:", torch_map.compute().item())
 
 

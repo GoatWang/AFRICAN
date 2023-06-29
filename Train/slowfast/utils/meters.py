@@ -269,8 +269,8 @@ class TestMeter(object):
         self.ensemble_method = ensemble_method
         # Initialize tensors.
         self.video_preds = torch.zeros((num_videos, num_cls))
-        if multi_label:
-            self.video_preds -= 1e10
+        # if multi_label:
+        #     self.video_preds -= 1e10
 
         self.video_labels = (
             torch.zeros((num_videos, num_cls))
@@ -290,8 +290,8 @@ class TestMeter(object):
         """
         self.clip_count.zero_()
         self.video_preds.zero_()
-        if self.multi_label:
-            self.video_preds -= 1e10
+        # if self.multi_label:
+        #     self.video_preds -= 1e10
         self.video_labels.zero_()
 
     def update_stats(self, preds, labels, clip_ids):
@@ -316,7 +316,7 @@ class TestMeter(object):
                 )
             self.video_labels[vid_id] = labels[ind]
             if self.ensemble_method == "sum":
-                self.video_preds[vid_id] += preds[ind] / self.num_clips
+                self.video_preds[vid_id] += preds[ind] / self.num_clips # TODO: modified
             elif self.ensemble_method == "max":
                 self.video_preds[vid_id] = torch.max(
                     self.video_preds[vid_id], preds[ind]

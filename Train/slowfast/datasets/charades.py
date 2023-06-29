@@ -86,6 +86,12 @@ class Charades(torch.utils.data.Dataset):
         (self._path_to_videos, self._labels) = utils.load_image_lists(
             path_to_file, self.cfg.DATA.PATH_PREFIX, return_list=True
         )
+
+        # TODO : added
+        if self.cfg.DATA.training_test_size is not None:
+            self._path_to_videos = self._path_to_videos[:self.cfg.DATA.training_test_size]
+            self._labels = self._labels[:self.cfg.DATA.training_test_size]
+
         # TODO: remove debug
         # print("self._path_to_videos", len(self._path_to_videos))
         # print("self._path_to_videos", len(self._path_to_videos[0]))
