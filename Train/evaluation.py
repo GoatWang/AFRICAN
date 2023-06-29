@@ -71,9 +71,9 @@ def main(_config):
     # evaluate
     # for frames, label, index, _ in tqdm(loader_charades):
     for frames, label, index in tqdm(loader_charades):
-        frames, label = frames.to(_config['device']), label
+        frames, label = frames.to(_config['device']), label.type(torch.float32)
         video_logits = model((frames, label, index))
-        video_pred = torch.sigmoid(video_logits).detach().cpu()
+        video_pred = torch.sigmoid(video_logits).detach().cpu().type(torch.float32)
         testmeter.update_stats(video_pred, label, index)
 
     # do stat & print metric
