@@ -200,7 +200,7 @@ class VideoCLIP(pl.LightningModule):
                 p.requires_grad = False
 
     def forward(self, batch, mode="video"):
-        video_tensor, labels = batch
+        video_tensor, labels, index = batch
         video_tensor = video_tensor.contiguous().transpose(1, 2)
         video_feats, video_all_feats = self.clip.encode_video(
             video_tensor, return_all_feats=True, mode=mode
@@ -214,7 +214,7 @@ class VideoCLIP(pl.LightningModule):
         return video_logits
         
     def training_step(self, batch, batch_idx):
-        video_tensor, labels_onehot = batch
+        video_tensor, labels_onehot, index = batch
         video_logits = self(batch)
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
