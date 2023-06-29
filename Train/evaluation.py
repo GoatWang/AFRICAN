@@ -1,5 +1,6 @@
 import os
 import torch
+import torchmetrics
 from tqdm import tqdm
 from torch import utils
 from Model import VideoCLIP
@@ -68,6 +69,7 @@ def main(_config):
     # num_clips = cfg_charades.TEST.NUM_ENSEMBLE_VIEWS * cfg_charades.TEST.NUM_SPATIAL_CROPS
     # testmeter = TestMeter(len(dataset_charades), num_clips, num_cls, overall_iters=1, multi_label=True)
     testmeter = TestMeter(len(dataset_charades), 1, 140, overall_iters=1, multi_label=True)
+    torch_map = torchmetrics.classification.MultilabelAveragePrecision(num_labels=140)
 
     # evaluate
     # for frames, label, index, _ in tqdm(loader_charades):
@@ -76,9 +78,12 @@ def main(_config):
         video_logits = model((frames, label, index))
         video_pred = torch.sigmoid(video_logits).detach().cpu()
         testmeter.update_stats(video_pred, label, index)
+        torch_map.update(video_pred, label)
 
     # do stat & print metric
     testmeter.finalize_metrics()
+    print("mAP:", torch_map.compute().item())
+
 
     # for testing
     # dataset_self = AnimalKingdomDataset(_config, split="val")
