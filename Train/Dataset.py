@@ -82,7 +82,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         video_tensor = self.video_aug(video_tensor, self.video_transform)
         labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
         labels_onehot[self.labels[index]] = 1
-        return video_tensor, labels_onehot
+        return video_tensor, labels_onehot, index
     
     def __len__(self):
         return len(self.video_fps)
