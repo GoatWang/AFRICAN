@@ -8,88 +8,10 @@ from Loss import get_loss_func
 import pytorch_lightning as pl
 import InternVideo as clip_kc_new
 from ModelUtil.clip_param_keys import clip_param_keys
-# from CoTrain.modules import heads, cotrain_utils
-# from CoTrain.modules import objectives as objectives
-# from CoTrain.modules import base_vision_transformer as vit
-# from CoTrain.modules.text_prompt import text_prompt
-
-# def vis_save(imgs, texts):
-#     # img: [B, T, C, H, W]
-#     # texts: [str]
-#     os.makedirs("vis_test", exist_ok=True)
-#     imgs = imgs.permute(0, 1, 3, 4, 2).cpu().numpy()
-#     imgs = (imgs - imgs.min()) / (imgs.max() - imgs.min())
-#     for img, text in zip(imgs, texts):
-#         caption = "_".join(text.split())
-#         os.makedirs(os.path.join("vis_test", caption), exist_ok=True)
-#         for i, im in enumerate(img):
-#             img_path = os.path.join("vis_test", caption, f"{i}.png")
-#             plt.imsave(img_path, im)
-
-
-# # utils
-# @torch.no_grad()
-# def concat_all_gather(tensor):
-#     """
-#     Performs all_gather operation on the provided tensors.
-#     *** Warning ***: torch.distributed.all_gather has no gradient.
-#     """
-#     tensors_gather = [
-#         torch.ones_like(tensor) for _ in range(torch.distributed.get_world_size())
-#     ]
-#     torch.distributed.all_gather(tensors_gather, tensor, async_op=False)
-
-#     output = torch.cat(tensors_gather, dim=0)
-#     return output
-
-
-# @torch.no_grad()
-# def batch_shuffle_ddp(x):
-#     """
-#     Batch shuffle, for making use of BatchNorm.
-#     *** Only support DistributedDataParallel (DDP) model. ***
-#     """
-#     # gather from all gpus
-#     batch_size_this = x.shape[0]
-#     x_gather = concat_all_gather(x)
-#     batch_size_all = x_gather.shape[0]
-
-#     num_gpus = batch_size_all // batch_size_this
-
-#     # random shuffle index
-#     idx_shuffle = torch.randperm(batch_size_all).cuda()
-
-#     # broadcast to all gpus
-#     torch.distributed.broadcast(idx_shuffle, src=0)
-
-#     # index for restoring
-#     idx_unshuffle = torch.argsort(idx_shuffle)
-
-#     # shuffled index for this gpu
-#     gpu_idx = torch.distributed.get_rank()
-#     idx_this = idx_shuffle.view(num_gpus, -1)[gpu_idx]
-
-#     return x_gather[idx_this], idx_unshuffle
-
-
-# @torch.no_grad()
-# def batch_unshuffle_ddp(x, idx_unshuffle):
-#     """
-#     Undo batch shuffle.
-#     *** Only support DistributedDataParallel (DDP) model. ***
-#     """
-#     # gather from all gpus
-#     batch_size_this = x.shape[0]
-#     x_gather = concat_all_gather(x)
-#     batch_size_all = x_gather.shape[0]
-
-#     num_gpus = batch_size_all // batch_size_this
-
-#     # restored index for this gpu
-#     gpu_idx = torch.distributed.get_rank()
-#     idx_this = idx_unshuffle.view(num_gpus, -1)[gpu_idx]
-
-#     return x_gather[idx_this]
+from transformers import (
+    get_polynomial_decay_schedule_with_warmup,
+    get_cosine_schedule_with_warmup,
+)
 
 class VideoCLIP(pl.LightningModule):
     def __init__(self, config):
@@ -99,15 +21,11 @@ class VideoCLIP(pl.LightningModule):
         self.n_classes = config["n_classes"]
         self.optimizer = config["optimizer"]
 
-        metric_collection = torchmetrics.MetricCollection([
-            torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes),
-            torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes),
-            torchmetrics.classification.MultilabelAveragePrecision(num_labels=self.n_classes)
-        ])
-        self.train_metrics = metric_collection.clone()
-        self.valid_metrics = metric_collection.clone()
-        self.train_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
-        self.valid_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
+        self.decay_power = config['decay_power']
+        self.warmup_steps = config['warmup_steps']
+        self.max_steps = config['max_steps']
+        self.end_lr = config['end_lr']
+        self.poly_decay_power = config['poly_decay_power']
 
         self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
         self.clip, self.clip_preprocess = clip_kc_new.load( # class VideoIntern(nn.Module):
@@ -144,7 +62,6 @@ class VideoCLIP(pl.LightningModule):
             self.freeze_text()
         if config['train_laryers'] == "vision_proj":
             self.freeze_clip_evl()
-        # self.freeze_clip()
 
     def load_ckpt_state_dict(self, ckpt_fp):
         ckpt = torch.load(ckpt_fp, map_location="cpu")
@@ -159,7 +76,31 @@ class VideoCLIP(pl.LightningModule):
 
     def set_loss_func(self, loss_name, class_frequency):
         class_frequency = list(map(float, class_frequency))
-        self.loss_func = get_loss_func(loss_name)(class_frequency, self.device)
+        self.loss_func = get_loss_func(loss_name, class_frequency, self.device)
+
+    def set_metrics(self, classes_head, classes_middle, classes_tail):
+        metric_collection = torchmetrics.MetricCollection([
+            torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes),
+            torchmetrics.ExactMatch(task='multilabel', num_labels=self.n_classes),
+            torchmetrics.classification.MultilabelAveragePrecision(num_labels=self.n_classes), # total
+        ])
+        self.train_metrics = metric_collection.clone(prefix='train_')
+        self.valid_metrics = metric_collection.clone(prefix='valid_')
+
+        self.classes_head = classes_head
+        self.classes_middle = classes_middle
+        self.classes_tail = classes_tail
+        
+        self.train_map_head = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_head)) # head
+        self.train_map_middle = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_middle)) # middle
+        self.train_map_tail = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_tail)) # tail
+
+        self.valid_map_head = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_head)) # head
+        self.valid_map_middle = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_middle)) # middle
+        self.valid_map_tail = torchmetrics.classification.MultilabelAveragePrecision(num_labels=len(classes_tail)) # tail
+
+        self.train_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
+        self.valid_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
 
     def freeze_clip_evl(self):
         for n, p in self.named_parameters():
@@ -200,7 +141,7 @@ class VideoCLIP(pl.LightningModule):
                 p.requires_grad = False
 
     def forward(self, batch, mode="video"):
-        video_tensor, labels = batch
+        video_tensor, labels_onehot = batch
         video_tensor = video_tensor.contiguous().transpose(1, 2)
         video_feats, video_all_feats = self.clip.encode_video(
             video_tensor, return_all_feats=True, mode=mode
@@ -219,7 +160,11 @@ class VideoCLIP(pl.LightningModule):
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.train_metrics.update(video_pred, labels_onehot)
+        self.train_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
+        self.train_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
+        self.train_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
         self.train_map_class.update(video_pred, labels_onehot)
+        on_step = batch_idx
         self.log("train_loss", loss)
         return loss
 
@@ -227,6 +172,18 @@ class VideoCLIP(pl.LightningModule):
         _train_metrics = self.train_metrics.compute()
         self.log_dict(_train_metrics)
         self.train_metrics.reset()
+
+        _train_map_head = self.train_map_head.compute()
+        self.log("train_map_head", _train_map_head)
+        self.train_map_head.reset()
+
+        _train_map_middle = self.train_map_middle.compute()
+        self.log("train_map_middle", _train_map_middle)
+        self.train_map_middle.reset()
+
+        _train_map_tail = self.train_map_tail.compute()
+        self.log("train_map_tail", _train_map_tail)
+        self.train_map_tail.reset()
 
         _train_map_class = self.train_map_class.compute()
         for i in range(self.n_classes):
@@ -239,6 +196,9 @@ class VideoCLIP(pl.LightningModule):
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.valid_metrics.update(video_pred, labels_onehot)
+        self.valid_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
+        self.valid_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
+        self.valid_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
         self.valid_map_class.update(video_pred, labels_onehot)
         self.log("valid_loss", loss)
 
@@ -247,145 +207,52 @@ class VideoCLIP(pl.LightningModule):
         self.log_dict(_valid_metrics)
         self.valid_metrics.reset()
 
+        _valid_map_head = self.valid_map_head.compute()
+        self.log("valid_map_head", _valid_map_head)
+        self.valid_map_head.reset()
+
+        _valid_map_middle = self.valid_map_middle.compute()
+        self.log("valid_map_middle", _valid_map_middle)
+        self.valid_map_middle.reset()
+
+        _valid_map_tail = self.valid_map_tail.compute()
+        self.log("valid_map_tail", _valid_map_tail)
+        self.valid_map_tail.reset()
+
         _valid_map_class = self.valid_map_class.compute()
         for i in range(self.n_classes):
             self.log('valid_map_' + self.class_names[i], _valid_map_class[i])
         self.valid_map_class.reset()
 
     def configure_optimizers(self):
-        # TODO: add parameter groups
-        # TODO: add lr scheduler
         if self.optimizer == 'adam':
             optimizer = torch.optim.Adam([p for p in self.parameters() if p.requires_grad], lr=self.lr)
         elif self.optimizer == 'adamw':
             optimizer = torch.optim.AdamW([p for p in self.parameters() if p.requires_grad], lr=self.lr, eps=1e-6, betas=(0.9, 0.98))
         else:
             assert False, f"Unknown optimizer: {optimizer}"
-        return optimizer
+
+        if self.decay_power == "no_decay":
+            return optimizer
+        else:
+            if self.decay_power == "cosine":
+                scheduler = get_cosine_schedule_with_warmup(
+                    optimizer,
+                    num_warmup_steps=self.warmup_steps,
+                    num_training_steps=self.max_steps,
+                )
+            elif self.decay_power == "poly":
+                scheduler = get_polynomial_decay_schedule_with_warmup(
+                    optimizer,
+                    num_warmup_steps=self.warmup_steps,
+                    num_training_steps=self.max_steps,
+                    lr_end=self.end_lr,
+                    power=self.poly_decay_power,
+                )
+            sched = {"scheduler": scheduler, "interval": "step"}
+
+            return ([optimizer], [sched])    
     
-    # def infer(
-    #     self,
-    #     batch,
-    #     mask_text=False,
-    #     mask_video=False,
-    #     input_video_only=False,
-    #     input_text_only=False,
-    #     caption=False,
-    #     mode="video",
-    # ):
-
-    #     # Check configs
-    #     assert not input_video_only
-    #     assert not input_text_only
-    #     if mask_text:
-    #         assert self.clip_type in ["ori", "evl", "kc", "kc_new"]
-    #     if mask_video:
-    #         assert self.clip_type in ["ori", "kc", "kc_new"]
-
-    #     text_ids, special_tokens_mask = batch["clip_text_ids"], batch["clip_special_tokens_mask"]
-    #     text_feats, text_all_feats = self.clip.encode_text(
-    #         text_ids, return_all_feats=True
-    #     )
-
-    #     video = batch["video"] # [0]
-    #     video = video.contiguous().transpose(1, 2)
-    #     video_feats, video_all_feats = self.clip.encode_video(
-    #         video, return_all_feats=True, mode=mode
-    #     )
-
-    #     ret = {
-    #         "video": video,  # N, C, T, H, W
-    #         "text_feats": text_feats,  # N, C
-    #         "video_feats": video_feats,  # N, C
-    #         "text_ids": text_ids,  # N, L
-    #         "special_tokens_mask": special_tokens_mask,  # N, L
-    #     }
-
-    #     return ret
-
-    # def forward(self, batch, batch_idx=None, mode="video"):
-    #     # self.sanity_check()
-    #     with torch.no_grad():
-    #         self.clip.logit_scale.clamp_(0, math.log(100))
-
-    #     ret = dict()
-    #     ret.update(self.infer(batch, mode=mode))
-
-    #     # if "contrastive" in self.current_tasks:
-    #     #     ret.update(objectives.compute_contrastive(self, batch, mode=mode))
-
-    #     # if "multiple_choice" in self.current_tasks:
-    #     #     ret.update(objectives.compute_multiple_choice(self, batch))
-
-    #     # if "zs_classify" in self.current_tasks:
-    #     #     if self.text_ret is None:
-    #     #         # print(f"Generate text features for in batch-{batch_idx}")
-    #     #         self.text_ret = self.forward_text()
-    #     #     ret.update(objectives.compute_zs_classify(self, batch, self.text_ret))
-
-    #     return ret
-
-    # def forward_text(self):
-    #     classes, num_text_aug, _ = text_prompt(prompt_type=self.prompt_type)
-    #     text_inputs = classes.to(self.device)
-    #     text_feats = self.clip.encode_text(text_inputs)
-    #     # text_feats /= text_feats.norm(dim=-1, keepdim=True)
-
-    #     ret = {
-    #         "text_feats": text_feats,  # num_text_aug * num_classes, C
-    #         "num_text_aug": num_text_aug,
-    #     }
-    #     return ret
-
-    # def forward_video(self, batch):
-    #     img = batch["video"][0]
-    #     if self.clip_type in ["ori", "evl", "kc", "kc_new"]:
-    #         # [B, T, C, H, W] -> [B, C, T, H, W]
-    #         img = img.contiguous().transpose(1, 2)
-    #     video_feats = self.clip.encode_video(img)
-
-    #     ret = {
-    #         "video_feats": video_feats,  # N, C
-    #     }
-    #     return ret
-
-    # def training_step(self, batch, batch_idx):
-    #     # gradually_freeze_by_layer(self, self.global_step, self.grad_unfreeze_int)
-    #     cotrain_utils.set_task(self)
-    #     # self.momentum_checkpoint()
-    #     # co-training
-    #     if "v" in batch and "i" in batch:
-    #         video_output, image_output = {}, {}
-    #         if not self.alt_data or batch_idx % 2 == 0:
-    #             video_output = self(batch["v"], mode="video")
-    #         if not self.alt_data or batch_idx % 2 == 1:
-    #             image_output = self(batch["i"], mode="image")
-    #         total_loss = sum([v for k, v in video_output.items() if "loss" in k]) + sum(
-    #             [v for k, v in image_output.items() if "loss" in k]
-    #         )
-    #     else:
-    #         output = self(batch, mode="video")
-    #         total_loss = sum([v for k, v in output.items() if "loss" in k])
-    #     return total_loss
-
-    # def training_epoch_end(self, outs):
-    #     cotrain_utils.epoch_wrapup(self)
-
-    # def validation_step(self, batch, batch_idx):
-    #     cotrain_utils.set_task(self)
-    #     if "v" in batch and "i" in batch:
-    #         video_output = self(batch["v"], mode="video")
-    #         image_output = self(batch["i"], mode="image")
-    #     else:
-    #         output = self(batch, mode="video")
-
-    # def validation_epoch_end(self, outs):
-    #     cotrain_utils.epoch_wrapup(self)
-    #     self.text_ret = None
-
-    # def configure_optimizers(self):
-    #     return cotrain_utils.set_schedule(self)
-
 if __name__ == "__main__":    
     import numpy as np
     from torch import utils
@@ -395,14 +262,17 @@ if __name__ == "__main__":
 
     device = 'cpu'
     _config = config()
-    model = VideoCLIP(_config)
-
-    weight_fp = os.path.join(os.path.dirname(__file__), "weights", "epoch=2-step=9003.ckpt")
-    if os.path.exists(weight_fp):
-        model.load_ckpt(weight_fp)
 
     dataset_train = AnimalKingdomDataset(_config, split="train")
     dataset_valid = AnimalKingdomDataset(_config, split="val")
+
+    _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
+    model = VideoCLIP(_config)
+
+    ckpt_fp = os.path.join(os.path.dirname(__file__), "weights", "epoch=2-step=9003.ckpt")
+    if os.path.exists(ckpt_fp):
+        model.load_ckpt_state_dict(ckpt_fp)
+
     dataset_train.produce_prompt_embedding(model.clip)
     dataset_valid.produce_prompt_embedding(model.clip)
     model.set_text_feats(dataset_train.text_features)

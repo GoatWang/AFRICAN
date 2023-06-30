@@ -89,7 +89,6 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
 
 if __name__  == "__main__":
     from config import config
-    from PromptEngineer import generate_prompt
     _config = config()
     # # ===============run all data test
     # from torch import utils

@@ -18,14 +18,21 @@ def config():
     # for training
     video_sampling = 'sequence_rand'
     batch_size = 32
-    max_epochs = 50
+    max_epochs = 100
     lr = 0.0001
     optimizer = "adamw" # adam or adamw
+    decay_power = "cosine" # no_decay, poly, cosine
+    warmup_steps = 10000
+    end_lr = 0.0 # for poly decay
+    poly_decay_power = 1 # for poly decay
+
+
+    version = None
     data_workers = 4
     training_test_size = None
     
     # for model
-    loss = "BCE" # "BCE", "FOCAL", "LDAM", "EQL"
+    loss = "BCE" # "BCE", "FOCAL_2", "LDAM", "EQL"
     n_classes = 140
     train_laryers = "vision_proj" # vision or vision_proj
 
