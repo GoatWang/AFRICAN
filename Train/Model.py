@@ -191,7 +191,7 @@ class VideoCLIP(pl.LightningModule):
         self.train_map_class.reset()
 
     def validation_step(self, batch, batch_idx):
-        video_tensor, labels_onehot = batch
+        video_tensor, labels_onehot, index = batch
         video_logits = self(batch)
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
