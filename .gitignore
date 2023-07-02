@@ -3,3 +3,4 @@ temp
 weights
 .DS_Store
 experiments
+wandb
