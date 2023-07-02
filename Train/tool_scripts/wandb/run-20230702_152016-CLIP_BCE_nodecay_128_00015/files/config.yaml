@@ -1,0 +1,143 @@
+wandb_version: 1
+
+animal_kingdom_clip_path:
+  desc: null
+  value: /notebooks/AnimalKingdomCLIP/Train/ckpts/AnimalKingdomCLIPVisionProj/20230616-033836/epoch=15-step=3008.ckpt
+batch_size:
+  desc: null
+  value: 128
+clip:
+  desc: null
+  value: /notebooks/AnimalKingdomCLIP/Train/weights/ViT-L-14.pt
+clip_checkpoint_num:
+  desc: null
+  value:
+  - 0
+  - 0
+  - 0
+clip_dpr:
+  desc: null
+  value: 0.0
+clip_evl_dropout:
+  desc: null
+  value: 0.0
+clip_init_zero:
+  desc: null
+  value: true
+clip_no_pretrain:
+  desc: null
+  value: false
+clip_use_checkpoint:
+  desc: null
+  value: false
+config:
+  desc: null
+  value:
+    animal_kingdom_clip_path: /notebooks/AnimalKingdomCLIP/Train/ckpts/AnimalKingdomCLIPVisionProj/20230616-033836/epoch=15-step=3008.ckpt
+    batch_size: 128
+    clip: /notebooks/AnimalKingdomCLIP/Train/weights/ViT-L-14.pt
+    clip_checkpoint_num:
+    - 0
+    - 0
+    - 0
+    clip_dpr: 0.0
+    clip_evl_dropout: 0.0
+    clip_init_zero: true
+    clip_no_pretrain: false
+    clip_use_checkpoint: false
+    data_dir: /notebooks/AnimalKingdomCLIP/Train/../../data/AnimalKingdom/action_recognition
+    data_workers: 4
+    device: cuda
+    load_path: /notebooks/AnimalKingdomCLIP/Train/weights/InternVideo-MM-L-14.ckpt
+    log_dir: /notebooks/AnimalKingdomCLIP/Train/logs
+    loss: FOCAL
+    lr: 0.00015
+    max_epochs: 50
+    model_dir: /notebooks/AnimalKingdomCLIP/Train/ckpts
+    models_dir: /notebooks/AnimalKingdomCLIP/Train/ckpts/AnimalKingdomCLIPVisionProj/20230616-100856
+    n_classes: 140
+    name: AnimalKingdomCLIPVisionProj
+    num_frames: 8
+    optimizer: adamw
+    seed: 2023
+    train_laryers: vision_proj
+    training_test_size: null
+    version: 20230616-100856
+    video_sampling: sequence_rand
+data_dir:
+  desc: null
+  value: /notebooks/AnimalKingdomCLIP/Train/../../data/AnimalKingdom/action_recognition
+data_workers:
+  desc: null
+  value: 4
+device:
+  desc: null
+  value: cuda
+load_path:
+  desc: null
+  value: /notebooks/AnimalKingdomCLIP/Train/weights/InternVideo-MM-L-14.ckpt
+log_dir:
+  desc: null
+  value: /notebooks/AnimalKingdomCLIP/Train/logs
+loss:
+  desc: null
+  value: FOCAL
+lr:
+  desc: null
+  value: 0.00015
+max_epochs:
+  desc: null
+  value: 50
+model_dir:
+  desc: null
+  value: /notebooks/AnimalKingdomCLIP/Train/ckpts
+models_dir:
+  desc: null
+  value: /notebooks/AnimalKingdomCLIP/Train/ckpts/AnimalKingdomCLIPVisionProj/20230616-100856
+n_classes:
+  desc: null
+  value: 140
+name:
+  desc: null
+  value: AnimalKingdomCLIPVisionProj
+num_frames:
+  desc: null
+  value: 8
+optimizer:
+  desc: null
+  value: adamw
+seed:
+  desc: null
+  value: 2023
+train_laryers:
+  desc: null
+  value: vision_proj
+training_test_size:
+  desc: null
+  value: null
+version:
+  desc: null
+  value: 20230616-100856
+video_sampling:
+  desc: null
+  value: sequence_rand
+_wandb:
+  desc: null
+  value:
+    python_version: 3.7.9
+    cli_version: 0.15.4
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1688307616.554751
+    t:
+      1:
+      - 55
+      3:
+      - 13
+      - 14
+      - 16
+      - 23
+      4: 3.7.9
+      5: 0.15.4
+      8:
+      - 5

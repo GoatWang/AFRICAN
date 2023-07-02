@@ -1,0 +1,78 @@
+2023-07-02 15:32:14,386 INFO    StreamThr :60440 [internal.py:wandb_internal():89] W&B internal server running at pid: 60440, started at: 2023-07-02 15:32:14.386488
+2023-07-02 15:32:14,388 DEBUG   HandlerThread:60440 [handler.py:handle_request():144] handle_request: status
+2023-07-02 15:32:14,391 INFO    WriterThread:60440 [datastore.py:open_for_write():85] open: /Users/jeremywang/BristolCourses/Dissertation/AnimalKingdomCLIP/Train/tool_scripts/wandb/run-20230702_153214-CLIP_BCE_nodecay_128_00015/run-CLIP_BCE_nodecay_128_00015.wandb
+2023-07-02 15:32:14,392 DEBUG   SenderThread:60440 [sender.py:send():369] send: header
+2023-07-02 15:32:14,416 DEBUG   SenderThread:60440 [sender.py:send():369] send: run
+2023-07-02 15:32:15,058 ERROR   SenderThread:60440 [internal_api.py:execute():323] 409 response executing GraphQL.
+2023-07-02 15:32:15,058 ERROR   SenderThread:60440 [internal_api.py:execute():324] {"errors":[{"message":"run animalkingdom/AnimalKingdom/CLIP_BCE_nodecay_128_00015 was previously created and deleted; try a new run name","path":["upsertBucket"]}],"data":{"upsertBucket":null}}
+2023-07-02 15:32:16,537 ERROR   SenderThread:60440 [internal_api.py:execute():323] 409 response executing GraphQL.
+2023-07-02 15:32:16,537 ERROR   SenderThread:60440 [internal_api.py:execute():324] {"errors":[{"message":"run animalkingdom/AnimalKingdom/CLIP_BCE_nodecay_128_00015 was previously created and deleted; try a new run name","path":["upsertBucket"]}],"data":{"upsertBucket":null}}
+2023-07-02 15:32:19,029 ERROR   SenderThread:60440 [internal_api.py:execute():323] 409 response executing GraphQL.
+2023-07-02 15:32:19,029 ERROR   SenderThread:60440 [internal_api.py:execute():324] {"errors":[{"message":"run animalkingdom/AnimalKingdom/CLIP_BCE_nodecay_128_00015 was previously created and deleted; try a new run name","path":["upsertBucket"]}],"data":{"upsertBucket":null}}
+2023-07-02 15:32:19,029 INFO    SenderThread:60440 [retry.py:__call__():172] Retry attempt failed:
+Traceback (most recent call last):
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/lib/retry.py", line 131, in __call__
+    result = self._call_fn(*args, **kwargs)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/internal/internal_api.py", line 320, in execute
+    return self.client.execute(*args, **kwargs)  # type: ignore
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 52, in execute
+    result = self._get_result(document, *args, **kwargs)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 60, in _get_result
+    return self.transport.execute(document, *args, **kwargs)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/lib/gql_request.py", line 56, in execute
+    request.raise_for_status()
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 409 Client Error: Conflict for url: https://api.wandb.ai/graphql
+2023-07-02 15:32:19,428 DEBUG   HandlerThread:60440 [handler.py:handle_request():144] handle_request: keepalive
+2023-07-02 15:32:23,716 ERROR   SenderThread:60440 [internal_api.py:execute():323] 409 response executing GraphQL.
+2023-07-02 15:32:23,716 ERROR   SenderThread:60440 [internal_api.py:execute():324] {"errors":[{"message":"run animalkingdom/AnimalKingdom/CLIP_BCE_nodecay_128_00015 was previously created and deleted; try a new run name","path":["upsertBucket"]}],"data":{"upsertBucket":null}}
+2023-07-02 15:32:24,442 DEBUG   HandlerThread:60440 [handler.py:handle_request():144] handle_request: keepalive
+2023-07-02 15:32:29,460 DEBUG   HandlerThread:60440 [handler.py:handle_request():144] handle_request: keepalive
+2023-07-02 15:32:32,177 ERROR   SenderThread:60440 [internal_api.py:execute():323] 409 response executing GraphQL.
+2023-07-02 15:32:32,177 ERROR   SenderThread:60440 [internal_api.py:execute():324] {"errors":[{"message":"run animalkingdom/AnimalKingdom/CLIP_BCE_nodecay_128_00015 was previously created and deleted; try a new run name","path":["upsertBucket"]}],"data":{"upsertBucket":null}}
+2023-07-02 15:32:34,482 DEBUG   HandlerThread:60440 [handler.py:handle_request():144] handle_request: keepalive
+2023-07-02 15:32:39,503 DEBUG   HandlerThread:60440 [handler.py:handle_request():144] handle_request: keepalive
+2023-07-02 15:32:44,523 DEBUG   HandlerThread:60440 [handler.py:handle_request():144] handle_request: keepalive
+2023-07-02 15:32:48,319 DEBUG   HandlerThread:60440 [handler.py:handle_request():144] handle_request: shutdown
+2023-07-02 15:32:48,319 INFO    HandlerThread:60440 [handler.py:finish():854] shutting down handler
+2023-07-02 15:32:48,536 INFO    WriterThread:60440 [datastore.py:close():298] close: /Users/jeremywang/BristolCourses/Dissertation/AnimalKingdomCLIP/Train/tool_scripts/wandb/run-20230702_153214-CLIP_BCE_nodecay_128_00015/run-CLIP_BCE_nodecay_128_00015.wandb
+2023-07-02 15:32:51,366 ERROR   SenderThread:60440 [internal_api.py:execute():323] 409 response executing GraphQL.
+2023-07-02 15:32:51,366 ERROR   SenderThread:60440 [internal_api.py:execute():324] {"errors":[{"message":"run animalkingdom/AnimalKingdom/CLIP_BCE_nodecay_128_00015 was previously created and deleted; try a new run name","path":["upsertBucket"]}],"data":{"upsertBucket":null}}
+2023-07-02 15:33:30,994 ERROR   SenderThread:60440 [internal_api.py:execute():323] 409 response executing GraphQL.
+2023-07-02 15:33:30,994 ERROR   SenderThread:60440 [internal_api.py:execute():324] {"errors":[{"message":"run animalkingdom/AnimalKingdom/CLIP_BCE_nodecay_128_00015 was previously created and deleted; try a new run name","path":["upsertBucket"]}],"data":{"upsertBucket":null}}
+2023-07-02 15:34:39,232 ERROR   SenderThread:60440 [internal_api.py:execute():323] 409 response executing GraphQL.
+2023-07-02 15:34:39,232 ERROR   SenderThread:60440 [internal_api.py:execute():324] {"errors":[{"message":"run animalkingdom/AnimalKingdom/CLIP_BCE_nodecay_128_00015 was previously created and deleted; try a new run name","path":["upsertBucket"]}],"data":{"upsertBucket":null}}
+2023-07-02 15:34:39,233 ERROR   SenderThread:60440 [sender.py:send_run():955] run animalkingdom/AnimalKingdom/CLIP_BCE_nodecay_128_00015 was previously created and deleted; try a new run name (Error 409: Conflict)
+Traceback (most recent call last):
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/apis/normalize.py", line 41, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/internal/internal_api.py", line 1731, in upsert_run
+    **kwargs,
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/internal/internal_api.py", line 295, in gql
+    **kwargs,
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/lib/retry.py", line 131, in __call__
+    result = self._call_fn(*args, **kwargs)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/internal/internal_api.py", line 320, in execute
+    return self.client.execute(*args, **kwargs)  # type: ignore
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 52, in execute
+    result = self._get_result(document, *args, **kwargs)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 60, in _get_result
+    return self.transport.execute(document, *args, **kwargs)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/lib/gql_request.py", line 56, in execute
+    request.raise_for_status()
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 409 Client Error: Conflict for url: https://api.wandb.ai/graphql
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/internal/sender.py", line 953, in send_run
+    self._init_run(run, config_value_dict)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/internal/sender.py", line 1005, in _init_run
+    commit=run.git.commit or None,
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/apis/normalize.py", line 51, in wrapper
+    raise CommError(message, error)
+wandb.errors.CommError: run animalkingdom/AnimalKingdom/CLIP_BCE_nodecay_128_00015 was previously created and deleted; try a new run name (Error 409: Conflict)
+2023-07-02 15:34:39,235 INFO    SenderThread:60440 [sender.py:finish():1526] shutting down sender

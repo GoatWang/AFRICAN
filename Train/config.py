@@ -29,7 +29,7 @@ def config():
 
     version = None
     data_workers = 4
-    training_test_size = None
+    functional_test_size = None
     
     # for model
     loss = "BCE" # "BCE", "FOCAL_2", "LDAM", "EQL"

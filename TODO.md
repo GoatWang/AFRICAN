@@ -1,11 +1,21 @@
-# TODO:
-- use BlueCrystol
+# Experiments
+- [X] Test VideoCLIP baseline
+- [ ] Find the best loss function (BCE, Focal, EQL)
+    - [ ] Test BCE on lr0.00015
+    - [X] Test Focal on lr0.00015
+    - [ ] Test EQL on lr0.00015
+- [ ] prove bs008 > bs128 (lr: 0.0001)
+- [ ] variable bs (0008 -> 1024) vs 1024
+- [ ] contrastive learning (ActionFrameIdentity)
 
-- sort code, remove notes
-- try Focal Loss with fixed lr & the training result of Cosine Learning Rate seems not work
-- Monitor mAP on validation result not training result
-- saving ckpt filename metric (head, middle, tail) name error
-- add in MetricCollection.clone(prefix='train_'), remember to also modify the moniter name
+# TODO:
+- mv log to s3
+- Write training script for variable bs
+- Make sure the sampling method acceptable 
+- Combine the contrastive learning and VideoCLIP result 
+- Ask InternVideo how to combine VideoCLIP and VideoMAE
+- Ask AnimalKingdom how to calculate the count of each segment (head, middle and tail): 
+    > When constructing our animal action recognition dataset, we follow the work of [82] and divide the distri- bution into three different segments based on the number of samples in each action class. Specifically, we group all the 140 action classes in our dataset into the head segment (17 action classes that have more than 500 samples each), the middle segment (29 action classes that have 100 to 500 samples each), and the tail segment (94 action classes that have fewer than 100 samples each).
 
 # Next Steps
 - test vision train_laryers (A100)
@@ -134,12 +144,21 @@
 - specify the model version using 'version' config
 - check is the batch_size (32 -> 128) or the learning rate (0.0001 -> 0.00015)cause the poor performance of the model training. => batch_size count (32 better)
 - ask for BlueCrystol
+- sort code, remove notes
+- change to use wandb
+- try Focal Loss with fixed lr & the training result of Cosine Learning Rate seems not work
+- Monitor mAP on validation result not training result
+- saving ckpt filename metric (head, middle, tail) name error
+- add in MetricCollection.clone(prefix='train_'), remember to also modify the moniter name
+- write the first model to WandB
+- Change the name of training_test_size to function_test_size
+- move ckpts to s3
 
 ## Suspended
 - test rand sampling of video frames
 - PR to InternVideo on VideoReader (File Reader: )
 - start index of Dataset
-- change to use wandb
+- use BlueCrystol
 
 
 

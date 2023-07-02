@@ -1,0 +1,49 @@
+2023-07-02 15:20:16,551 INFO    StreamThr :60218 [internal.py:wandb_internal():89] W&B internal server running at pid: 60218, started at: 2023-07-02 15:20:16.551358
+2023-07-02 15:20:16,552 DEBUG   HandlerThread:60218 [handler.py:handle_request():144] handle_request: status
+2023-07-02 15:20:16,561 INFO    WriterThread:60218 [datastore.py:open_for_write():85] open: /Users/jeremywang/BristolCourses/Dissertation/AnimalKingdomCLIP/Train/tool_scripts/wandb/run-20230702_152016-CLIP_BCE_nodecay_128_00015/run-CLIP_BCE_nodecay_128_00015.wandb
+2023-07-02 15:20:16,562 DEBUG   SenderThread:60218 [sender.py:send():369] send: header
+2023-07-02 15:20:16,587 DEBUG   SenderThread:60218 [sender.py:send():369] send: run
+2023-07-02 15:20:16,904 ERROR   SenderThread:60218 [internal_api.py:execute():323] 404 response executing GraphQL.
+2023-07-02 15:20:16,904 ERROR   SenderThread:60218 [internal_api.py:execute():324] {"errors":[{"message":"entity jeremywang1006 not found during upsertBucket","path":["upsertBucket"]}],"data":{"upsertBucket":null}}
+2023-07-02 15:20:16,904 ERROR   SenderThread:60218 [sender.py:send_run():955] It appears that you do not have permission to access the requested resource. Please reach out to the project owner to grant you access. If you have the correct permissions, verify that there are no issues with your networking setup.(Error 404: Not Found)
+Traceback (most recent call last):
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/lib/retry.py", line 131, in __call__
+    result = self._call_fn(*args, **kwargs)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/internal/internal_api.py", line 320, in execute
+    return self.client.execute(*args, **kwargs)  # type: ignore
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 52, in execute
+    result = self._get_result(document, *args, **kwargs)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 60, in _get_result
+    return self.transport.execute(document, *args, **kwargs)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/lib/gql_request.py", line 56, in execute
+    request.raise_for_status()
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 404 Client Error: Not Found for url: https://api.wandb.ai/graphql
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/internal/sender.py", line 953, in send_run
+    self._init_run(run, config_value_dict)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/internal/sender.py", line 1005, in _init_run
+    commit=run.git.commit or None,
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/apis/normalize.py", line 73, in wrapper
+    raise err
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/apis/normalize.py", line 41, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/internal/internal_api.py", line 1731, in upsert_run
+    **kwargs,
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/internal/internal_api.py", line 295, in gql
+    **kwargs,
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/sdk/lib/retry.py", line 147, in __call__
+    retry_timedelta_triggered = check_retry_fn(e)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/util.py", line 908, in check_retry_fn
+    return fallback_retry_fn(e)
+  File "/Users/jeremywang/BristolCourses/Dissertation/repos/InternVideo/venv/lib/python3.7/site-packages/wandb/util.py", line 851, in no_retry_auth
+    "It appears that you do not have permission to access the requested resource. "
+wandb.errors.CommError: It appears that you do not have permission to access the requested resource. Please reach out to the project owner to grant you access. If you have the correct permissions, verify that there are no issues with your networking setup.(Error 404: Not Found)
+2023-07-02 15:20:17,023 DEBUG   HandlerThread:60218 [handler.py:handle_request():144] handle_request: shutdown
+2023-07-02 15:20:17,024 INFO    HandlerThread:60218 [handler.py:finish():854] shutting down handler
+2023-07-02 15:20:17,590 INFO    WriterThread:60218 [datastore.py:close():298] close: /Users/jeremywang/BristolCourses/Dissertation/AnimalKingdomCLIP/Train/tool_scripts/wandb/run-20230702_152016-CLIP_BCE_nodecay_128_00015/run-CLIP_BCE_nodecay_128_00015.wandb
+2023-07-02 15:20:17,921 INFO    SenderThread:60218 [sender.py:finish():1526] shutting down sender
