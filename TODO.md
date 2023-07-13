@@ -15,6 +15,8 @@
 
 # paper
 1. lrdecay solve log-tail: https://arxiv.org/pdf/2203.14197.pdf
+2. adamW: 
+3. GELU: https://github.com/huggingface/pytorch-image-models/blob/main/timm/models/vision_transformer.py#L126
 
 # TODO:
 - mv log to s3

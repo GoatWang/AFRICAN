@@ -71,10 +71,18 @@ class ResidualAttentionBlock(nn.Module): # TODO: understand this
         self.attn_mask = attn_mask
 
     def attention(self, x):
+        """
+        x: (257, 8, 1024)
+        """        
         self.attn_mask = self.attn_mask.to(dtype=x.dtype, device=x.device) if self.attn_mask is not None else None
+        #                q, k, v
+        # take 8 as batch (transformer query only patches in the same frame)
         return self.attn(x, x, x, need_weights=False, attn_mask=self.attn_mask)[0]
 
     def forward(self, x, T=8, use_checkpoint=False):
+        """
+        x: (257, 8, 1024)
+        """        
         # x: 1+HW, NT, C
         # MHSA
         if use_checkpoint:
@@ -212,7 +220,7 @@ class Transformer(nn.Module):
         assert n_layers == len(return_list)
         self.temporal_cls_token = nn.Parameter(torch.zeros(1, 1, n_dim)) # 1, 1, 1024
         # do the convolution on time dimension (input: 1024, 8, 16, 16)
-        # use 1024 seperated (3x3x3) filter to do convolution on 1024 (8, 16, 16) cubes one by one
+        # use 1024 groups,in each group apply one (3x3x3) filter to do convolution on (8, 16, 16) cubes one by one
         self.dpe = nn.ModuleList([ # Depth-wise separable convolution
             nn.Conv3d(n_dim, n_dim, kernel_size=3, stride=1, padding=1, bias=True, groups=n_dim)
             for i in range(n_layers)
@@ -236,6 +244,9 @@ class Transformer(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x, mode='video', return_all_feats=False):
+        """
+        x: (257, 8, 1024)
+        """
         if mode == 'video':
             T_down = self.T
         else:
@@ -251,7 +262,7 @@ class Transformer(nn.Module):
                 x = resblock(x, T_down, use_checkpoint=True)
             else:
                 x = resblock(x, T_down) # 257, 8, 1024
-            if i in self.return_list: # [20, 21, 22, 23] (ViT-L-14.pt)
+            if i in self.return_list: # [20, 21, 22, 23] (ViT-L-14.pt) => for outputing the features of the last 4 layers
                 j += 1
                 tmp_x = x.clone()
                 tmp_x = tmp_x.view(L, N, T_down, C) # 257, 1, 8, 1024
@@ -295,8 +306,8 @@ class VisionTransformer(nn.Module):
         self.conv1 = nn.Conv3d(3, width, (1, patch_size, patch_size), (1, patch_size, patch_size), (0, 0, 0), bias=False)
 
         scale = width ** -0.5
-        self.class_embedding = nn.Parameter(scale * torch.randn(width))
-        self.positional_embedding = nn.Parameter(scale * torch.randn((input_resolution // patch_size) ** 2 + 1, width))
+        self.class_embedding = nn.Parameter(scale * torch.randn(width)) # first token for output the embedding
+        self.positional_embedding = nn.Parameter(scale * torch.randn((input_resolution // patch_size) ** 2 + 1, width)) # (257, 1024)
         self.ln_pre = LayerNorm(width)
 
         # input_resolution=224,
@@ -323,9 +334,10 @@ class VisionTransformer(nn.Module):
         )
 
     def forward(self, x, mode='video', return_all_feats=False):
-        x = self.conv1(x)  # shape = [*, width, grid, grid] # [1, 1024, 8(num_frames), 16, 16]
-        N, C, T, H, W = x.shape # bs, width, num_frames, patch_size, patch_size
-        x = x.permute(0, 2, 3, 4, 1).reshape(N * T, H * W, C) # [1*8, 16*16, 1024]
+        x = self.conv1(x)  # shape = [*, width, num_frames, grid_rows, grid_cols] # [1, 1024, 8(num_frames), 16, 16]
+        N, C, T, H, W = x.shape # bs, width, num_frames, grid_rows, grid_cols
+        x = x.permute(0, 2, 3, 4, 1).reshape(N * T, H * W, C) # [1*8, 16*16, 1024], 8 frames/video, 16*16 patches/frame, 1024 dim/patch
+        #              1024                               for boradcast 8            1024                                         (8, 256, 1024) 
         x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width] # [1*8, 257, 1024]
         x = x + self.positional_embedding.to(x.dtype) # [1*8, 257, 1024]
         x = self.ln_pre(x) # [1*8, 257, 1024]
