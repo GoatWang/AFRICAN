@@ -10,7 +10,7 @@ def read_frames_decord(video_path, num_frames, sample='rand', fix_start=None):
     # video_reader = decord.VideoReader(video_path, num_threads=1, ctx=cpu(0))
     decord.bridge.set_bridge('torch')
     vlen = len(video_reader)
-    if sample in ['sample', 'uniform']:
+    if sample in ['rand', 'uniform']:
         frame_idxs = sample_frames(num_frames, vlen, sample=sample, fix_start=fix_start)
     elif sample == ("sequence_rand"):
         step_size = np.random.randint(1, 6)
