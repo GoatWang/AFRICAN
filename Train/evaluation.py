@@ -56,7 +56,6 @@ def main(_config):
     model.set_text_feats(dataset_train.text_features)
     model.eval()
 
-
     # load dataset
     path_to_data_dir = os.path.join(_config['data_dir'], "annotation")
     path_prefix = os.path.join(_config['data_dir'], 'dataset', 'image')

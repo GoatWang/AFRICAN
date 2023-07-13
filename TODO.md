@@ -5,17 +5,27 @@
     - [X] Test Focal on lr0.00015
     - [ ] Test EQL on lr0.00015
 - [ ] prove bs008 > bs128 (lr: 0.0001)
-- [ ] variable bs (0008 -> 1024) vs 1024
 - [ ] contrastive learning (ActionFrameIdentity)
+- [ ] verify segment in promp training performace
+    - [ ] using segment
+        - [ ] using BCE
+        - [ ] using Focal    
+    - [ ] using rare, uncommon, common(general)
+- [ ] variable bs (0008 -> 1024) vs 1024
+
+# paper
+1. lrdecay solve log-tail: https://arxiv.org/pdf/2203.14197.pdf
 
 # TODO:
 - mv log to s3
 - Write training script for variable bs
-- Make sure the sampling method acceptable 
 - Combine the contrastive learning and VideoCLIP result 
 - Ask InternVideo how to combine VideoCLIP and VideoMAE
 - Ask AnimalKingdom how to calculate the count of each segment (head, middle and tail): 
     > When constructing our animal action recognition dataset, we follow the work of [82] and divide the distri- bution into three different segments based on the number of samples in each action class. Specifically, we group all the 140 action classes in our dataset into the head segment (17 action classes that have more than 500 samples each), the middle segment (29 action classes that have 100 to 500 samples each), and the tail segment (94 action classes that have fewer than 100 samples each).
+    
+- check the sampling method acceptable 
+- check training without sigmoid function
 
 # Next Steps
 - test vision train_laryers (A100)
@@ -153,6 +163,7 @@
 - write the first model to WandB
 - Change the name of training_test_size to function_test_size
 - move ckpts to s3
+- add mAP calculation for head, middle and tail classes
 
 ## Suspended
 - test rand sampling of video frames

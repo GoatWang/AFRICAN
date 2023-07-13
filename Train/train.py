@@ -14,8 +14,8 @@ torch.manual_seed(0)
 @ex.automain
 def main(_config):
     _config = copy.deepcopy(_config)
-    datestime_str = datetime.now().strftime("%Y%m%d-%H%M%S")
-    model_version = _config['version'] if _config['version'] is not None else datestime_str
+    datetime_str = datetime.now().strftime("%Y%m%d-%H%M%S")
+    model_version = _config['version'] if _config['version'] is not None else datetime_str
     _config['models_dir'] = os.path.join(_config["model_dir"], _config["name"], model_version)
     Path(_config['models_dir']).mkdir(parents=True, exist_ok=True)
 
@@ -34,8 +34,6 @@ def main(_config):
     model.set_metrics(df_action[df_action['segment'] == 'head'].index.tolist(), 
                       df_action[df_action['segment'] == 'middle'].index.tolist(), 
                       df_action[df_action['segment'] == 'tail'].index.tolist())
-    print("train baseline (140 classes):", (1 - np.bincount(np.hstack(dataset_train.labels)) / len(dataset_train)))
-    print("valid baseline (140 classes):", (1 - np.bincount(np.hstack(dataset_valid.labels)) / len(dataset_valid)))
 
     train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True, num_workers=_config["data_workers"]) # bugs on MACOS
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"]) # bugs on MACOS
@@ -52,7 +50,7 @@ def main(_config):
     summary_callback = pl.callbacks.ModelSummary(max_depth=1)
     lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
 
-    csv_logger = pl.loggers.CSVLogger(save_dir=_config["log_dir"], name=_config['name'], version=datestime_str)
+    csv_logger = pl.loggers.CSVLogger(save_dir=_config["log_dir"], name=_config['name'], version=datetime_str)
     csv_logger.log_hyperparams(_config)
     wandb_logger = pl.loggers.WandbLogger(project='AnimalKingdom', save_dir=_config["log_dir"], name=_config['name'], version=model_version)
     wandb_logger.experiment.config.update(_config, allow_val_change=True)
