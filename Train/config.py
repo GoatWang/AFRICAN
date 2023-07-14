@@ -47,6 +47,7 @@ def config():
     clip_checkpoint_num = [0, 0, 0]
 
     # africa
+    preprocess_dir = os.path.join(os.path.dirname(__file__), 'preprocess') 
     africa = True
     original_clip_africa = True
     ckpt_path_africa = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))

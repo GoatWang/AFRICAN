@@ -12,7 +12,7 @@ from VideoReader import read_frames_decord
 from Transform import VideoTransformTorch, video_aug
 
 class AnimalKingdomDataset(torch.utils.data.Dataset):
-    def __init__(self, config, split=""):
+    def __init__(self, config, preprocessed=True, split=""):
         assert split in ["train", "val"], "split must be train or val"
         self.split = split
         self.metadata = None
@@ -32,29 +32,13 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         # africa
         self.africa = config['africa']
         if self.africa:
+            self.preprocessed = preprocessed
+            self.preprocess_dir = config['preprocess_dir']
             self.ckpt_path_africa = config['ckpt_path_africa']
             self.original_clip_africa = config['original_clip_africa']
             self.num_frames_africa = config['num_frames_africa']
             self.video_sampling_africa = config['video_sampling_africa']
             self.video_transform_africa = VideoTransformTorch(mode='val')  # train or val model
-            self.load_clip_africa()
-
-    def load_clip_africa(self):
-        africa_config_fp = os.path.join(os.path.dirname(__file__), "open_clip/model_configs/ViT-L-14.json")
-        with open(africa_config_fp, 'r') as f:
-            africa_model_config = json.load(f)
-        self.clip_africa = _build_vision_tower(africa_model_config['embed_dim'], africa_model_config['vision_cfg'])
-        if self.original_clip_africa:
-            # original_clip
-            state_dict_africa = torch.jit.load(self.ckpt_path_africa, map_location="cpu").visual.state_dict()
-        else:
-            # pretrained africa clip
-            state_dict_africa = torch.load(self.ckpt_path_africa, map_location="cpu")['state_dict']
-            state_dict_africa = {name.replace("image_encoder.", ""): weights for name, weights in state_dict_africa.items() if "image_encoder" in name}
-        self.clip_africa.load_state_dict(state_dict_africa)
-        self.clip_africa.to(self.device)
-        self.clip_africa.requires_grad = False
-        self.clip_africa.eval()
 
     def process_annotation(self, csv_fp, video_fps):
         video_id_mapping = {os.path.basename(fp).replace(".mp4", ""):fp for fp in video_fps}
@@ -108,11 +92,15 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
 
         video_tensor_africa = torch.zeros(1)
         if self.africa:
-            video_tensor_africa = read_frames_decord(video_fp, num_frames=self.num_frames_africa, sample=self.video_sampling_africa)[0]
-            video_tensor_africa = self.video_aug(video_tensor_africa, self.video_transform_africa)
-            video_feats_africa = self.clip_africa(video_tensor_africa.to(self.device))
+            if self.preprocessed:
+                video_feats_africa_fp = os.path.join(self.preprocess_dir, self.split + "_" + str(index).zfill(5) + ".pt")
+                video_feats_africa = torch.load(video_feats_africa_fp, map_location='cpu')
+                return video_tensor, video_feats_africa, labels_onehot, index
+            else:
+                video_tensor_africa = read_frames_decord(video_fp, num_frames=self.num_frames_africa, sample=self.video_sampling_africa)[0]
+                video_tensor_africa = self.video_aug(video_tensor_africa, self.video_transform_africa)
+                return video_tensor_africa
 
-        return video_tensor, video_feats_africa, labels_onehot, index
     
     def __len__(self):
         return len(self.video_fps)
