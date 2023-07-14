@@ -53,7 +53,7 @@ def config():
     # original_clip_africa = False
     # ckpt_path_africa = os.path.abspath(os.path.join(base_dir, "weights", "clip_cosine_infoNCE_8_uniform_augmix_map_epoch124.ckpt"))
     clip_width_africa = 768
-    clip_layers_africa = 4
+    clip_layers_africa = 6
     clip_heads_africa = 12
     num_frames_africa = 32
     video_sampling_africa = 'uniform' # 'rand', 'uniform', 'sequence_rand'
