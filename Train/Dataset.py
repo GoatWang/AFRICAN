@@ -37,7 +37,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             self.num_frames_africa = config['num_frames_africa']
             self.video_sampling_africa = config['video_sampling_africa']
             self.video_transform_africa = VideoTransformTorch(mode='val')  # train or val model
-            self.clip_africa = self.load_clip_africa()
+            self.load_clip_africa()
 
     def load_clip_africa(self):
         africa_config_fp = os.path.join(os.path.dirname(__file__), "open_clip/model_configs/ViT-L-14.json")
@@ -52,6 +52,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             state_dict_africa = torch.load(self.ckpt_path_africa, map_location="cpu")['state_dict']
             state_dict_africa = {name.replace("image_encoder.", ""): weights for name, weights in state_dict_africa.items() if "image_encoder" in name}
         self.clip_africa.load_state_dict(state_dict_africa)
+        self.clip_africa.to(self.device)
         self.clip_africa.requires_grad = False
         self.clip_africa.eval()
 
@@ -109,7 +110,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         if self.africa:
             video_tensor_africa = read_frames_decord(video_fp, num_frames=self.num_frames_africa, sample=self.video_sampling_africa)[0]
             video_tensor_africa = self.video_aug(video_tensor_africa, self.video_transform_africa)
-            video_tensor_africa = self.clip_africa(video_tensor_africa)
+            video_tensor_africa = self.clip_africa(video_tensor_africa.to(self.device))
 
         return video_tensor, video_tensor_africa, labels_onehot, index
     
