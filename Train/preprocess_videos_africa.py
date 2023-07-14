@@ -1,6 +1,7 @@
 import os
 import json
 import torch
+from pathlib import Path
 import numpy as np
 from tqdm import tqdm
 from torch import utils
@@ -43,14 +44,15 @@ def main(_config):
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False)
 
     clip_africa = load_clip_africa(_config)
-
-    for batch_idx, (video_feats_africa, index) in enumerate(tqdm(train_loader)):
+    Path(_config['preprocess_dir']).mkdir(parents=True, exist_ok=True)
+    
+    for batch_idx, (video_feats_africa, video_fp) in enumerate(tqdm(train_loader)):
         video_feats_africa = video_feats_africa.to(_config['device'])
         video_feats_africa = clip_africa(video_feats_africa)
-        torch.save(video_feats_africa, os.path.join(_config['preprocess_dir'], "train_" + str(index[0]).zfill(5) + ".pt"))
+        torch.save(video_feats_africa, os.path.join(_config['preprocess_dir'], os.path.basename(video_fp).split(".")[0] + ".pt"))
 
-    for batch_idx, (video_feats_africa, index) in enumerate(tqdm(valid_loader)):
+    for batch_idx, (video_feats_africa, video_fp) in enumerate(tqdm(valid_loader)):
         video_feats_africa = video_feats_africa.to(_config['device'])
         video_feats_africa = clip_africa(video_feats_africa)
-        torch.save(video_feats_africa, os.path.join(_config['preprocess_dir'], "val_" + str(index[0]).zfill(5) + ".pt"))
+        torch.save(video_feats_africa, os.path.join(_config['preprocess_dir'], os.path.basename(video_fp).split(".")[0] + ".pt"))
 
