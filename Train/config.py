@@ -27,7 +27,7 @@ def config():
     poly_decay_power = 1 # for poly decay
 
     version = None
-    data_workers = 4
+    data_workers = 12
     functional_test_size = None
     
     # for model
