@@ -1,4 +1,5 @@
 import os
+import copy
 import json
 import torch
 from pathlib import Path
@@ -32,6 +33,7 @@ def load_clip_africa(config):
 
 @ex.automain
 def main(_config):
+    _config = copy.deepcopy(_config)
     dataset_train = AnimalKingdomDataset(_config, preprocessed=False, split="train")
     dataset_valid = AnimalKingdomDataset(_config, preprocessed=False, split="val")
 
@@ -45,7 +47,7 @@ def main(_config):
 
     clip_africa = load_clip_africa(_config)
     Path(_config['preprocess_dir']).mkdir(parents=True, exist_ok=True)
-    
+
     for batch_idx, (video_feats_africa, video_fp) in enumerate(tqdm(train_loader)):
         video_feats_africa = video_feats_africa.to(_config['device'])
         video_feats_africa = clip_africa(video_feats_africa)
