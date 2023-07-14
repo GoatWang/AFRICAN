@@ -140,14 +140,14 @@ class VideoCLIP(pl.LightningModule):
             self.clip_africa.requires_grad = False
             self.clip_africa.eval()
             self.transformer_africa = AfricaTransformer(
-                _config['num_frames_africa'],
-                _config['clip_width_africa'],
-                _config['clip_layers_africa'],
-                _config['clip_heads_africa']
+                config['num_frames_africa'],
+                config['clip_width_africa'],
+                config['clip_layers_africa'],
+                config['clip_heads_africa']
             )
-            self.w1_africa = nn.Parameter(torch.randn(_config['clip_width_africa']))
-            self.w2_africa = nn.Parameter(torch.randn(_config['clip_width_africa']))
-            self.bias = nn.Parameter(torch.randn(_config['clip_width_africa']))
+            self.w1_africa = nn.Parameter(torch.randn(config['clip_width_africa']))
+            self.w2_africa = nn.Parameter(torch.randn(config['clip_width_africa']))
+            self.bias = nn.Parameter(torch.randn(config['clip_width_africa']))
 
     def load_ckpt_state_dict(self, ckpt_fp):
         ckpt = torch.load(ckpt_fp, map_location="cpu")
