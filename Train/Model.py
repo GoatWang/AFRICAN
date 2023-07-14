@@ -213,7 +213,7 @@ class VideoCLIP(pl.LightningModule):
                 p.requires_grad = False
 
     def forward_clip(self, batch):
-        video_tensor, video_tensor_africa, labels, index = batch
+        video_tensor, video_feats_africa, labels, index = batch
         video_tensor = video_tensor.contiguous().transpose(1, 2)
         video_feats, video_all_feats = self.clip.encode_video(
             video_tensor, return_all_feats=True, mode='video'
@@ -221,16 +221,22 @@ class VideoCLIP(pl.LightningModule):
         return video_feats
     
     # def forward_clip_africa(self, batch):
-    #     video_tensor, video_tensor_africa, labels, index = batch
-    #     B, F, C, H, W = video_tensor_africa.shape
-    #     video_feats = self.clip_africa(video_tensor_africa.view(B*F, C, H, W))
+    #     video_tensor, video_feats_africa, labels, index = batch
+    #     B, F, C, H, W = video_feats_africa.shape
+    #     video_feats = self.clip_africa(video_feats_africa.view(B*F, C, H, W))
     #     video_feats = video_feats.view(B, F, -1)
     #     return video_feats
+
+    def forward_clip_africa(self, batch):
+        video_tensor, video_feats_africa, labels, index = batch
+        video_feats_africa = self.transformer_africa(video_feats_africa)
+        return video_feats_africa
 
     def forward(self, batch):
         video_feats = self.forward_clip(batch)
         if self.africa:
             # video_feats_africa = self.forward_clip_africa(batch) # (B, F, 768)
+            video_tensor, video_feats_africa, labels, index = batch
             video_feats_africa = self.transformer_africa(video_feats_africa)
             video_feats = video_feats * self.w1_africa + video_feats_africa * self.w2_africa + self.bias
 
@@ -242,7 +248,7 @@ class VideoCLIP(pl.LightningModule):
         return video_logits
         
     def training_step(self, batch, batch_idx):
-        video_tensor, video_tensor_africa, labels_onehot, index = batch
+        video_tensor, video_feats_africa, labels_onehot, index = batch
         video_logits = self(batch)
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
@@ -278,7 +284,7 @@ class VideoCLIP(pl.LightningModule):
         self.train_map_class.reset()
 
     def validation_step(self, batch, batch_idx):
-        video_tensor, video_tensor_africa, labels_onehot, index = batch
+        video_tensor, video_feats_africa, labels_onehot, index = batch
         video_logits = self(batch)
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
@@ -400,8 +406,8 @@ if __name__ == "__main__":
     #     break
 
     # test inference
-    for batch_idx, (video_tensor, video_tensor_africa, labels_onehot, index) in enumerate(train_loader):
-        batch = video_tensor.to(device), video_tensor_africa.to(device), labels_onehot.to(device), index
+    for batch_idx, (video_tensor, video_feats_africa, labels_onehot, index) in enumerate(train_loader):
+        batch = video_tensor.to(device), video_feats_africa.to(device), labels_onehot.to(device), index
         video_logits = model(batch)
         video_logits = video_logits.cpu().detach().numpy()
         print(video_logits.shape)

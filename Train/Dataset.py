@@ -110,9 +110,9 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         if self.africa:
             video_tensor_africa = read_frames_decord(video_fp, num_frames=self.num_frames_africa, sample=self.video_sampling_africa)[0]
             video_tensor_africa = self.video_aug(video_tensor_africa, self.video_transform_africa)
-            video_tensor_africa = self.clip_africa(video_tensor_africa.to(self.device))
+            video_feats_africa = self.clip_africa(video_tensor_africa.to(self.device))
 
-        return video_tensor, video_tensor_africa, labels_onehot, index
+        return video_tensor, video_feats_africa, labels_onehot, index
     
     def __len__(self):
         return len(self.video_fps)
@@ -128,9 +128,9 @@ if __name__  == "__main__":
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
     print("len(train_loader)", len(train_loader))
     for batch_idx, batch in enumerate(train_loader):
-      video_tensor, video_tensor_africa, labels_onehot, index = batch
+      video_tensor, video_feats_africa, labels_onehot, index = batch
       print("video_tensor.shape", video_tensor.shape)
-      print("video_tensor_africa.shape", video_tensor_africa.shape)
+      print("video_feats_africa.shape", video_feats_africa.shape)
       print("labels_onehot.shape", labels_onehot.shape)
       print("index", index)
       print(batch_idx, "success")
@@ -143,7 +143,7 @@ if __name__  == "__main__":
 
     dataset = AnimalKingdomDataset(_config, split="train")
     df_action = dataset.df_action
-    video_tensor, video_tensor_africa, labels_onehot, index = dataset[0]
+    video_tensor, video_feats_africa, labels_onehot, index = dataset[0]
     print(video_tensor.shape)
     print(labels_onehot.shape)
     for idx, prompt in df_action.loc[np.where(labels_onehot)[0], 'prompt'].items():
