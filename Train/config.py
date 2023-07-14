@@ -17,7 +17,7 @@ def config():
 
     # for training
     video_sampling = 'rand' # 'rand', 'uniform', 'sequence_rand'
-    batch_size = 32
+    batch_size = 128
     max_epochs = 100
     lr = 0.0001
     optimizer = "adamw" # adam or adamw
