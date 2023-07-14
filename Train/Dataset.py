@@ -99,7 +99,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             else:
                 video_tensor_africa = read_frames_decord(video_fp, num_frames=self.num_frames_africa, sample=self.video_sampling_africa)[0]
                 video_tensor_africa = self.video_aug(video_tensor_africa, self.video_transform_africa)
-                return video_tensor_africa
+                return video_tensor_africa, index
 
     
     def __len__(self):

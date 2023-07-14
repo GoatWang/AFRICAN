@@ -36,26 +36,20 @@ def main(_config):
 
     _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
     model = VideoCLIP(_config)
-
-    ckpt_fp = os.path.join(os.path.dirname(__file__), "weights", "epoch=2-step=9003.ckpt")
-    if os.path.exists(ckpt_fp):
-        model.load_ckpt_state_dict(ckpt_fp)
-
     dataset_train.produce_prompt_embedding(model.clip)
     dataset_valid.produce_prompt_embedding(model.clip)
-    model.set_text_feats(dataset_train.text_features)
 
-    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=False) # TODO: DEBUG num_workers=4, maybe MACOS bug
-    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False) # TODO: DEBUG num_workers=4, maybe MACOS bug
+    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=False)
+    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False)
 
     clip_africa = load_clip_africa(_config)
 
-    for batch_idx, video_feats_africa in enumerate(tqdm(train_loader)):
+    for batch_idx, (video_feats_africa, index) in enumerate(tqdm(train_loader)):
         video_feats_africa = video_feats_africa.to(_config['device'])
         video_feats_africa = clip_africa(video_feats_africa)
         torch.save(video_feats_africa, os.path.join(_config['preprocess_dir'], "train_" + str(index[0]).zfill(5) + ".pt"))
 
-    for batch_idx, video_feats_africa in enumerate(tqdm(train_loader)):
+    for batch_idx, (video_feats_africa, index) in enumerate(tqdm(valid_loader)):
         video_feats_africa = video_feats_africa.to(_config['device'])
         video_feats_africa = clip_africa(video_feats_africa)
         torch.save(video_feats_africa, os.path.join(_config['preprocess_dir'], "val_" + str(index[0]).zfill(5) + ".pt"))
