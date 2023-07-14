@@ -8,7 +8,7 @@ def config():
     # basic
     name = "AnimalKingdomCLIPVisionProj"
     seed = 2023
-    device = 'cpu'
+    device = 'cuda'
 
     # for save
     log_dir = os.path.abspath(os.path.join(base_dir, "logs"))

@@ -10,9 +10,9 @@ from Loss import get_loss_func
 import pytorch_lightning as pl
 import InternVideo as clip_kc_new
 from typing import Callable, Sequence, Tuple
+from open_clip import Transformer, LayerNorm
 from torch.utils.checkpoint import checkpoint
 from ModelUtil.clip_param_keys import clip_param_keys
-from open_clip import _build_vision_tower, Transformer, LayerNorm
 from transformers import (
     get_polynomial_decay_schedule_with_warmup,
     get_cosine_schedule_with_warmup,
@@ -125,20 +125,6 @@ class VideoCLIP(pl.LightningModule):
         # africa
         self.africa = config['africa']
         if self.africa:
-            africa_config_fp = os.path.join(os.path.dirname(__file__), "open_clip/model_configs/ViT-L-14.json")
-            with open(africa_config_fp, 'r') as f:
-                africa_model_config = json.load(f)
-            self.clip_africa = _build_vision_tower(africa_model_config['embed_dim'], africa_model_config['vision_cfg'])
-            if config['original_clip_africa']:
-                # original_clip
-                state_dict_africa = torch.jit.load(config["ckpt_path_africa"], map_location="cpu").visual.state_dict()
-            else:
-                # pretrained africa clip
-                state_dict_africa = torch.load(config["ckpt_path_africa"], map_location="cpu")['state_dict']
-                state_dict_africa = {name.replace("image_encoder.", ""): weights for name, weights in state_dict_africa.items() if "image_encoder" in name}
-            self.clip_africa.load_state_dict(state_dict_africa)
-            self.clip_africa.requires_grad = False
-            self.clip_africa.eval()
             self.transformer_africa = AfricaTransformer(
                 config['num_frames_africa'],
                 config['clip_width_africa'],
@@ -234,17 +220,17 @@ class VideoCLIP(pl.LightningModule):
         )
         return video_feats
     
-    def forward_clip_africa(self, batch):
-        video_tensor, video_tensor_africa, labels, index = batch
-        B, F, C, H, W = video_tensor_africa.shape
-        video_feats = self.clip_africa(video_tensor_africa.view(B*F, C, H, W))
-        video_feats = video_feats.view(B, F, -1)
-        return video_feats
+    # def forward_clip_africa(self, batch):
+    #     video_tensor, video_tensor_africa, labels, index = batch
+    #     B, F, C, H, W = video_tensor_africa.shape
+    #     video_feats = self.clip_africa(video_tensor_africa.view(B*F, C, H, W))
+    #     video_feats = video_feats.view(B, F, -1)
+    #     return video_feats
 
     def forward(self, batch):
         video_feats = self.forward_clip(batch)
         if self.africa:
-            video_feats_africa = self.forward_clip_africa(batch) # (B, F, 768)
+            # video_feats_africa = self.forward_clip_africa(batch) # (B, F, 768)
             video_feats_africa = self.transformer_africa(video_feats_africa)
             video_feats = video_feats * self.w1_africa + video_feats_africa * self.w2_africa + self.bias
 
