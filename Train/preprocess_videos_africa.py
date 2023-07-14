@@ -48,13 +48,19 @@ def main(_config):
     clip_africa = load_clip_africa(_config)
     Path(_config['preprocess_dir']).mkdir(parents=True, exist_ok=True)
 
-    for batch_idx, (video_feats_africa, video_fp) in enumerate(tqdm(train_loader)):
-        video_feats_africa = video_feats_africa.to(_config['device'])
-        video_feats_africa = clip_africa(video_feats_africa)
-        torch.save(video_feats_africa, os.path.join(_config['preprocess_dir'], os.path.basename(video_fp).split(".")[0] + ".pt"))
+    for batch_idx, (video_tensor_africa, video_fps) in enumerate(tqdm(train_loader)):
+        video_tensor_africa = video_tensor_africa.to(_config['device'])
+        B, F, C, W, H = video_tensor_africa.shape
+        video_feats_africa = clip_africa(video_tensor_africa.view(B*F, C, W, H))
+        for idx, video_fp in enumerate(video_fps):
+            torch.save(video_feats_africa[idx], os.path.join(_config['preprocess_dir'], os.path.basename(video_fp).split(".")[0] + ".pt"))
 
-    for batch_idx, (video_feats_africa, video_fp) in enumerate(tqdm(valid_loader)):
-        video_feats_africa = video_feats_africa.to(_config['device'])
-        video_feats_africa = clip_africa(video_feats_africa)
-        torch.save(video_feats_africa, os.path.join(_config['preprocess_dir'], os.path.basename(video_fp).split(".")[0] + ".pt"))
+    for batch_idx, (video_tensor_africa, video_fps) in enumerate(tqdm(valid_loader)):
+        video_tensor_africa = video_tensor_africa.to(_config['device'])
+        B, F, C, W, H = video_tensor_africa.shape
+        video_feats_africa = clip_africa(video_tensor_africa.view(B*F, C, W, H))
+        for idx, video_fp in enumerate(video_fps):
+            torch.save(video_feats_africa[idx], os.path.join(_config['preprocess_dir'], os.path.basename(video_fp).split(".")[0] + ".pt"))
+
+
 
