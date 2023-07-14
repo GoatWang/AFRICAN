@@ -48,19 +48,21 @@ def main(_config):
     clip_africa = load_clip_africa(_config)
     Path(_config['preprocess_dir']).mkdir(parents=True, exist_ok=True)
 
-    for batch_idx, (video_tensor_africa, video_fps) in enumerate(tqdm(train_loader)):
-        video_tensor_africa = video_tensor_africa.to(_config['device'])
-        B, F, C, W, H = video_tensor_africa.shape
-        video_feats_africa = clip_africa(video_tensor_africa.view(B*F, C, W, H))
-        for idx, video_fp in enumerate(video_fps):
-            torch.save(video_feats_africa[idx], os.path.join(_config['preprocess_dir'], os.path.basename(video_fp).split(".")[0] + ".pt"))
+    for batch_idx, (video_tensors_africa, video_fps) in enumerate(tqdm(train_loader)):
+        video_tensors_africa = video_tensors_africa.to(_config['device'])
+        for idx, (video_tensors_africa, video_fp) in enumerate(zip(video_tensors_africa, video_fps)):
+            fp_dst = os.path.join(_config['preprocess_dir'], os.path.basename(video_fp).split(".")[0] + ".pt")
+            if not os.path.exists(fp_dst):
+                video_feats_africa = clip_africa(video_tensors_africa[idx])            
+                torch.save(video_feats_africa, fp_dst)
 
-    for batch_idx, (video_tensor_africa, video_fps) in enumerate(tqdm(valid_loader)):
-        video_tensor_africa = video_tensor_africa.to(_config['device'])
-        B, F, C, W, H = video_tensor_africa.shape
-        video_feats_africa = clip_africa(video_tensor_africa.view(B*F, C, W, H))
-        for idx, video_fp in enumerate(video_fps):
-            torch.save(video_feats_africa[idx], os.path.join(_config['preprocess_dir'], os.path.basename(video_fp).split(".")[0] + ".pt"))
+    for batch_idx, (video_tensors_africa, video_fps) in enumerate(tqdm(valid_loader)):
+        video_tensors_africa = video_tensors_africa.to(_config['device'])
+        for idx, (video_tensors_africa, video_fp) in enumerate(zip(video_tensors_africa, video_fps)):
+            fp_dst = os.path.join(_config['preprocess_dir'], os.path.basename(video_fp).split(".")[0] + ".pt")
+            if not os.path.exists(fp_dst):
+                video_feats_africa = clip_africa(video_tensors_africa[idx])            
+                torch.save(video_feats_africa, fp_dst)
 
 
 
