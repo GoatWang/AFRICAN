@@ -84,7 +84,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
         labels_onehot[self.labels[index]] = 1
 
-        video_tensor_africa = None
+        video_tensor_africa = video_tensor
         if self.africa:
             video_tensor_africa = read_frames_decord(video_fp, num_frames=self.num_frames_africa, sample=self.video_sampling_africa)[0]
             video_tensor_africa = self.video_aug(video_tensor_africa, self.video_transform_africa)            
