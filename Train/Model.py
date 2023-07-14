@@ -1,17 +1,76 @@
 import os
+import json
 import math
 from copy import deepcopy
 
 import torch
+from torch import nn
 import torchmetrics
 from Loss import get_loss_func
 import pytorch_lightning as pl
 import InternVideo as clip_kc_new
+from typing import Callable, Sequence, Tuple
+from torch.utils.checkpoint import checkpoint
 from ModelUtil.clip_param_keys import clip_param_keys
+from open_clip import _build_vision_tower, Transformer, LayerNorm
 from transformers import (
     get_polynomial_decay_schedule_with_warmup,
     get_cosine_schedule_with_warmup,
 )
+
+class AfricaTransformer(nn.Module):
+    def __init__(
+            self,
+            seq_len: int = 32,
+            width: int = 768,
+            layers: int = 12,
+            heads: int = 12,
+            mlp_ratio: float = 4.0,
+            ls_init_value: float = None,
+            act_layer: Callable = nn.GELU,
+            norm_layer: Callable = LayerNorm,
+    ):
+        super().__init__()
+        # class embeddings and positional embeddings
+        scale = width ** -0.5
+        
+        # self.class_embedding = nn.Parameter(scale * torch.randn(width))
+        # self.positional_embedding = nn.Parameter(scale * torch.randn(self.grid_size[0] * self.grid_size[1] + 1, width))
+        self.positional_embedding = nn.Parameter(scale * torch.randn(seq_len, width))
+
+        self.ln_pre = norm_layer(width)
+        self.transformer = Transformer(
+            width,
+            layers,
+            heads,
+            mlp_ratio,
+            ls_init_value=ls_init_value,
+            act_layer=act_layer,
+            norm_layer=norm_layer,
+        )
+
+        self.ln_post = norm_layer(width)
+        self.proj = nn.Parameter(scale * torch.randn(width, width))
+
+    def forward(self, x: torch.Tensor):
+        # class embeddings and positional embeddings
+        # x = torch.cat(
+        #     [
+        #         self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device),
+        #         x
+        #     ], dim=1)  # shape = [*, grid ** 2 + 1, width]
+        x = x + self.positional_embedding.to(x.dtype)
+        x = self.ln_pre(x)
+
+        x = x.permute(1, 0, 2)  # NLD -> LND
+        x = self.transformer(x)
+        x = x.permute(1, 0, 2)  # LND -> NLD
+
+        x = self.ln_post(x)
+        # pooled, tokens = x[:, 0], x[:, 1:] # use cls token to do classification. # https://chat.openai.com/share/83c1c340-3a53-4366-901f-183fbc05f2a2
+        pooled = x.mean(dim=1) # mean over all tokens to do classification. # https://chat.openai.com/share/83c1c340-3a53-4366-901f-183fbc05f2a2
+        pooled = pooled @ self.proj
+        return pooled
 
 class VideoCLIP(pl.LightningModule):
     def __init__(self, config):
@@ -62,6 +121,33 @@ class VideoCLIP(pl.LightningModule):
             self.freeze_text()
         if config['train_laryers'] == "vision_proj":
             self.freeze_clip_evl()
+
+        # africa
+        self.africa = config['africa']
+        if self.africa:
+            africa_config_fp = os.path.join(os.path.dirname(__file__), "open_clip/model_configs/ViT-L-14.json")
+            with open(africa_config_fp, 'r') as f:
+                africa_model_config = json.load(f)
+            self.clip_africa = _build_vision_tower(africa_model_config['embed_dim'], africa_model_config['vision_cfg'])
+            if config['original_clip_africa']:
+                # original_clip
+                state_dict_africa = torch.jit.load(config["ckpt_path_africa"], map_location="cpu").visual.state_dict()
+            else:
+                # pretrained africa clip
+                state_dict_africa = torch.load(config["ckpt_path_africa"], map_location="cpu")['state_dict']
+                state_dict_africa = {name.replace("image_encoder.", ""): weights for name, weights in state_dict_africa.items() if "image_encoder" in name}
+            self.clip_africa.load_state_dict(state_dict_africa)
+            self.clip_africa.requires_grad = False
+            self.clip_africa.eval()
+            self.transformer_africa = AfricaTransformer(
+                _config['num_frames_africa'],
+                _config['clip_width_africa'],
+                _config['clip_layers_africa'],
+                _config['clip_heads_africa']
+            )
+            self.w1_africa = nn.Parameter(torch.randn(_config['clip_width_africa']))
+            self.w2_africa = nn.Parameter(torch.randn(_config['clip_width_africa']))
+            self.bias = nn.Parameter(torch.randn(_config['clip_width_africa']))
 
     def load_ckpt_state_dict(self, ckpt_fp):
         ckpt = torch.load(ckpt_fp, map_location="cpu")
@@ -140,22 +226,37 @@ class VideoCLIP(pl.LightningModule):
             elif "clip.eot_token_embedding" in n:
                 p.requires_grad = False
 
-    def forward(self, batch, mode="video"):
-        video_tensor, labels, index = batch
+    def forward_clip(self, batch):
+        video_tensor, video_tensor_africa, labels, index = batch
         video_tensor = video_tensor.contiguous().transpose(1, 2)
         video_feats, video_all_feats = self.clip.encode_video(
-            video_tensor, return_all_feats=True, mode=mode
+            video_tensor, return_all_feats=True, mode='video'
         )
+        return video_feats
+    
+    def forward_clip_africa(self, batch):
+        video_tensor, video_tensor_africa, labels, index = batch
+        B, F, C, H, W = video_tensor_africa.shape
+        video_feats = self.clip_africa(video_tensor_africa.view(B*F, C, H, W))
+        video_feats = video_feats.view(B, F, -1)
+        return video_feats
+
+    def forward(self, batch):
+        video_feats = self.forward_clip(batch)
+        if self.africa:
+            video_feats_africa = self.forward_clip_africa(batch) # (B, F, 768)
+            video_feats_africa = self.transformer_africa(video_feats_africa)
+            video_feats = video_feats * self.w1_africa + video_feats_africa * self.w2_africa + self.bias
+
         video_feats = torch.nn.functional.normalize(video_feats, dim=1) # (n, 768)
         text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
         t = self.clip.logit_scale.exp()
         video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
         video_logits = self.final_fc(video_logits)
-        # video_logits = torch.sigmoid(video_logits)
         return video_logits
         
     def training_step(self, batch, batch_idx):
-        video_tensor, labels_onehot, index = batch
+        video_tensor, video_tensor_africa, labels_onehot, index = batch
         video_logits = self(batch)
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
@@ -191,7 +292,7 @@ class VideoCLIP(pl.LightningModule):
         self.train_map_class.reset()
 
     def validation_step(self, batch, batch_idx):
-        video_tensor, labels_onehot, index = batch
+        video_tensor, video_tensor_africa, labels_onehot, index = batch
         video_logits = self(batch)
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
@@ -254,6 +355,22 @@ class VideoCLIP(pl.LightningModule):
             return ([optimizer], [sched])    
     
 if __name__ == "__main__":    
+    # AFRICA
+    # from config import config
+    # _config = config()
+    
+    # africa_transformer = AfricaTransformer(
+    #     _config['num_frames_africa'],
+    #     _config['clip_width_africa'],
+    #     _config['clip_layers_africa'],
+    #     _config['clip_heads_africa']
+    #     )
+    
+    # x = torch.rand(_config['batch_size'], _config['num_frames_africa'], _config['clip_width_africa'])
+    # x = africa_transformer(x)
+    # print(x.shape)
+
+    # Whole Model
     import numpy as np
     from torch import utils
     from config import config
@@ -262,6 +379,7 @@ if __name__ == "__main__":
 
     device = 'cpu'
     _config = config()
+    _config['batch_size'] = 2
 
     dataset_train = AnimalKingdomDataset(_config, split="train")
     dataset_valid = AnimalKingdomDataset(_config, split="val")
@@ -296,11 +414,12 @@ if __name__ == "__main__":
     #     break
 
     # test inference
-    for batch_idx, (video_tensor, labels_onehot) in enumerate(train_loader):
-        video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
-        video_logits = model((video_tensor, labels_onehot))
+    for batch_idx, (video_tensor, video_tensor_africa, labels_onehot, index) in enumerate(train_loader):
+        batch = video_tensor.to(device), video_tensor_africa.to(device), labels_onehot.to(device), index
+        video_logits = model(batch)
         video_logits = video_logits.cpu().detach().numpy()
-        np.save(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"), video_logits)
+        print(video_logits.shape)
+        # np.save(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"), video_logits)
         break
     # video_logits = np.load(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"))
     

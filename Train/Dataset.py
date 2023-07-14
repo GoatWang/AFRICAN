@@ -21,11 +21,18 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.num_frames = config['num_frames']
         self.video_sampling = config['video_sampling']
         self.functional_test_size = config['functional_test_size']
-
+            
         # self.text_column_name = "questions"
         self.video_transform = VideoTransformTorch(mode=self.split)  # train or val model
         self.video_aug = video_aug
         self.load_metadata()
+
+        # africa
+        self.africa = config['africa']
+        if self.africa:
+            self.num_frames_africa = config['num_frames_africa']
+            self.video_sampling_africa = config['video_sampling_africa']
+            self.video_transform_africa = VideoTransformTorch(mode='val')  # train or val model
 
     def process_annotation(self, csv_fp, video_fps):
         video_id_mapping = {os.path.basename(fp).replace(".mp4", ""):fp for fp in video_fps}
@@ -71,18 +78,18 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             self.text_features = torch.from_numpy(np.load(npy_fp)).to(self.device)
 
     def __getitem__(self, index):
-        ret = None
         video_fp = self.video_fps[index]
         video_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
-        # try:
-        #     video_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
-        # except:
-        #     print(video_fp)
-        #     assert False, "video_fp not exist"
-        video_tensor = self.video_aug(video_tensor, self.video_transform)
+        video_tensor = self.video_aug(video_tensor, self.video_transform)            
         labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
         labels_onehot[self.labels[index]] = 1
-        return video_tensor, labels_onehot, index
+
+        video_tensor_africa = None
+        if self.africa:
+            video_tensor_africa = read_frames_decord(video_fp, num_frames=self.num_frames_africa, sample=self.video_sampling_africa)[0]
+            video_tensor_africa = self.video_aug(video_tensor_africa, self.video_transform_africa)            
+
+        return video_tensor, video_tensor_africa, labels_onehot, index
     
     def __len__(self):
         return len(self.video_fps)
@@ -90,30 +97,37 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
 if __name__  == "__main__":
     from config import config
     _config = config()
-    # # ===============run all data test
-    # from torch import utils
-    # dataset_train = AnimalKingdomDataset(_config, split="train")
-    # dataset_valid = AnimalKingdomDataset(_config, split="val")
-    # train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
-    # valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
-    # print(len(train_loader))
-    # for batch_idx, (video_tensor, labels_onehot) in enumerate(train_loader):
-    #   print(batch_idx, "success")
+
+    from torch import utils
+    dataset_train = AnimalKingdomDataset(_config, split="train")
+    dataset_valid = AnimalKingdomDataset(_config, split="val")
+    train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
+    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
+    print("len(train_loader)", len(train_loader))
+    for batch_idx, batch in enumerate(train_loader):
+      video_tensor, video_tensor_africa, labels_onehot, index = batch
+      print("video_tensor.shape", video_tensor.shape)
+      print("video_tensor_africa.shape", video_tensor_africa.shape)
+      print("labels_onehot.shape", labels_onehot.shape)
+      print("index", index)
+      print(batch_idx, "success")
+      break
 
     # print(len(valid_loader))
     # for batch_idx, (video_tensor, labels_onehot) in enumerate(valid_loader):
     #   print(batch_idx, "success")
-    # # ===============
+    #   break
 
     dataset = AnimalKingdomDataset(_config, split="train")
     df_action = dataset.df_action
-    video_tensor, labels_onehot = dataset[0]
+    video_tensor, video_tensor_africa, labels_onehot, index = dataset[0]
     print(video_tensor.shape)
     print(labels_onehot.shape)
     for idx, prompt in df_action.loc[np.where(labels_onehot)[0], 'prompt'].items():
         print(str(idx).zfill(3) + ":", prompt)
     
     from Model import VideoCLIP
+    _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
     model = VideoCLIP(_config)
     dataset.produce_prompt_embedding(model.clip)
     print(dataset.text_features.shape)

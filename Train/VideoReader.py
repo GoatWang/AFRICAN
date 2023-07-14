@@ -124,3 +124,8 @@ if __name__ == "__main__":
     frames, frame_idxs, vlen = read_frames_decord(video_fp, num_frames=_config['num_frames'], sample=_config['video_sampling'], fix_start=True)
     for frame, frame_idx in zip(frames, frame_idxs):
         cv2.imwrite(os.path.join(save_dir, f"{frame_idx:04d}.jpg"), frame.numpy().transpose(1, 2, 0))
+
+    frames, frame_idxs, vlen = read_frames_decord(video_fp, num_frames=_config['num_frames_africa'], sample=_config['video_sampling_africa'], fix_start=True)
+    print(frame_idxs)
+    print(len(frames))
+
