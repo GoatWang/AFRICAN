@@ -84,6 +84,8 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             self.text_features = torch.from_numpy(np.load(npy_fp)).to(self.device)
 
     def __getitem__(self, index):
+        video_fp = self.video_fps[index]
+        
         if self.africa and self.preprocessing:
             fp_dst = os.path.join(self.preprocess_dir, os.path.basename(video_fp).split(".")[0] + ".pt")
             if not os.path.exists(fp_dst):
@@ -95,7 +97,6 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             return video_tensor_africa, video_fp
         
         else:
-            video_fp = self.video_fps[index]
             video_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
             video_tensor = self.video_aug(video_tensor, self.video_transform)            
             labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
