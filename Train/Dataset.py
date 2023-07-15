@@ -97,8 +97,12 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
                 video_feats_africa = torch.load(video_feats_africa_fp, map_location='cpu')
                 return video_tensor, video_feats_africa, labels_onehot, index
             else:
-                video_tensor_africa = read_frames_decord(video_fp, num_frames=self.num_frames_africa, sample=self.video_sampling_africa)[0]
-                video_tensor_africa = self.video_aug(video_tensor_africa, self.video_transform_africa)
+                fp_dst = os.path.join(self.preprocess_dir, os.path.basename(video_fp).split(".")[0] + ".pt")
+                if not os.path.exists(fp_dst):
+                    video_tensor_africa = read_frames_decord(video_fp, num_frames=self.num_frames_africa, sample=self.video_sampling_africa)[0]
+                    video_tensor_africa = self.video_aug(video_tensor_africa, self.video_transform_africa)
+                else:
+                    video_tensor_africa = torch.zeros(1)
                 return video_tensor_africa, video_fp
 
     
