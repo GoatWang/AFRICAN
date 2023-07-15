@@ -12,7 +12,7 @@ from VideoReader import read_frames_decord
 from Transform import VideoTransformTorch, video_aug
 
 class AnimalKingdomDataset(torch.utils.data.Dataset):
-    def __init__(self, config, preprocessing=True, split=""):
+    def __init__(self, config, preprocessing=False, split=""):
         assert split in ["train", "val"], "split must be train or val"
         self.split = split
         self.metadata = None

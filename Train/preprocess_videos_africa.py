@@ -34,8 +34,8 @@ def load_clip_africa(config):
 @ex.automain
 def main(_config):
     _config = copy.deepcopy(_config)
-    dataset_train = AnimalKingdomDataset(_config, preprocessed=False, split="train")
-    dataset_valid = AnimalKingdomDataset(_config, preprocessed=False, split="val")
+    dataset_train = AnimalKingdomDataset(_config, preprocessing=True, split="train")
+    dataset_valid = AnimalKingdomDataset(_config, preprocessing=True, split="val")
 
     _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
     model = VideoCLIP(_config)
