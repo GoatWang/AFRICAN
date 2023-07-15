@@ -235,9 +235,7 @@ class VideoCLIP(pl.LightningModule):
     def forward(self, batch):
         video_feats = self.forward_clip(batch)
         if self.africa:
-            # video_feats_africa = self.forward_clip_africa(batch) # (B, F, 768)
-            video_tensor, video_feats_africa, labels, index = batch
-            video_feats_africa = self.transformer_africa(video_feats_africa)
+            video_feats_africa = self.forward_clip_africa(batch) # (B, F, 768)
             video_feats = video_feats * self.w1_africa + video_feats_africa * self.w2_africa + self.bias
 
         video_feats = torch.nn.functional.normalize(video_feats, dim=1) # (n, 768)
