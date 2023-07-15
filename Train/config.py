@@ -46,8 +46,12 @@ def config():
     clip_use_checkpoint = False
     clip_checkpoint_num = [0, 0, 0]
 
-    # africa
+    # africa preprocess
     preprocess_dir = os.path.join(os.path.dirname(__file__), 'preprocess') 
+    num_frames_africa = 32
+    video_sampling_africa = 'uniform' # 'rand', 'uniform', 'sequence_rand'
+
+    # africa model
     africa = True
     original_clip_africa = True
     ckpt_path_africa = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
@@ -56,7 +60,5 @@ def config():
     clip_width_africa = 768
     clip_layers_africa = 6
     clip_heads_africa = 12
-    num_frames_africa = 32
-    video_sampling_africa = 'uniform' # 'rand', 'uniform', 'sequence_rand'
 
     

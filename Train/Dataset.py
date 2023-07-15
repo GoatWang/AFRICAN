@@ -85,8 +85,8 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         video_fp = self.video_fps[index]
-        video_feats_africa_fp = os.path.join(self.preprocess_dir, os.path.basename(video_fp).split(".")[0] + ".pt")
         if self.africa and self.preprocessing:
+            video_feats_africa_fp = os.path.join(self.preprocess_dir, os.path.basename(video_fp).split(".")[0] + ".pt")
             if not os.path.exists(video_feats_africa_fp):
                 video_tensor_africa = read_frames_decord(video_fp, num_frames=self.num_frames_africa, sample=self.video_sampling_africa)[0]
                 video_tensor_africa = self.video_aug(video_tensor_africa, self.video_transform_africa)
@@ -101,9 +101,11 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
             labels_onehot[self.labels[index]] = 1
 
-            video_tensor_africa = torch.zeros(1)
+            video_feats_africa = torch.zeros(1)
             if self.africa:
+                video_feats_africa_fp = os.path.join(self.preprocess_dir, os.path.basename(video_fp).split(".")[0] + ".pt")
                 video_feats_africa = torch.load(video_feats_africa_fp, map_location='cpu')
+                video_feats_africa.requires_grad = False
 
             return video_tensor, video_feats_africa, labels_onehot, index
     

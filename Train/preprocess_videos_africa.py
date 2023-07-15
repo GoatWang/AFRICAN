@@ -61,7 +61,7 @@ def main(_config):
         for idx, (video_tensor_africa, video_fp) in enumerate(zip(video_tensors_africa, video_fps)):
             fp_dst = os.path.join(_config['preprocess_dir'], os.path.basename(video_fp).split(".")[0] + ".pt")
             if not os.path.exists(fp_dst):
-                video_feats_africa = clip_africa(video_tensor_africa)
+                video_feats_africa = clip_africa(video_tensor_africa)            
                 torch.save(video_feats_africa, fp_dst)
 
 
