@@ -143,7 +143,7 @@ class VideoCLIP(pl.LightningModule):
         return clip
     
 
-    def load_clip_africa_model(config):
+    def load_clip_africa_model(self, config):
         africa_config_fp = os.path.join(os.path.dirname(__file__), "open_clip/model_configs/ViT-L-14.json")
         with open(africa_config_fp, 'r') as f:
             africa_model_config = json.load(f)
