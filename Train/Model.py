@@ -94,12 +94,17 @@ class VideoCLIP(pl.LightningModule):
             self.freeze_text(self.clip)
         if config['train_laryers'] == "vision_proj":
             self.freeze_clip_evl(self.clip)
-
+        print("!!!!!self.clip!!!!!!!!!")
+        self.print_requires_grad(self, self.clip)
+            
         # africa
         self.africa = config['africa']
         if self.africa:
             self.clip_africa = self.load_clip_africa_model(config)
             self.freeze_clip_africa_evl(self.clip_africa)
+            print("!!!!!self.clip_africa!!!!!!!!!")
+            self.print_requires_grad(self, self.clip_africa)
+
             self.transformer_africa = AfricaTransformer(
                 config['num_frames'],
                 config['clip_width_africa'],
@@ -109,6 +114,10 @@ class VideoCLIP(pl.LightningModule):
             self.w1_africa = nn.Parameter(torch.randn(config['clip_width_africa']))
             self.w2_africa = nn.Parameter(torch.randn(config['clip_width_africa']))
             self.bias = nn.Parameter(torch.randn(config['clip_width_africa']))
+
+    def print_requires_grad(self, model):
+        for n, p in model.named_parameters():
+            print(n, p.requires_grad)
 
     def get_clip_model(self, config):
         clip, clip_preprocess = clip_kc_new.load( # class VideoIntern(nn.Module):
@@ -288,7 +297,10 @@ class VideoCLIP(pl.LightningModule):
 
     def forward_clip_africa(self, batch): # TODO
         video_tensor, labels, index = batch
+        B, F, C, H, W = video_tensor.shape
+        video_tensor = video_tensor.view(B*F, C, H, W)
         video_tensor = self.clip_africa(video_tensor)
+        video_tensor = video_tensor.view(B, F, -1)
         video_feats_africa = self.transformer_africa(video_tensor)
         return video_feats_africa
 
