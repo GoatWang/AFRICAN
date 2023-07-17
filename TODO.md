@@ -1,17 +1,37 @@
 # Experiments
+## VideoCLIP (X: DONE, D: Doing, S:Suspend, C:Cancel)
 - [X] Test VideoCLIP baseline
-- [ ] Find the best loss function (BCE, Focal, EQL)
-    - [ ] Test BCE on lr0.00015
+- [X] Find the best loss function (BCE, Focal, EQL)
+    - [X] Test BCE on lr0.00015
     - [X] Test Focal on lr0.00015
-    - [ ] Test EQL on lr0.00015
-- [ ] prove bs008 > bs128 (lr: 0.0001)
-- [ ] contrastive learning (ActionFrameIdentity)
-- [ ] verify segment in promp training performace
-    - [ ] using segment
-        - [ ] using BCE
-        - [ ] using Focal    
-    - [ ] using rare, uncommon, common(general)
+    - [X] Test EQL on lr0.00015
+- [X] prove bs128 > bs008 (lr: 0.0001)
+- [D] check rand sampling works as well
 - [ ] variable bs (0008 -> 1024) vs 1024
+- [C] verify segment in promp training performace
+    - [C] using segment
+        - [C] using BCE
+        - [C] using Focal    
+    - [C] using rare, uncommon, common(general)
+
+## FrameID
+- [X] test clip_cosine_infoNCE_8_uniform_augmix (lr=0.0001) (epoch=300)
+- [X] test init_cosine_infoNCE_8_uniform_augmix (lr=0.0001) (epoch=300)
+- [X] test clip_cosine_infoNCE_8_rand_augmix_000040 (epoch=300)
+- [X] test clip_nodecay_infoNCE_8_rand_augmix_000030 (epoch=300)
+- [ ] test clip_cosine_infoNCE_8_rand_augmix_000030 (epoch=100)
+
+## AFRICA
+- [D] AFRICA_nodecay_128_00015: test clip_cosine_infoNCE_8_uniform_augmix_000040_epoch52.ckpt on africa
+- [D] test ViT-L-14.pt on africa
+- [ ] test with africa only without VideoCLIP
+- [ ] test clip_no_decay_infoNCE_8_rand_augmix_000030_epochxx.ckpt on africa
+- [ ] test cosine (lr=0.00015) (epoch=50)
+- [ ] test agmentation on FrameID representation: option to load video in dataset directly (not preprocessed representation) with smaller batch size
+
+
+
+# Experiments (Suspended)
 
 # paper
 1. lrdecay solve log-tail: https://arxiv.org/pdf/2203.14197.pdf
@@ -21,17 +41,10 @@
 # TODO:
 - mv log to s3
 - Write training script for variable bs
-- Combine the contrastive learning and VideoCLIP result 
 - Ask InternVideo how to combine VideoCLIP and VideoMAE
 - Ask AnimalKingdom how to calculate the count of each segment (head, middle and tail): 
     > When constructing our animal action recognition dataset, we follow the work of [82] and divide the distri- bution into three different segments based on the number of samples in each action class. Specifically, we group all the 140 action classes in our dataset into the head segment (17 action classes that have more than 500 samples each), the middle segment (29 action classes that have 100 to 500 samples each), and the tail segment (94 action classes that have fewer than 100 samples each).
-    
-- check the sampling method acceptable 
-- check training without sigmoid function
-
-# Next Steps
-- test vision train_laryers (A100)
-- contrastive learn on sequence order of the frames (survey & model building)
+- write scripts for africa training with augmented input (not preprocessed img representation)
 
 # DONE
 - deal with text embedding using cuda
@@ -166,6 +179,10 @@
 - Change the name of training_test_size to function_test_size
 - move ckpts to s3
 - add mAP calculation for head, middle and tail classes
+- Combine the contrastive learning and VideoCLIP result 
+- check the sampling method acceptable 
+- test vision train_laryers (A100)
+- contrastive learn on sequence order of the frames (survey & model building)
 
 ## Suspended
 - test rand sampling of video frames
