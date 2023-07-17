@@ -89,7 +89,7 @@ class VideoCLIP(pl.LightningModule):
         self.poly_decay_power = config['poly_decay_power']
 
         self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
-        self.clip = self.get_clip_model(self)
+        self.clip = self.get_clip_model()
         if config['train_laryers'] == "vision":
             self.freeze_text(self.clip)
         if config['train_laryers'] == "vision_proj":
