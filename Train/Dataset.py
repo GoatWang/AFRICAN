@@ -12,7 +12,7 @@ from VideoReader import read_frames_decord
 from Transform import VideoTransformTorch, video_aug
 
 class AnimalKingdomDataset(torch.utils.data.Dataset):
-    def __init__(self, config, preprocessing=False, split=""):
+    def __init__(self, config, split=""):
         assert split in ["train", "val"], "split must be train or val"
         self.split = split
         self.metadata = None
@@ -28,17 +28,6 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.video_transform = VideoTransformTorch(mode=self.split)  # train or val model
         self.video_aug = video_aug
         self.load_metadata()
-
-        # africa
-        self.africa = config['africa']
-        if self.africa:
-            self.preprocessing = preprocessing
-            self.preprocess_dir = config['preprocess_dir']
-            self.ckpt_path_africa = config['ckpt_path_africa']
-            self.original_clip_africa = config['original_clip_africa']
-            self.num_frames_africa = config['num_frames_africa']
-            self.video_sampling_africa = config['video_sampling_africa']
-            self.video_transform_africa = VideoTransformTorch(mode='val')  # train or val model
 
     def process_annotation(self, csv_fp, video_fps):
         video_id_mapping = {os.path.basename(fp).replace(".mp4", ""):fp for fp in video_fps}
@@ -85,23 +74,12 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         video_fp = self.video_fps[index]
-        if self.africa and self.preprocessing:
-            video_feats_africa_fp = os.path.join(self.preprocess_dir, os.path.basename(video_fp).split(".")[0] + ".pt")
-            if not os.path.exists(video_feats_africa_fp):
-                video_tensor_africa = read_frames_decord(video_fp, num_frames=self.num_frames_africa, sample=self.video_sampling_africa)[0]
-                video_tensor_africa = self.video_aug(video_tensor_africa, self.video_transform_africa)
-            else:
-                video_tensor_africa = torch.zeros(1)
+        video_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
+        video_tensor = self.video_aug(video_tensor, self.video_transform)            
+        labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
+        labels_onehot[self.labels[index]] = 1
 
-            return video_tensor_africa, video_fp
-        
-        else:
-            video_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
-            video_tensor = self.video_aug(video_tensor, self.video_transform)            
-            labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
-            labels_onehot[self.labels[index]] = 1
-
-            return video_tensor, labels_onehot, index
+        return video_tensor, labels_onehot, index
     
     def __len__(self):
         return len(self.video_fps)
