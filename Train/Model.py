@@ -89,7 +89,7 @@ class VideoCLIP(pl.LightningModule):
         self.poly_decay_power = config['poly_decay_power']
 
         self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
-        self.clip = self.get_clip_model()
+        self.clip = self.get_clip_model(config)
         if config['train_laryers'] == "vision":
             self.freeze_text(self.clip)
         if config['train_laryers'] == "vision_proj":
@@ -110,7 +110,7 @@ class VideoCLIP(pl.LightningModule):
             self.w2_africa = nn.Parameter(torch.randn(config['clip_width_africa']))
             self.bias = nn.Parameter(torch.randn(config['clip_width_africa']))
 
-    def get_clip_model(self):
+    def get_clip_model(self, config):
         clip, clip_preprocess = clip_kc_new.load( # class VideoIntern(nn.Module):
             config["clip"], # /pathto/ViT-L-14.pt
             t_size=config["num_frames"], # num_frames=8
