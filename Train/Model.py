@@ -91,15 +91,15 @@ class VideoCLIP(pl.LightningModule):
         self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
         self.clip = self.get_clip_model(self)
         if config['train_laryers'] == "vision":
-            self.freeze_text(prefix="clip")
+            self.freeze_text(self.clip)
         if config['train_laryers'] == "vision_proj":
-            self.freeze_clip_evl(prefix="clip")
+            self.freeze_clip_evl(self.clip)
 
         # africa
         self.africa = config['africa']
         if self.africa:
             self.clip_africa = self.load_clip_africa_model(config)
-            self.freeze_clip_evl(prefix="clip_africa")
+            self.freeze_clip_africa_evl(self.clip_africa)
             self.transformer_africa = AfricaTransformer(
                 config['num_frames'],
                 config['clip_width_africa'],
@@ -214,19 +214,19 @@ class VideoCLIP(pl.LightningModule):
         self.train_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
         self.valid_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
 
-    def freeze_clip_evl(self, prefix):
-        for n, p in self.named_parameters():
+    def freeze_clip_evl(self, model):
+        for n, p in model.named_parameters():
             if (
-                prefix+".visual" in n
-                and prefix+".visual.ln_post" not in n
-                and prefix+".visual.proj" not in n
+                "visual" in n
+                and "visual.ln_post" not in n # and "visual_ln_post" not in n
+                and "visual.proj" not in n # and "visual_proj" not in n
             ):
                 p.requires_grad = False
-            elif prefix+".transformer" in n:
+            elif "transformer" in n:
                 p.requires_grad = False
-            elif prefix+".token_embedding" in n:
+            elif "token_embedding" in n:
                 p.requires_grad = False
-            elif prefix+".positional_embedding" in n:
+            elif "positional_embedding" in n:
                 p.requires_grad = False
 
     def freeze_clip(self):
@@ -237,21 +237,40 @@ class VideoCLIP(pl.LightningModule):
             if any(x in n for x in clip_param_keys):
                 p.requires_grad = False
 
-    def freeze_text(self, prefix):
-        for n, p in self.named_parameters():
-            if prefix+".transformer" in n:
+    def freeze_text(self, model):
+        for n, p in model.named_parameters():
+            if "transformer" in n:
                 p.requires_grad = False
-            elif prefix+".token_embedding" in n:
+            elif "token_embedding" in n:
                 p.requires_grad = False
-            elif prefix+".positional_embedding" in n:
+            elif "positional_embedding" in n:
                 p.requires_grad = False
-            elif prefix+".ln_final" in n:
+            elif "ln_final" in n:
                 p.requires_grad = False
-            elif prefix+".text_projection" in n:
+            elif "text_projection" in n:
                 p.requires_grad = False
-            elif prefix+".eot_token_embedding" in n:
+            elif "eot_token_embedding" in n:
                 p.requires_grad = False
 
+    def freeze_clip_africa_evl(self, model):
+        for n, p in model.named_parameters():
+            if (
+                "visual" in n
+                and "ln_post" not in n # and "visual_ln_post" not in n
+                and "proj" not in n # and "visual_proj" not in n
+            ):
+                p.requires_grad = False
+            elif "transformer" in n:
+                p.requires_grad = False
+            elif "token_embedding" in n:
+                p.requires_grad = False
+            elif "positional_embedding" in n:
+                p.requires_grad = False
+            elif "conv1" in n:
+                p.requires_grad = False
+            elif "ln_pre" in n:
+                p.requires_grad = False
+                
     def forward_clip(self, batch):
         video_tensor, labels, index = batch
         video_tensor = video_tensor.contiguous().transpose(1, 2)
