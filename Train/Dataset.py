@@ -101,13 +101,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
             labels_onehot[self.labels[index]] = 1
 
-            video_feats_africa = torch.zeros(1)
-            if self.africa:
-                video_feats_africa_fp = os.path.join(self.preprocess_dir, os.path.basename(video_fp).split(".")[0] + ".pt")
-                video_feats_africa = torch.load(video_feats_africa_fp, map_location='cpu')
-                video_feats_africa.requires_grad = False
-
-            return video_tensor, video_feats_africa, labels_onehot, index
+            return video_tensor, labels_onehot, index
     
     def __len__(self):
         return len(self.video_fps)

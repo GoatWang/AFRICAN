@@ -46,10 +46,10 @@ def config():
     clip_use_checkpoint = False
     clip_checkpoint_num = [0, 0, 0]
 
-    # africa preprocess
-    preprocess_dir = os.path.join(os.path.dirname(__file__), 'preprocess') 
-    num_frames_africa = 32
-    video_sampling_africa = 'uniform' # 'rand', 'uniform', 'sequence_rand'
+    # # africa preprocess
+    # preprocess_dir = os.path.join(os.path.dirname(__file__), 'preprocess') 
+    # num_frames_africa = 32
+    # video_sampling_africa = 'uniform' # 'rand', 'uniform', 'sequence_rand'
 
     # africa model
     africa = True
