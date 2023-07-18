@@ -227,8 +227,8 @@ class VideoCLIP(pl.LightningModule):
         for n, p in model.named_parameters():
             if (
                 "visual" in n
-                and "visual.ln_post" not in n # and "visual_ln_post" not in n
-                and "visual.proj" not in n # and "visual_proj" not in n
+                and "visual_ln_post" not in n # and "visual_ln_post" not in n "visual.ln_post"
+                and "visual_proj" not in n # and "visual_proj" not in n "visual.proj"
             ):
                 p.requires_grad = False
             elif "transformer" in n:
