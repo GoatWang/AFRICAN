@@ -95,7 +95,7 @@ class VideoCLIP(pl.LightningModule):
         if config['train_laryers'] == "vision_proj":
             self.freeze_clip_evl(self.clip)
         print("!!!!!self.clip!!!!!!!!!")
-        self.print_requires_grad(self, self.clip)
+        self.print_requires_grad(self.clip)
             
         # africa
         self.africa = config['africa']
@@ -103,7 +103,7 @@ class VideoCLIP(pl.LightningModule):
             self.clip_africa = self.load_clip_africa_model(config)
             self.freeze_clip_africa_evl(self.clip_africa)
             print("!!!!!self.clip_africa!!!!!!!!!")
-            self.print_requires_grad(self, self.clip_africa)
+            self.print_requires_grad(self.clip_africa)
 
             self.transformer_africa = AfricaTransformer(
                 config['num_frames'],
