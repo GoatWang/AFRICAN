@@ -167,7 +167,7 @@ class AfricanSlowfast(pl.LightningModule):
             },
         }
         image_encoder = _build_vision_tower(clip_model_config['embed_dim'], clip_model_config['vision_cfg'])
-        if config['ckpt_path_fast']:
+        if config['use_image_clip_fast']:
             # original_clip
             state_dict_clip = torch.jit.load(config['ckpt_path_fast'], map_location="cpu").visual.state_dict()
             image_encoder.load_state_dict(state_dict_clip)
