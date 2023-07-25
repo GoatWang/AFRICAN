@@ -93,13 +93,13 @@ class AfricanSlowfast(pl.LightningModule):
         self.enable_preprocess_fast = config['enable_preprocess_fast']
 
         self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
-        self.video_encoder = self.get_video_clip_model(config) # video encoder (slow stream)
+        self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
         if config['train_laryers'] == "vision":
-            self.freeze_video_encoder_text(self.video_encoder)
+            self.freeze_video_clip_text(self.video_clip)
         if config['train_laryers'] == "vision_proj":
-            self.freeze_video_encoder_evl(self.video_encoder)
-            # print("freeze_video_encoder_evl")
-            # self.print_requires_grad(self.video_encoder)
+            self.freeze_video_clip_evl(self.video_clip)
+            # print("freeze_video_clip_evl")
+            # self.print_requires_grad(self.video_clip)
             
         # slowfast: enable fast stream
         if self.slowfast:
@@ -217,7 +217,7 @@ class AfricanSlowfast(pl.LightningModule):
         self.train_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
         self.valid_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
 
-    def freeze_video_encoder_evl(self, model):
+    def freeze_video_clip_evl(self, model):
         for n, p in model.named_parameters():
             if (
                 "visual" in n
@@ -240,7 +240,7 @@ class AfricanSlowfast(pl.LightningModule):
             if any(x in n for x in clip_param_keys):
                 p.requires_grad = False
 
-    def freeze_video_encoder_text(self, model):
+    def freeze_video_clip_text(self, model):
         for n, p in model.named_parameters():
             if "transformer" in n:
                 p.requires_grad = False
