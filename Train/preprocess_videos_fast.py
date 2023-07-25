@@ -7,7 +7,6 @@ import numpy as np
 from tqdm import tqdm
 from torch import utils
 from config import config
-from Model import VideoCLIP
 from config import ex, config
 from InternVideo import tokenize
 from Model import AfricanSlowfast
