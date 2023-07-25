@@ -19,7 +19,7 @@ from transformers import (
     get_cosine_schedule_with_warmup,
 )
 
-class AfricaTransformer(nn.Module):
+class TransformerFast(nn.Module):
     def __init__(
             self,
             seq_len: int = 32,
@@ -74,7 +74,7 @@ class AfricaTransformer(nn.Module):
         return pooled
 
 
-class VideoCLIP(pl.LightningModule):
+class AfricanSlowfast(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.save_hyperparameters()
@@ -88,40 +88,45 @@ class VideoCLIP(pl.LightningModule):
         self.end_lr = config['end_lr']
         self.poly_decay_power = config['poly_decay_power']
 
-        self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
-        self.clip = self.get_clip_model(config)
-        if config['train_laryers'] == "vision":
-            self.freeze_text(self.clip)
-        if config['train_laryers'] == "vision_proj":
-            self.freeze_clip_evl(self.clip)
-        # print("!!!!!self.clip!!!!!!!!!")
-        # self.print_requires_grad(self.clip)
-            
-        # africa
-        self.africa = config['africa']
-        if self.africa:
-            self.clip_africa = self.load_clip_africa_model(config)
-            self.freeze_clip_africa_evl(self.clip_africa)
-            # print("!!!!!self.clip_africa!!!!!!!!!")
-            # self.print_requires_grad(self.clip_africa)
+        self.slowfast = config['slowfast']
+        self.diff_sampling_fast = config['diff_sampling_fast']
+        self.enable_preprocess_fast = config['enable_preprocess_fast']
 
-            self.transformer_africa = AfricaTransformer(
-                config['num_frames'],
-                config['clip_width_africa'],
-                config['clip_layers_africa'],
-                config['clip_heads_africa']
+        self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
+        self.video_encoder = self.get_video_clip_model(config) # video encoder (slow stream)
+        if config['train_laryers'] == "vision":
+            self.freeze_video_encoder_text(self.video_encoder)
+        if config['train_laryers'] == "vision_proj":
+            self.freeze_video_encoder_evl(self.video_encoder)
+            # print("freeze_video_encoder_evl")
+            # self.print_requires_grad(self.video_encoder)
+            
+        # slowfast: enable fast stream
+        if self.slowfast:
+            if not self.enable_preprocess_fast:
+                self.image_encoder_fast = self.get_image_encoder_fast(config) # image encoder (fast stream)
+                self.freeze_image_encoder_fast_evl(self.image_encoder_fast)
+                # print("freeze_image_encoder_fast_evl")
+                # self.print_requires_grad(self.image_encoder_fast)
+
+            num_frames_fast = config['num_frames_fast'] if not self.diff_sampling_fast else config['num_frames']
+            self.transformer_fast = TransformerFast(
+                num_frames_fast,
+                config['transformer_width_fast'],
+                config['transformer_layers_fast'],
+                config['transformer_heads_fast']
             )
-            self.w1_africa = nn.Parameter(torch.randn(config['clip_width_africa']))
-            self.w2_africa = nn.Parameter(torch.randn(config['clip_width_africa']))
-            self.bias = nn.Parameter(torch.randn(config['clip_width_africa']))
+            self.w_slow = nn.Parameter(torch.randn(config['transformer_width_fast']))
+            self.w_fast = nn.Parameter(torch.randn(config['transformer_width_fast']))
+            self.bias = nn.Parameter(torch.randn(config['transformer_width_fast']))
 
     def print_requires_grad(self, model):
         for n, p in model.named_parameters():
             print(n, p.requires_grad)
 
-    def get_clip_model(self, config):
+    def get_video_clip_model(self, config):
         clip, clip_preprocess = clip_kc_new.load( # class VideoIntern(nn.Module):
-            config["clip"], # /pathto/ViT-L-14.pt
+            config["ckpt_path_imageclip"], # /pathto/ViT-L-14.pt
             t_size=config["num_frames"], # num_frames=8
             n_layers=4,
             mlp_dropout=[config["clip_evl_dropout"]] * 4, # 0.0
@@ -133,7 +138,7 @@ class VideoCLIP(pl.LightningModule):
             use_checkpoint=config["clip_use_checkpoint"],
             checkpoint_num=config["clip_checkpoint_num"],
         )
-        ckpt = torch.load(config["load_path"], map_location="cpu")
+        ckpt = torch.load(config["ckpt_path_videoclip"], map_location="cpu")
         state_dict = ckpt["state_dict"]
 
         sd = {k: v.cpu() for k, v in self.state_dict().items()}
@@ -151,38 +156,27 @@ class VideoCLIP(pl.LightningModule):
         self.load_state_dict(state_dict, strict=False)
         return clip
     
-
-    def load_clip_africa_model(self, config):
-        africa_config_fp = os.path.join(os.path.dirname(__file__), "open_clip/model_configs/ViT-L-14.json")
-        with open(africa_config_fp, 'r') as f:
-            africa_model_config = json.load(f)
-        clip_africa = _build_vision_tower(africa_model_config['embed_dim'], africa_model_config['vision_cfg'])
-        if config['original_clip_africa']:
+    def get_image_encoder_fast(self, config):
+        clip_model_config = { # "open_clip/model_configs/ViT-L-14.json"
+            "embed_dim": 768,
+            "vision_cfg": {
+                "image_size": 224,
+                "layers": 24,
+                "width": 1024,
+                "patch_size": 14
+            },
+        }
+        image_encoder = _build_vision_tower(clip_model_config['embed_dim'], clip_model_config['vision_cfg'])
+        if config['ckpt_path_fast']:
             # original_clip
-            state_dict_africa = torch.jit.load(config['ckpt_path_africa'], map_location="cpu").visual.state_dict()
+            state_dict_clip = torch.jit.load(config['ckpt_path_fast'], map_location="cpu").visual.state_dict()
+            image_encoder.load_state_dict(state_dict_clip)
         else:
-            # pretrained africa clip
-            state_dict_africa = torch.load(config['ckpt_path_africa'], map_location="cpu")['state_dict']
-            state_dict_africa = {name.replace("image_encoder.", ""): weights for name, weights in state_dict_africa.items() if "image_encoder" in name}
-        clip_africa.load_state_dict(state_dict_africa)
-        return clip_africa
-
-
-    def get_africa_clip_model(self):
-        africa_clip, clip_preprocess = clip_kc_new.load( # class VideoIntern(nn.Module):
-            config["ckpt_path_africa"], # /pathto/ViT-L-14.pt
-            t_size=config["num_frames"], # num_frames=8
-            n_layers=4,
-            mlp_dropout=[config["clip_evl_dropout"]] * 4, # 0.0
-            cls_dropout=config["clip_evl_dropout"], # 0.0
-            no_pretrain=config["clip_no_pretrain"], # False
-            init_zero=config["clip_init_zero"], # True
-            drop_path_rate=config["clip_dpr"], # 0.0
-            device=self.device,
-            use_checkpoint=config["clip_use_checkpoint"],
-            checkpoint_num=config["clip_checkpoint_num"],
-        )
-        return africa_clip
+            # pretrained african
+            state_dict_african = torch.load(config['ckpt_path_fast'], map_location="cpu")['state_dict']
+            state_dict_african = {name.replace("image_encoder.", ""): weights for name, weights in state_dict_african.items() if "image_encoder" in name}
+            image_encoder.load_state_dict(state_dict_african)
+        return image_encoder
 
     def load_ckpt_state_dict(self, ckpt_fp):
         ckpt = torch.load(ckpt_fp, map_location="cpu")
@@ -223,7 +217,7 @@ class VideoCLIP(pl.LightningModule):
         self.train_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
         self.valid_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
 
-    def freeze_clip_evl(self, model):
+    def freeze_video_encoder_evl(self, model):
         for n, p in model.named_parameters():
             if (
                 "visual" in n
@@ -246,7 +240,7 @@ class VideoCLIP(pl.LightningModule):
             if any(x in n for x in clip_param_keys):
                 p.requires_grad = False
 
-    def freeze_text(self, model):
+    def freeze_video_encoder_text(self, model):
         for n, p in model.named_parameters():
             if "transformer" in n:
                 p.requires_grad = False
@@ -261,7 +255,7 @@ class VideoCLIP(pl.LightningModule):
             elif "eot_token_embedding" in n:
                 p.requires_grad = False
 
-    def freeze_clip_africa_evl(self, model):
+    def freeze_image_encoder_fast_evl(self, model):
         for n, p in model.named_parameters():
             if (
                 "visual" in n
@@ -280,37 +274,48 @@ class VideoCLIP(pl.LightningModule):
             elif "ln_pre" in n:
                 p.requires_grad = False
                 
-    def forward_clip(self, batch):
-        video_tensor, labels, index = batch
-        video_tensor = video_tensor.contiguous().transpose(1, 2)
-        video_feats, video_all_feats = self.clip.encode_video(
-            video_tensor, return_all_feats=True, mode='video'
+    def forward_frames_slow(self, frames_tensor):
+        frames_tensor = frames_tensor.contiguous().transpose(1, 2)
+        frames_feats, video_all_feats = self.clip.encode_video(
+            frames_tensor, return_all_feats=True, mode='video'
         )
-        return video_feats
+        return frames_feats
     
-    # def forward_clip_africa(self, batch):
-    #     video_tensor, video_feats_africa, labels, index = batch
-    #     B, F, C, H, W = video_feats_africa.shape
-    #     video_feats = self.clip_africa(video_feats_africa.view(B*F, C, H, W))
-    #     video_feats = video_feats.view(B, F, -1)
-    #     return video_feats
+    def forward_frames_fast(self, frames_tensor):
+        """encode image into embedding"""
+        B, F, C, H, W = frames_tensor.shape
+        frames_tensor = frames_tensor.view(B*F, C, H, W)
+        frames_feats = self.image_encoder_fast(frames_tensor)
+        frames_feats = frames_feats.view(B, F, -1)
+        frames_feats = self.forward_frames_feats_fast(self, frames_feats)
+        return frames_feats
 
-    def forward_clip_africa(self, batch): # TODO
-        video_tensor, labels, index = batch
-        B, F, C, H, W = video_tensor.shape
-        video_tensor = video_tensor.view(B*F, C, H, W)
-        video_tensor = self.clip_africa(video_tensor)
-        video_tensor = video_tensor.view(B, F, -1)
-        video_feats_africa = self.transformer_africa(video_tensor)
-        return video_feats_africa
+    def forward_frames_feats_fast(self, frames_feats):
+        """apply transformer on image embedding of each frames"""
+        frames_feats = self.transformer_fast(frames_feats)
+        return frames_feats
 
     def forward(self, batch):
-        video_feats = self.forward_clip(batch)
-        if self.africa:
-            video_feats_africa = self.forward_clip_africa(batch) # (B, F, 768)
-            video_feats = video_feats * self.w1_africa + video_feats_africa * self.w2_africa + self.bias
+        if not self.slowfast:
+            frames_tensor, labels, index = batch
+            frames_feats = self.forward_frames_slow(frames_tensor)
+        else:
+            if not self.diff_sampling_fast:
+                frames_tensor, labels, index = batch
+                frames_feats_slow = self.forward_frames_slow(frames_tensor)
+                frames_feats_fast = self.forward_frames_fast(frames_tensor)
+            else:
+                if not self.enable_preprocess_fast:
+                    frames_tensor, frames_tensor_fast, labels_onehot, index = batch
+                    frames_feats_slow = self.forward_frames_slow(frames_tensor)
+                    frames_feats_fast = self.forward_frames_fast(frames_tensor_fast)
+                else:
+                    frames_tensor, frames_feats_tensor_fast, labels_onehot, index = batch
+                    frames_feats_slow = self.forward_frames_slow(frames_tensor)
+                    frames_feats_fast = self.forward_frames_feats_fast(frames_feats_tensor_fast)
+            frames_feats = frames_feats_slow * self.w_slow + frames_feats_fast * self.w_fast + self.bias
 
-        video_feats = torch.nn.functional.normalize(video_feats, dim=1) # (n, 768)
+        video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
         text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
         t = self.clip.logit_scale.exp()
         video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
@@ -417,19 +422,19 @@ class VideoCLIP(pl.LightningModule):
             return ([optimizer], [sched])    
     
 if __name__ == "__main__":    
-    # AFRICA
+    # # fast stream
     # from config import config
     # _config = config()
     
-    # africa_transformer = AfricaTransformer(
-    #     _config['num_frames_africa'],
-    #     _config['clip_width_africa'],
-    #     _config['clip_layers_africa'],
-    #     _config['clip_heads_africa']
-    #     )
-    
-    # x = torch.rand(_config['batch_size'], _config['num_frames_africa'], _config['clip_width_africa'])
-    # x = africa_transformer(x)
+    # transformer_fast = TransformerFast(
+    #     config['num_frames_fast'], # config['num_frames']
+    #     config['transformer_width_fast'],
+    #     config['transformer_layers_fast'],
+    #     config['transformer_heads_fast']
+    # )
+
+    # x = torch.rand(_config['batch_size'], _config['num_frames_fast'], _config['transformer_width_fast'])
+    # x = transformer_fast(x)
     # print(x.shape)
 
     # Whole Model

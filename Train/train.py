@@ -4,11 +4,11 @@ import torch
 import numpy as np
 from pathlib import Path
 from torch import utils
-from Model import VideoCLIP
+from Model import AfricanSlowfast
 from config import ex, config
 import pytorch_lightning as pl
 from datetime import datetime
-from Dataset import AnimalKingdomDataset
+from Dataset import AnimalKingdomDataset, AnimalKingdomDatasetSlowFast
 torch.manual_seed(0)
 
 @ex.automain
@@ -20,11 +20,12 @@ def main(_config):
     Path(_config['models_dir']).mkdir(parents=True, exist_ok=True)
 
     pl.seed_everything(_config["seed"])
-    dataset_train = AnimalKingdomDataset(_config, split="train")
-    dataset_valid = AnimalKingdomDataset(_config, split="val")
+    Dataset = AnimalKingdomDatasetSlowFast if _config['enable_preprocess_fast'] else AnimalKingdomDataset
+    dataset_train = Dataset(_config, split="train")
+    dataset_valid = Dataset(_config, split="val")
     _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
 
-    model = VideoCLIP(_config).to(_config['device'])
+    model = AfricanSlowfast(_config).to(_config['device'])
     dataset_train.produce_prompt_embedding(model.clip)
     dataset_valid.produce_prompt_embedding(model.clip)
     df_action = dataset_train.df_action
@@ -58,7 +59,7 @@ def main(_config):
                         logger=[csv_logger, wandb_logger], 
                         log_every_n_steps=(len(dataset_train) // _config['batch_size']) // 3,
                         callbacks=[checkpoint_callback, lr_callback, summary_callback])
-    trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=valid_loader, ckpt_path=_config['animal_kingdom_clip_path'])
+    trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=valid_loader, ckpt_path=_config['ckpt_path'])
 
     # optimizer = model.configure_optimizers()
     # for batch_idx, (video_tensor, labels_onehot) in enumerate(val_loader):

@@ -35,9 +35,9 @@ def config():
     n_classes = 140
     train_laryers = "vision_proj" # vision or vision_proj
 
-    clip = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
-    load_path = os.path.abspath(os.path.join(base_dir, "weights", "InternVideo-MM-L-14.ckpt"))
-    animal_kingdom_clip_path = None
+    ckpt_path_imageclip = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
+    ckpt_path_videoclip = os.path.abspath(os.path.join(base_dir, "weights", "InternVideo-MM-L-14.ckpt"))
+    ckpt_path = None
     num_frames = 8
     clip_evl_dropout = 0.0
     clip_no_pretrain = False
@@ -46,19 +46,34 @@ def config():
     clip_use_checkpoint = False
     clip_checkpoint_num = [0, 0, 0]
 
-    # # africa preprocess
-    preprocess_dir = os.path.join(os.path.dirname(__file__), 'preprocess') 
-    # num_frames_africa = 32
-    # video_sampling_africa = 'uniform' # 'rand', 'uniform', 'sequence_rand'
+    # slowfast model ()
+    # enable the fast stream in the model
+    # or only use the slow stream (videoclip)
+    slowfast = True 
 
-    # africa model
-    africa = True
-    original_clip_africa = True
-    ckpt_path_africa = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
-    # original_clip_africa = False
-    # ckpt_path_africa = os.path.abspath(os.path.join(base_dir, "weights", "clip_cosine_infoNCE_8_uniform_augmix_map_epoch124.ckpt"))
-    clip_width_africa = 768
-    clip_layers_africa = 6
-    clip_heads_africa = 12
+    # use different sampling settings for fast stream
+    # if True, the AnimalKingdomDatasetDiffSampling will be used, 
+    # else AnimalKingdomDataset will be used
+    diff_sampling_fast = True 
+
+    ## fast stream dataset setting
+    num_frames_fast = 32
+    video_sampling_fast = 'rand' # 'rand', 'uniform', 'sequence_rand'
+    
+    ## fast stream model setting
+    use_image_clip_fast = True # use pretrained (image clip / african) as image encoder in fast stream
+    ckpt_path_fast = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt")) # clip_cosine_infoNCE_8_uniform_augmix_map_epoch124.ckpt
+    transformer_width_fast = 768
+    transformer_layers_fast = 6
+    transformer_heads_fast = 12
+
+    ## fast stream preprocess setting
+    # also means two different source for two streams of the model
+    # affetct Model.py: if True, the dataset output should be video feature embedding, else output should be video frame
+    # affetct train.py: 
+    enable_preprocess_fast = True 
+    preprocess_dir_fast = os.path.join(os.path.dirname(__file__), 'preprocess', "video_feats") 
+
+
 
     

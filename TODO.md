@@ -7,31 +7,27 @@
     - [X] Test EQL on lr0.00015
 - [X] prove bs128 > bs008 (lr: 0.0001)
 - [D] check rand sampling works as well
-- [ ] variable bs (0008 -> 1024) vs 1024
+- [C] variable bs (0008 -> 1024) vs 1024
 - [C] verify segment in promp training performace
     - [C] using segment
         - [C] using BCE
         - [C] using Focal    
     - [C] using rare, uncommon, common(general)
 
-## FrameID
+## AFRICAN
 - [X] test clip_cosine_infoNCE_8_uniform_augmix (lr=0.0001) (epoch=300)
 - [X] test init_cosine_infoNCE_8_uniform_augmix (lr=0.0001) (epoch=300)
 - [X] test clip_cosine_infoNCE_8_rand_augmix_000040 (epoch=300)
 - [X] test clip_nodecay_infoNCE_8_rand_augmix_000030 (epoch=300)
 - [ ] test clip_cosine_infoNCE_8_rand_augmix_000030 (epoch=100)
 
-## AFRICA
-- [D] AFRICA_nodecay_128_00015: test clip_cosine_infoNCE_8_uniform_augmix_000040_epoch52.ckpt on africa
-- [D] test ViT-L-14.pt on africa
-- [ ] test with africa only without VideoCLIP
-- [ ] test clip_no_decay_infoNCE_8_rand_augmix_000030_epochxx.ckpt on africa
-- [ ] test cosine (lr=0.00015) (epoch=50)
-- [ ] test agmentation on FrameID representation: option to load video in dataset directly (not preprocessed representation) with smaller batch size
-
-
-
-# Experiments (Suspended)
+## AFRICAn Slowfast
+- [X] AFRICA_nodecay_128_00015: test clip_cosine_infoNCE_8_uniform_augmix_000040_epoch52.ckpt on africa
+- [X] test ViT-L-14.pt on africa
+- [C] test with africa only without VideoCLIP
+- [X] test clip_no_decay_infoNCE_8_rand_augmix_000030_epochxx.ckpt on africa
+- [X] test cosine (lr=0.00015) (epoch=50)
+- [X] test agmentation on FrameID representation: option to load video in dataset directly (not preprocessed representation) with smaller batch size
 
 # paper
 1. lrdecay solve log-tail: https://arxiv.org/pdf/2203.14197.pdf
