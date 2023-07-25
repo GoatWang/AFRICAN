@@ -88,7 +88,7 @@ class AnimalKingdomDatasetDiffSampling(AnimalKingdomDataset):
     """two samplings of video for two streams of model"""
     def __init__(self, config, split=""):
         super(self).__init__(config, split)
-        self.preprocess_dir = config['preprocess_dir']
+        self.preprocess_dir_fast = config['preprocess_dir_fast']
         self.ckpt_path_fast = config['ckpt_path_fast']
         self.use_image_clip_fast = config['use_image_clip_fast']
         self.num_frames_fast = config['num_frames_fast']
@@ -98,7 +98,7 @@ class AnimalKingdomDatasetDiffSampling(AnimalKingdomDataset):
 
     def get_preprocess_feats_fp(self, video_fp):
         base_model_name_fast = os.path.basename(self.ckpt_path_fast).split('.')[0]
-        save_dir = os.path.join(self.preprocess_dir, base_model_name_fast)
+        save_dir = os.path.join(self.preprocess_dir_fast, base_model_name_fast)
         Path(save_dir).mkdir(parents=True, exist_ok=True)
         return os.path.join(save_dir, os.path.basename(video_fp).split(".")[0] + ".pt")
 
