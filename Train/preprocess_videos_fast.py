@@ -16,8 +16,8 @@ from Dataset import AnimalKingdomDatasetPreprocess
 @ex.automain
 def main(_config):
     _config = copy.deepcopy(_config)
-    dataset_train = AnimalKingdomDatasetPreprocess(_config, preprocessing=True, split="train")
-    dataset_valid = AnimalKingdomDatasetPreprocess(_config, preprocessing=True, split="val")
+    dataset_train = AnimalKingdomDatasetPreprocess(_config, split="train")
+    dataset_valid = AnimalKingdomDatasetPreprocess(_config, split="val")
 
     _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
     model = AfricanSlowfast(_config)
