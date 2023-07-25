@@ -124,7 +124,7 @@ class AnimalKingdomDatasetDiffSampling(AnimalKingdomDataset):
              
 class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetDiffSampling):
     def __init__(self, config, split=""):
-        super(self).__init__(config, split)
+        super().__init__(config, split)
 
     def __getitem__(self, index):
         video_fp = self.video_fps[index]
