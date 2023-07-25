@@ -28,7 +28,7 @@ def main(_config):
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=1, shuffle=False) # _config['batch_size']
 
     image_encoder_fast = model.get_image_encoder_fast(_config)
-    image_encoder_fast.to(config['device'])
+    image_encoder_fast.to(_config['device'])
     image_encoder_fast.eval()
 
     with torch.no_grad():
