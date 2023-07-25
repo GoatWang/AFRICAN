@@ -87,7 +87,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
 class AnimalKingdomDatasetDiffSampling(AnimalKingdomDataset):
     """two samplings of video for two streams of model"""
     def __init__(self, config, split=""):
-        super(self).__init__(config, split)
+        super().__init__(config, split)
         self.preprocess_dir_fast = config['preprocess_dir_fast']
         self.ckpt_path_fast = config['ckpt_path_fast']
         self.use_image_clip_fast = config['use_image_clip_fast']
