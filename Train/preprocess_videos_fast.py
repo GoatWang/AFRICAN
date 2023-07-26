@@ -13,6 +13,49 @@ from Model import AfricanSlowfast
 from open_clip import _build_vision_tower
 from Dataset import AnimalKingdomDatasetPreprocess
 
+
+def inference_save(_config, dataset, dataloader, image_encoder):
+    with torch.no_grad():
+        for batch_idx, (video_tensors_fast, video_fps) in enumerate(tqdm(dataloader)):
+            video_tensors_fast = video_tensors_fast.to(_config['device'])
+            for idx, (video_tensor_fast, video_fp) in enumerate(zip(video_tensors_fast, video_fps)):
+                video_feats_fast_fp = dataset.get_preprocess_feats_fp(video_fp)
+                if not os.path.exists(video_feats_fast_fp):
+                    video_feats_fast = image_encoder(video_tensor_fast)
+                    torch.save(video_feats_fast, video_feats_fast_fp)
+
+def batch_inference_save(_config, dataset, dataloader, image_encoder):
+    with torch.no_grad():
+        for batch_idx, (video_tensors_fast, video_fps) in enumerate(tqdm(dataloader)):
+            all_exists = np.all([os.path.exists(dataset.get_preprocess_feats_fp(video_fp)) for video_fp in video_fps])
+            if all_exists:
+                continue
+
+            # data cat 
+            video_tensors_fast = video_tensors_fast.to(_config['device'])
+            video_tensors_n_frames = [video_tensors_fast[i].shape[0] for i in range(video_tensors_fast.shape[0])]
+            video_tensors_cat_fast = torch.cat(video_tensors_fast, dim=0)
+
+            # parallel inference
+            video_feats_tensors_cat = torch.zeros(video_tensors_cat_fast.shape[0], _config['transformer_width_fast']).to(_config['device'])
+            n_iters = (video_tensors_cat_fast.shape[0] // _config['preprocess_batch_size']) + 1
+            for idx in range(n_iters):
+                st, end = idx*_config['preprocess_batch_size'], (idx+1)*_config['preprocess_batch_size']
+                video_tensors_batch = video_tensors_cat_fast[st:end]
+                video_feats_tensors_batch = image_encoder(video_tensors_batch)
+                video_feats_tensors_cat[st:end] = video_feats_tensors_batch
+
+            # split into different videos $ save
+            frane_st = 0
+            for idx, (n_frames, video_fp) in enumerate(zip(video_tensors_n_frames, video_fps)):
+                video_feats_fast = video_feats_tensors_cat[frane_st: frane_st+n_frames]
+                frane_st = frane_st+n_frames
+                
+                video_feats_fast_fp = dataset.get_preprocess_feats_fp(video_fp)
+                if not os.path.exists(video_feats_fast_fp):
+                    torch.save(video_feats_fast, video_feats_fast_fp)
+
+
 @ex.automain
 def main(_config):
     _config = copy.deepcopy(_config)
@@ -31,22 +74,8 @@ def main(_config):
     image_encoder_fast.to(_config['device'])
     image_encoder_fast.eval()
 
-    with torch.no_grad():
-        for batch_idx, (video_tensors_fast, video_fps) in enumerate(tqdm(train_loader)):
-            video_tensors_fast = video_tensors_fast.to(_config['device'])
-            for idx, (video_tensor_fast, video_fp) in enumerate(zip(video_tensors_fast, video_fps)):
-                video_feats_fast_fp = dataset_train.get_preprocess_feats_fp(video_fp)
-                if not os.path.exists(video_feats_fast_fp):
-                    video_feats_fast = image_encoder_fast(video_tensor_fast)
-                    torch.save(video_feats_fast, video_feats_fast_fp)
+    batch_inference_save(_config, dataset_train, train_loader, image_encoder_fast)
+    batch_inference_save(_config, dataset_valid, valid_loader, image_encoder_fast)
 
-        for batch_idx, (video_tensors_fast, video_fps) in enumerate(tqdm(valid_loader)):
-            video_tensors_fast = video_tensors_fast.to(_config['device'])
-            for idx, (video_tensor_fast, video_fp) in enumerate(zip(video_tensors_fast, video_fps)):
-                video_feats_fast_fp = dataset_valid.get_preprocess_feats_fp(video_fp)
-                if not os.path.exists(video_feats_fast_fp):
-                    video_feats_fast = image_encoder_fast(video_tensor_fast)            
-                    torch.save(video_feats_fast, video_feats_fast_fp)
-
-
-
+    # inference_save(_config, dataset_train, train_loader, image_encoder_fast)
+    # inference_save(_config, dataset_valid, valid_loader, image_encoder_fast)
