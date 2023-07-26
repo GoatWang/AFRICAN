@@ -71,8 +71,8 @@ def main(_config):
     dataset_train.produce_prompt_embedding(model.video_clip)
     dataset_valid.produce_prompt_embedding(model.video_clip)
 
-    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], collate_func=collate_func, shuffle=False) # _config['batch_size']
-    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], collate_func=collate_func, shuffle=False) # _config['batch_size']
+    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
+    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
 
     image_encoder_fast = model.get_image_encoder_fast(_config)
     image_encoder_fast.to(_config['device'])
