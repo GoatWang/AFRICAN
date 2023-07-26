@@ -134,7 +134,7 @@ class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetDiffSampling):
             video_tensor_fast = self.video_aug(video_tensor_fast, self.video_transform_fast)
         else:
             # FOR ACCERLATION
-            video_tensor_fast = torch.zeros(1)
+            video_tensor_fast = torch.zeros(1, 3, 224, 224)
 
         return video_tensor_fast, video_fp
 
