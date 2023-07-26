@@ -21,9 +21,9 @@ def collate_func(batch):
     return video_tensors_cat, video_tensors_n_frames, video_fps
 
 def inference_save(_config, dataset, dataloader, image_encoder):
+    """dataloader without collate function with only batch_size=1"""
     with torch.no_grad():
-        for batch_idx, (batch) in enumerate(tqdm(dataloader)):
-            video_tensors_cat, video_tensors_n_frames, video_fps = batch
+        for batch_idx, (video_tensors_fast, video_fps) in enumerate(tqdm(dataloader)):
             video_tensors_fast = video_tensors_fast.to(_config['device'])
             for idx, (video_tensor_fast, video_fp) in enumerate(zip(video_tensors_fast, video_fps)):
                 video_feats_fast_fp = dataset.get_preprocess_feats_fp(video_fp)
@@ -45,14 +45,14 @@ def batch_inference_save(_config, dataset, dataloader, image_encoder):
             n_iters = (video_feats_tensors_cat.shape[0] // _config['preprocess_batch_size']) + 1
             for idx in range(n_iters):
                 st, end = idx*_config['preprocess_batch_size'], (idx+1)*_config['preprocess_batch_size']
-                video_tensors_batch = video_feats_tensors_cat[st:end]
+                video_tensors_batch = video_tensors_cat[st:end]
                 video_feats_tensors_batch = image_encoder(video_tensors_batch)
                 video_feats_tensors_cat[st:end] = video_feats_tensors_batch
 
             # split into different videos $ save
             frane_st = 0
             for idx, (n_frames, video_fp) in enumerate(zip(video_tensors_n_frames, video_fps)):
-                if not os.path.exists(video_feats_fast_fp):
+                if not os.path.exists(dataset.get_preprocess_feats_fp(video_fp)):
                     video_feats_fast = video_feats_tensors_cat[frane_st: frane_st+n_frames]
                     frane_st = frane_st+n_frames
                     
