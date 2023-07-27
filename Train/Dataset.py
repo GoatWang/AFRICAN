@@ -84,7 +84,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.video_fps)
     
-class AnimalKingdomDatasetDiffSampling(AnimalKingdomDataset):
+class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
     """two samplings of video for two streams of model"""
     def __init__(self, config, split=""):
         super().__init__(config, split)
@@ -122,7 +122,7 @@ class AnimalKingdomDatasetDiffSampling(AnimalKingdomDataset):
             frames_tensor_fast = self.video_aug(frames_tensor_fast, self.video_transform_fast)
             return frames_tensor, frames_tensor_fast, labels_onehot, index
              
-class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetDiffSampling):
+class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
     def __init__(self, config, split=""):
         super().__init__(config, split)
 
