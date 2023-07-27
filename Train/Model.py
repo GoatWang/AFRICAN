@@ -296,24 +296,8 @@ class AfricanSlowfast(pl.LightningModule):
         return frames_feats
 
     def forward(self, batch):
-        if not self.slowfast:
-            frames_tensor, labels_onehot, index = batch
-            frames_feats = self.forward_frames_slow(frames_tensor)
-        else:
-            if not self.diff_sampling_fast:
-                frames_tensor, labels_onehot, index = batch
-                frames_feats_slow = self.forward_frames_slow(frames_tensor)
-                frames_feats_fast = self.forward_frames_fast(frames_tensor)
-            else:
-                if not self.enable_preprocess_fast:
-                    frames_tensor, frames_tensor_fast, labels_onehot, index = batch
-                    frames_feats_slow = self.forward_frames_slow(frames_tensor)
-                    frames_feats_fast = self.forward_frames_fast(frames_tensor_fast)
-                else:
-                    frames_tensor, frames_feats_tensor_fast, labels_onehot, index = batch
-                    frames_feats_slow = self.forward_frames_slow(frames_tensor)
-                    frames_feats_fast = self.forward_frames_feats_fast(frames_feats_tensor_fast)
-            frames_feats = frames_feats_slow * self.w_slow + frames_feats_fast * self.w_fast + self.bias
+        frames_tensor, frames_feats_tensor_fast, labels_onehot, index = batch
+        frames_feats = self.forward_frames_feats_fast(frames_feats_tensor_fast)
 
         video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
         text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
@@ -462,7 +446,7 @@ if __name__ == "__main__":
     dataset_valid = AnimalKingdomDataset(_config, split="val")
 
     _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
-    model = VideoCLIP(_config)
+    model = AfricanSlowfast(_config)
 
     ckpt_fp = os.path.join(os.path.dirname(__file__), "weights", "epoch=2-step=9003.ckpt")
     if os.path.exists(ckpt_fp):
