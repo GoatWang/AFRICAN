@@ -63,16 +63,17 @@ def read_frames_decord(video_path, num_frames, sample='rand', fix_start=None):
         frames = torch.cat([frames, pad_frames], dim=0)
     return frames, frame_idxs, vlen
 
-def read_feats_fast(video_feats_path, num_frames, sample='rand', fix_start=None):
+def read_feats(video_feats_path, num_frames, sample='rand', frame_idxs=None, fix_start=None):
     video_feats_fast = torch.load(video_feats_path, map_location='cpu')
     video_feats_fast.requires_grad = False
-    frame_idxs = sample_frames(num_frames, len(video_feats_fast), sample=sample)
+    if frame_idxs is None:
+        frame_idxs = sample_frames(num_frames, len(video_feats_fast), sample=sample)
     frames_feats_fast = video_feats_fast[frame_idxs] # TODO pad the stream to self.num_frames_fast
     if frames_feats_fast.shape[0] < num_frames:
         pad_n_frames = num_frames - frames_feats_fast.shape[0]
         pad_frames = torch.stack([torch.zeros_like(frames_feats_fast[0])] * pad_n_frames)
         frames_feats_fast = torch.cat([frames_feats_fast, pad_frames], dim=0)
-    return frames_feats_fast
+    return frames_feats_fast, frame_idxs
 
 def sample_frames(num_frames, vlen, sample='rand', fix_start=None):
     if sample in ['rand', 'uniform']:

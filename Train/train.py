@@ -4,11 +4,11 @@ import torch
 import numpy as np
 from pathlib import Path
 from torch import utils
-from Model import AfricanSlowfast
+from Model import AfricanClip
 from config import ex, config
 import pytorch_lightning as pl
 from datetime import datetime
-from Dataset import AnimalKingdomDataset, AnimalKingdomDatasetSlowFast
+from Dataset import AnimalKingdomDataset
 torch.manual_seed(0)
 
 @ex.automain
@@ -20,12 +20,11 @@ def main(_config):
     Path(_config['models_dir']).mkdir(parents=True, exist_ok=True)
 
     pl.seed_everything(_config["seed"])
-    Dataset = AnimalKingdomDatasetSlowFast if _config['enable_preprocess_fast'] else AnimalKingdomDataset
-    dataset_train = Dataset(_config, split="train")
-    dataset_valid = Dataset(_config, split="val")
+    dataset_train = AnimalKingdomDataset(_config, split="train")
+    dataset_valid = AnimalKingdomDataset(_config, split="val")
     _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
 
-    model = AfricanSlowfast(_config).to(_config['device'])
+    model = AfricanClip(_config).to(_config['device'])
     dataset_train.produce_prompt_embedding(model.video_clip)
     dataset_valid.produce_prompt_embedding(model.video_clip)
     df_action = dataset_train.df_action
