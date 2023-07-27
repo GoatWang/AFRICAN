@@ -109,7 +109,7 @@ class AfricanSlowfast(pl.LightningModule):
                 # print("freeze_image_encoder_fast_evl")
                 # self.print_requires_grad(self.image_encoder_fast)
 
-            num_frames_fast = config['num_frames_fast'] if not self.diff_sampling_fast else config['num_frames']
+            num_frames_fast = config['num_frames_fast'] if self.diff_sampling_fast else config['num_frames']
             self.transformer_fast = TransformerFast(
                 num_frames_fast,
                 config['transformer_width_fast'],
