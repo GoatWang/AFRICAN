@@ -174,6 +174,6 @@ if __name__  == "__main__":
     from Model import VideoCLIP
     _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
     model = VideoCLIP(_config)
-    dataset.produce_prompt_embedding(model.clip)
+    dataset.produce_prompt_embedding(model.video_clip)
     print(dataset.text_features.shape)
 

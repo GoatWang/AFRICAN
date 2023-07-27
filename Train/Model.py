@@ -276,7 +276,7 @@ class AfricanSlowfast(pl.LightningModule):
                 
     def forward_frames_slow(self, frames_tensor):
         frames_tensor = frames_tensor.contiguous().transpose(1, 2)
-        frames_feats, video_all_feats = self.clip.encode_video(
+        frames_feats, video_all_feats = self.video_clip.encode_video(
             frames_tensor, return_all_feats=True, mode='video'
         )
         return frames_feats
@@ -317,7 +317,7 @@ class AfricanSlowfast(pl.LightningModule):
 
         video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
         text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
-        t = self.clip.logit_scale.exp()
+        t = self.video_clip.logit_scale.exp()
         video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
         video_logits = self.final_fc(video_logits)
         return video_logits, labels_onehot
@@ -329,7 +329,7 @@ class AfricanSlowfast(pl.LightningModule):
     #     frames_feats = frames_feats_slow * self.w_slow + frames_feats_fast * self.w_fast + self.bias
     #     video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
     #     text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
-    #     t = self.clip.logit_scale.exp()
+    #     t = self.video_clip.logit_scale.exp()
     #     video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
     #     video_logits = self.final_fc(video_logits)
     #     return video_logits
@@ -468,8 +468,8 @@ if __name__ == "__main__":
     if os.path.exists(ckpt_fp):
         model.load_ckpt_state_dict(ckpt_fp)
 
-    dataset_train.produce_prompt_embedding(model.clip)
-    dataset_valid.produce_prompt_embedding(model.clip)
+    dataset_train.produce_prompt_embedding(model.video_clip)
+    dataset_valid.produce_prompt_embedding(model.video_clip)
     model.set_text_feats(dataset_train.text_features)
 
     train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True) # TODO: DEBUG num_workers=4, maybe MACOS bug
