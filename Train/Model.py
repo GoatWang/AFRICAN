@@ -297,11 +297,11 @@ class AfricanSlowfast(pl.LightningModule):
 
     def forward(self, batch):
         if not self.slowfast:
-            frames_tensor, labels, index = batch
+            frames_tensor, labels_onehot, index = batch
             frames_feats = self.forward_frames_slow(frames_tensor)
         else:
             if not self.diff_sampling_fast:
-                frames_tensor, labels, index = batch
+                frames_tensor, labels_onehot, index = batch
                 frames_feats_slow = self.forward_frames_slow(frames_tensor)
                 frames_feats_fast = self.forward_frames_fast(frames_tensor)
             else:
@@ -320,11 +320,22 @@ class AfricanSlowfast(pl.LightningModule):
         t = self.clip.logit_scale.exp()
         video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
         video_logits = self.final_fc(video_logits)
-        return video_logits
+        return video_logits, labels_onehot
+    
+    # def infer(self, frames_tensor, rames_tensor_fast):
+    #     frames_tensor, frames_tensor_fast, labels_onehot, index = batch
+    #     frames_feats_slow = self.forward_frames_slow(frames_tensor)
+    #     frames_feats_fast = self.forward_frames_fast(frames_tensor_fast)
+    #     frames_feats = frames_feats_slow * self.w_slow + frames_feats_fast * self.w_fast + self.bias
+    #     video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
+    #     text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
+    #     t = self.clip.logit_scale.exp()
+    #     video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
+    #     video_logits = self.final_fc(video_logits)
+    #     return video_logits
         
     def training_step(self, batch, batch_idx):
-        video_tensor, labels_onehot, index = batch
-        video_logits = self(batch)
+        video_logits, labels_onehot = self(batch)
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.train_metrics.update(video_pred, labels_onehot)
@@ -359,8 +370,7 @@ class AfricanSlowfast(pl.LightningModule):
         self.train_map_class.reset()
 
     def validation_step(self, batch, batch_idx):
-        video_tensor, labels_onehot, index = batch
-        video_logits = self(batch)
+        video_logits, labels_onehot = self(batch)
         video_pred = torch.sigmoid(video_logits)
         loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.valid_metrics.update(video_pred, labels_onehot)
