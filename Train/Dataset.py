@@ -5,7 +5,7 @@ import torch
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from InternVideo import tokenize
+from open_clip import tokenize
 from PromptEngineer import generate_prompt
 from Transform import VideoTransformTorch, video_aug
 from VideoReader import read_frames_decord, read_feats

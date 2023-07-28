@@ -25,8 +25,8 @@ def main(_config):
     _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
 
     model = AfricanClip(_config).to(_config['device'])
-    dataset_train.produce_prompt_embedding(model.video_clip)
-    dataset_valid.produce_prompt_embedding(model.video_clip)
+    dataset_train.produce_prompt_embedding(model.image_clip)
+    dataset_valid.produce_prompt_embedding(model.image_clip)
     df_action = dataset_train.df_action
     model.set_class_names(df_action['action'].values)
     model.set_text_feats(dataset_train.text_features)

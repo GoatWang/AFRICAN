@@ -9,7 +9,7 @@ import torchmetrics
 from Loss import get_loss_func
 import pytorch_lightning as pl
 from typing import Callable, Sequence, Tuple
-from open_clip import Transformer, LayerNorm
+from open_clip import CLIP, Transformer, LayerNorm
 from ModelUtil.clip_param_keys import clip_param_keys
 from open_clip import _build_vision_tower
 from transformers import (
@@ -90,6 +90,9 @@ class AfricanClip(pl.LightningModule):
         self.enable_african = config['enable_african']
         self.enable_preprocess = config['enable_preprocess']
 
+        # load clip
+        self.image_clip = self.get_image_clip()
+        
         # image clip stream
         if not self.enable_preprocess:
             self.image_encoder_ic = self.get_image_encoder(config, "IC")
@@ -127,6 +130,28 @@ class AfricanClip(pl.LightningModule):
     def print_requires_grad(self, model):
         for n, p in model.named_parameters():
             print(n, p.requires_grad)
+
+    def get_image_clip(self):
+        clip_model_config = { # "open_clip/model_configs/ViT-L-14.json"
+            "embed_dim": 768,
+            "vision_cfg": {
+                "image_size": 224,
+                "layers": 24,
+                "width": 1024,
+                "patch_size": 14
+            },
+            "text_cfg": {
+                "context_length": 77,
+                "vocab_size": 49408,
+                "width": 768,
+                "heads": 12,
+                "layers": 12
+            }
+        }            
+        image_clip = CLIP(clip_model_config['embed_dim'], 
+             clip_model_config['vision_cfg'], 
+             clip_model_config['text_cfg'])
+        return image_clip
 
     def get_image_encoder(self, config, stream='IC'):
         """
@@ -393,72 +418,72 @@ class AfricanClip(pl.LightningModule):
     # x = transformer_fast(x)
     # print(x.shape)
 
-    # Whole Model
-    import numpy as np
-    from torch import utils
-    from config import config
-    from InternVideo import tokenize
-    from Dataset import AnimalKingdomDataset
+    # # Whole Model
+    # import numpy as np
+    # from torch import utils
+    # from config import config
+    # from InternVideo import tokenize
+    # from Dataset import AnimalKingdomDataset
 
-    device = 'cpu'
-    _config = config()
-    _config['batch_size'] = 2
+    # device = 'cpu'
+    # _config = config()
+    # _config['batch_size'] = 2
 
-    dataset_train = AnimalKingdomDataset(_config, split="train")
-    dataset_valid = AnimalKingdomDataset(_config, split="val")
+    # dataset_train = AnimalKingdomDataset(_config, split="train")
+    # dataset_valid = AnimalKingdomDataset(_config, split="val")
 
-    _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
-    model = VideoCLIP(_config)
+    # _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
+    # model = VideoCLIP(_config)
 
-    ckpt_fp = os.path.join(os.path.dirname(__file__), "weights", "epoch=2-step=9003.ckpt")
-    if os.path.exists(ckpt_fp):
-        model.load_ckpt_state_dict(ckpt_fp)
+    # ckpt_fp = os.path.join(os.path.dirname(__file__), "weights", "epoch=2-step=9003.ckpt")
+    # if os.path.exists(ckpt_fp):
+    #     model.load_ckpt_state_dict(ckpt_fp)
 
-    dataset_train.produce_prompt_embedding(model.video_clip)
-    dataset_valid.produce_prompt_embedding(model.video_clip)
-    model.set_text_feats(dataset_train.text_features)
+    # dataset_train.produce_prompt_embedding(model.image_clip)
+    # dataset_valid.produce_prompt_embedding(model.image_clip)
+    # model.set_text_feats(dataset_train.text_features)
 
-    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True) # TODO: DEBUG num_workers=4, maybe MACOS bug
-    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False) # TODO: DEBUG num_workers=4, maybe MACOS bug
+    # train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True) # TODO: DEBUG num_workers=4, maybe MACOS bug
+    # valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False) # TODO: DEBUG num_workers=4, maybe MACOS bug
 
-    # # test otptimizer
-    # optimizer = model.configure_optimizers()
+    # # # test otptimizer
+    # # optimizer = model.configure_optimizers()
 
-    # # test forward and train
-    # for batch_idx, (video_tensor, labels_onehot) in enumerate(train_loader):
-    #     video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
-    #     loss = model.training_step((video_tensor, labels_onehot), batch_idx)
-    #     print(loss)
+    # # # test forward and train
+    # # for batch_idx, (video_tensor, labels_onehot) in enumerate(train_loader):
+    # #     video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
+    # #     loss = model.training_step((video_tensor, labels_onehot), batch_idx)
+    # #     print(loss)
+    # #     break
+
+    # # for batch_idx, (video_tensor, labels_onehot) in enumerate(valid_loader):
+    # #     video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
+    # #     model.validation_step((video_tensor, labels_onehot), batch_idx)
+    # #     break
+
+    # # test inference
+    # for batch_idx, (video_tensor, labels_onehot, index) in enumerate(train_loader):
+    #     batch = video_tensor.to(device), labels_onehot.to(device), index
+    #     video_logits = model(batch)
+    #     video_logits = video_logits.cpu().detach().numpy()
+    #     print(video_logits.shape)
+    #     # np.save(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"), video_logits)
     #     break
-
-    # for batch_idx, (video_tensor, labels_onehot) in enumerate(valid_loader):
-    #     video_tensor, labels_onehot = video_tensor.to(device), labels_onehot.to(device)
-    #     model.validation_step((video_tensor, labels_onehot), batch_idx)
-    #     break
-
-    # test inference
-    for batch_idx, (video_tensor, labels_onehot, index) in enumerate(train_loader):
-        batch = video_tensor.to(device), labels_onehot.to(device), index
-        video_logits = model(batch)
-        video_logits = video_logits.cpu().detach().numpy()
-        print(video_logits.shape)
-        # np.save(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"), video_logits)
-        break
-    # video_logits = np.load(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"))
+    # # video_logits = np.load(os.path.join(os.path.dirname(__file__), "temp", "video_logits.npy"))
     
-    sameple_idx = 1
-    y = np.where(labels_onehot[sameple_idx])[0]
-    y_pred = np.where(video_logits[sameple_idx] > 0.5)[0]
+    # sameple_idx = 1
+    # y = np.where(labels_onehot[sameple_idx])[0]
+    # y_pred = np.where(video_logits[sameple_idx] > 0.5)[0]
 
-    df_action = dataset_train.df_action
+    # df_action = dataset_train.df_action
 
-    print("Ground Truth:")    
-    for idx, prompt in df_action.loc[y, 'prompt'].items():
-        print(str(idx).zfill(3) + ":", prompt)
-    print("====================================")
+    # print("Ground Truth:")    
+    # for idx, prompt in df_action.loc[y, 'prompt'].items():
+    #     print(str(idx).zfill(3) + ":", prompt)
+    # print("====================================")
 
-    print("Prediction:")
-    for idx, prompt in df_action.loc[y_pred, 'prompt'].items():
-        print(str(idx).zfill(3) + "(%.2f)"%video_logits[sameple_idx][idx] + ":", prompt)
-    print("====================================")
+    # print("Prediction:")
+    # for idx, prompt in df_action.loc[y_pred, 'prompt'].items():
+    #     print(str(idx).zfill(3) + "(%.2f)"%video_logits[sameple_idx][idx] + ":", prompt)
+    # print("====================================")
 

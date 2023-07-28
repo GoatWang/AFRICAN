@@ -68,8 +68,8 @@ def main(_config):
 
     _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
     model = AfricanSlowfast(_config)
-    dataset_train.produce_prompt_embedding(model.video_clip)
-    dataset_valid.produce_prompt_embedding(model.video_clip)
+    dataset_train.produce_prompt_embedding(model.image_clip)
+    dataset_valid.produce_prompt_embedding(model.image_clip)
 
     train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
