@@ -100,7 +100,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             video_feats_fp_ic = self.get_preprocess_feats_fp(video_fp, "IC")
             feats_tensor_ic, frame_idxs = read_feats(video_feats_fp_ic, self.num_frames, self.video_sampling)
 
-            feats_tensor_af = None
+            feats_tensor_af = feats_tensor_ic
             if self.enable_african:
                 video_feats_fp_af = self.get_preprocess_feats_fp(video_fp, "AF")
                 feats_tensor_af, frame_idxs = read_feats(video_feats_fp_af, self.num_frames, self.video_sampling, frame_idxs)
