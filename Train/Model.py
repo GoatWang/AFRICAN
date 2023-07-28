@@ -94,6 +94,7 @@ class AfricanSlowfast(pl.LightningModule):
 
         self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
         self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
+        self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
         if config['train_laryers'] == "vision":
             self.freeze_video_clip_text(self.video_clip)
         if config['train_laryers'] == "vision_proj":
@@ -116,8 +117,9 @@ class AfricanSlowfast(pl.LightningModule):
                 config['transformer_layers_fast'],
                 config['transformer_heads_fast']
             )
-            self.w_slow = nn.Parameter(torch.randn(config['transformer_width_fast']))
-            self.w_fast = nn.Parameter(torch.randn(config['transformer_width_fast']))
+            self.logit_scale_fast = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+            self.w_slow = nn.Parameter(torch.ones(config['transformer_width_fast']) * 0.5)
+            self.w_fast = nn.Parameter(torch.ones(config['transformer_width_fast']) * 0.5)
             self.bias = nn.Parameter(torch.randn(config['transformer_width_fast']))
 
     def print_requires_grad(self, model):
@@ -294,11 +296,19 @@ class AfricanSlowfast(pl.LightningModule):
         """apply transformer on image embedding of each frames"""
         frames_feats = self.transformer_fast(frames_feats)
         return frames_feats
+    
+    def cal_similarity(self, frames_feats, logit_scale):
+        video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
+        text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
+        t = logit_scale.exp()
+        video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
+        return video_logits
 
     def forward(self, batch):
         if not self.slowfast:
             frames_tensor, labels_onehot, index = batch
-            frames_feats = self.forward_frames_slow(frames_tensor)
+            frames_feats_slow = self.forward_frames_slow(frames_tensor)
+            video_logits = self.cal_similarity(frames_feats_slow, self.logit_scale)
         else:
             if not self.diff_sampling_fast:
                 frames_tensor, labels_onehot, index = batch
@@ -313,12 +323,11 @@ class AfricanSlowfast(pl.LightningModule):
                     frames_tensor, frames_feats_tensor_fast, labels_onehot, index = batch
                     frames_feats_slow = self.forward_frames_slow(frames_tensor)
                     frames_feats_fast = self.forward_frames_feats_fast(frames_feats_tensor_fast)
-            frames_feats = frames_feats_slow * self.w_slow + frames_feats_fast * self.w_fast + self.bias
 
-        video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
-        text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
-        t = self.video_clip.logit_scale.exp()
-        video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
+            video_logits_slow = self.cal_similarity(frames_feats_slow, self.logit_scale)
+            video_logits_fast = self.cal_similarity(frames_feats_fast, self.logit_scale_fast)
+            video_logits = video_logits_slow * self.w_slow + video_logits_fast * self.w_fast + self.bias
+
         video_logits = self.final_fc(video_logits)
         return video_logits, labels_onehot
     
