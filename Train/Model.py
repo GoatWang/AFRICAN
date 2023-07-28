@@ -10,7 +10,7 @@ import numpy as np
 from typing import Callable
 from Loss import get_loss_func
 import pytorch_lightning as pl
-from open_clip import Transformer, LayerNorm, build_model_from_openai_state_dict
+from open_clip import Transformer, LayerNorm, load_openai_model
 from ModelUtil.clip_param_keys import clip_param_keys
 from open_clip import _build_vision_tower
 from transformers import (
@@ -95,7 +95,7 @@ class AfricanClip(pl.LightningModule):
         self.AF_ckpt_path = config['AF_ckpt_path']
 
         # load clip
-        self.image_clip = build_model_from_openai_state_dict(self.IC_ckpt_path)
+        self.image_clip = load_openai_model(self.IC_ckpt_path)
         
         # image clip stream
         if not self.enable_preprocess:
