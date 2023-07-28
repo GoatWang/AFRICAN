@@ -6,9 +6,10 @@ from copy import deepcopy
 import torch
 from torch import nn
 import torchmetrics
+import numpy as np
+from typing import Callable
 from Loss import get_loss_func
 import pytorch_lightning as pl
-from typing import Callable, Sequence, Tuple
 from open_clip import CLIP, Transformer, LayerNorm
 from ModelUtil.clip_param_keys import clip_param_keys
 from open_clip import _build_vision_tower
