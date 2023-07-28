@@ -119,9 +119,9 @@ class AfricanSlowfast(pl.LightningModule):
                 config['transformer_heads_fast']
             )
             self.logit_scale_fast = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
-            self.w_slow = nn.Parameter(torch.ones(config['transformer_width_fast']) * 0.5)
-            self.w_fast = nn.Parameter(torch.ones(config['transformer_width_fast']) * 0.5)
-            self.bias = nn.Parameter(torch.randn(config['transformer_width_fast']))
+            self.w_slow = nn.Parameter(torch.ones(self.n_classes) * 0.5)
+            self.w_fast = nn.Parameter(torch.ones(self.n_classes) * 0.5)
+            self.bias = nn.Parameter(torch.randn(self.n_classes))
 
     def print_requires_grad(self, model):
         for n, p in model.named_parameters():
@@ -306,11 +306,11 @@ class AfricanSlowfast(pl.LightningModule):
         return video_logits
 
     def forward(self, batch):
-        if not self.slowfast:
+        if not self.slowfast: # only use slow stream
             frames_tensor, labels_onehot, index = batch
             frames_feats_slow = self.forward_frames_slow(frames_tensor)
             video_logits = self.cal_similarity(frames_feats_slow, self.logit_scale)
-        else:
+        else: # use both slow and fast stream
             if not self.diff_sampling_fast:
                 frames_tensor, labels_onehot, index = batch
                 frames_feats_slow = self.forward_frames_slow(frames_tensor)
