@@ -25,6 +25,9 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.enable_preprocess = config['enable_preprocess']
         self.functional_test_size = config['functional_test_size']
             
+        self.IC_ckpt_path = config['IC_ckpt_path']
+        self.AF_ckpt_path = config['AF_ckpt_path']
+
         # self.text_column_name = "questions"
         self.video_transform = VideoTransformTorch(mode=self.split)  # train or val model
         self.video_aug = video_aug

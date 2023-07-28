@@ -91,12 +91,16 @@ class AfricanClip(pl.LightningModule):
         self.enable_african = config['enable_african']
         self.enable_preprocess = config['enable_preprocess']
 
+        self.IC_ckpt_path = config['IC_ckpt_path']
+        self.AF_ckpt_path = config['AF_ckpt_path']
+
         # load clip
+
         self.image_clip = self.get_image_clip()
         
         # image clip stream
         if not self.enable_preprocess:
-            self.image_encoder_ic = self.get_image_encoder(config, "IC")
+            self.image_encoder_ic = self.image_clip.visual # self.get_image_encoder("IC")
             self.freeze_image_encoder_evl(self.image_encoder_ic)
         self.transformer_ic = FramesTransformer(
             self.num_frames,
@@ -110,7 +114,7 @@ class AfricanClip(pl.LightningModule):
         # african stream
         if self.enable_african:
             if not self.enable_preprocess:
-                self.image_encoder_af = self.get_image_encoder(config, "AF")
+                self.image_encoder_af = self.get_image_encoder("AF")
                 self.freeze_image_encoder_evl(self.image_encoder_af)
 
             self.transformer_af = FramesTransformer(
@@ -152,9 +156,12 @@ class AfricanClip(pl.LightningModule):
         image_clip = CLIP(clip_model_config['embed_dim'], 
              clip_model_config['vision_cfg'], 
              clip_model_config['text_cfg'])
+        
+        state_dict = torch.jit.load(self.IC_ckpt_path, map_location="cpu").visual.state_dict()
+        image_clip.load_state_dict(state_dict)
         return image_clip
 
-    def get_image_encoder(self, config, stream='IC'):
+    def get_image_encoder(self, stream='IC'):
         """
         stream: {"IC", "AF"} represens Image Clip and African
         """
@@ -170,11 +177,11 @@ class AfricanClip(pl.LightningModule):
         image_encoder = _build_vision_tower(clip_model_config['embed_dim'], clip_model_config['vision_cfg'])
         if stream == "IC":
             # original_clip
-            state_dict_clip = torch.jit.load(config['IC_ckpt_path'], map_location="cpu").visual.state_dict()
+            state_dict_clip = torch.jit.load(self.IC_ckpt_path, map_location="cpu").visual.state_dict()
             image_encoder.load_state_dict(state_dict_clip)
         elif stream == "AF":
             # pretrained african
-            state_dict_african = torch.load(config['AF_ckpt_path'], map_location="cpu")['state_dict']
+            state_dict_african = torch.load(self.AF_ckpt_path, map_location="cpu")['state_dict']
             state_dict_african = {name.replace("image_encoder.", ""): weights for name, weights in state_dict_african.items() if "image_encoder" in name}
             image_encoder.load_state_dict(state_dict_african)
         else:
