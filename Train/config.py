@@ -48,7 +48,7 @@ def config():
 
     # enable african stream
     enable_african = True 
-    AF_ckpt_path = os.path.abspath(os.path.join(base_dir, "weights", "clip_cosine_infoNCE_8_uniform_augmix_map_epoch124.ckpt")) # 
+    AF_ckpt_path = os.path.abspath(os.path.join(base_dir, "weights", "clip_nodecay_infoNCE_8_rand_augmix_000030_epoch30.ckpt")) # 
     AF_transformer_width = 768
     AF_transformer_layers = 6
     AF_transformer_heads = 12
