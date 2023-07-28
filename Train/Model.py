@@ -4,6 +4,7 @@ import math
 from copy import deepcopy
 
 import torch
+import numpy as np
 from torch import nn
 import torchmetrics
 from Loss import get_loss_func
