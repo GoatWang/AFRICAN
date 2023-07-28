@@ -130,8 +130,8 @@ class AfricanClip(pl.LightningModule):
                 nn.Linear(output_width//4, self.n_classes)
             )
 
-            self.w_ic = nn.Parameter(torch.ones(self.n_classes))
-            self.w_af = nn.Parameter(torch.zeros(self.n_classes))
+            self.w_ic = nn.Parameter(torch.ones(self.n_classes) * 0.9)
+            self.w_af = nn.Parameter(torch.ones(self.n_classes) * 0.1)
             self.bias = nn.Parameter(torch.randn(self.n_classes))
             # self.final_fc_af = torch.nn.Linear(int(self.n_classes * 2), self.n_classes)
 
