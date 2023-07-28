@@ -129,7 +129,11 @@ class AfricanClip(pl.LightningModule):
                 nn.Linear(output_width//2, output_width//4),
                 nn.Linear(output_width//4, self.n_classes)
             )
-            self.final_fc_af = torch.nn.Linear(int(self.n_classes * 2), self.n_classes)
+
+            self.w_ic = nn.Parameter(torch.zeros(config['transformer_width_fast']))
+            self.w_af = nn.Parameter(torch.ones(config['transformer_width_fast']))
+            self.bias = nn.Parameter(torch.randn(config['transformer_width_fast']))
+            # self.final_fc_af = torch.nn.Linear(int(self.n_classes * 2), self.n_classes)
 
     def print_requires_grad(self, model):
         for n, p in model.named_parameters():
@@ -266,7 +270,6 @@ class AfricanClip(pl.LightningModule):
             frames_feats_af = self.forward_frames_af(frames_tensor)
         return frames_feats_ic, frames_feats_af, labels_onehot
 
-
     def forward(self, batch):
         if self.enable_preprocess:
             frames_feats_ic, frames_feats_af, labels_onehot = self.encode_video_feats(batch)
@@ -282,8 +285,9 @@ class AfricanClip(pl.LightningModule):
     
         if self.enable_african:
             video_logits_af = self.mlp_af(frames_feats_af)
-            video_logits = torch.cat([video_logits, video_logits_af], dim=1)
-            video_logits = self.final_fc_af(video_logits)
+            video_logits = self.w_ic * video_logits + self.w_af * video_logits_af + self.bias
+            # video_logits = torch.cat([video_logits, video_logits_af], dim=1)
+            # video_logits = self.final_fc_af(video_logits)
 
         return video_logits, labels_onehot
     
