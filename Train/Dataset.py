@@ -25,6 +25,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.enable_preprocess = config['enable_preprocess']
         self.functional_test_size = config['functional_test_size']
             
+        self.preprocess_dir = config['preprocess_dir']
         self.IC_ckpt_path = config['IC_ckpt_path']
         self.AF_ckpt_path = config['AF_ckpt_path']
 
