@@ -252,7 +252,7 @@ class AfricanClip(pl.LightningModule):
         feats_tensor_ic, feats_tensor_af, labels_onehot, index = batch
         frames_feats_ic = self.forward_frames_feats_ic(feats_tensor_ic)
 
-        frames_feats_af = frames_feats_ic
+        frames_feats_af = None
         if self.enable_african:
             frames_feats_af = self.forward_frames_feats_af(feats_tensor_af)
         return frames_feats_ic, frames_feats_af, labels_onehot
@@ -261,7 +261,7 @@ class AfricanClip(pl.LightningModule):
         frames_tensor, labels_onehot, index = batch
         frames_feats_ic = self.forward_frames_ic(frames_tensor)
 
-        frames_feats_af = frames_feats_ic
+        frames_feats_af = None
         if self.enable_african:
             frames_feats_af = self.forward_frames_af(frames_tensor)
         return frames_feats_ic, frames_feats_af, labels_onehot
