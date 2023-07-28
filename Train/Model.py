@@ -10,7 +10,7 @@ import numpy as np
 from typing import Callable
 from Loss import get_loss_func
 import pytorch_lightning as pl
-from open_clip import CLIP, Transformer, LayerNorm
+from open_clip import Transformer, LayerNorm, build_model_from_openai_state_dict
 from ModelUtil.clip_param_keys import clip_param_keys
 from open_clip import _build_vision_tower
 from transformers import (
@@ -95,8 +95,7 @@ class AfricanClip(pl.LightningModule):
         self.AF_ckpt_path = config['AF_ckpt_path']
 
         # load clip
-
-        self.image_clip = self.get_image_clip()
+        self.image_clip = build_model_from_openai_state_dict(self.IC_ckpt_path)
         
         # image clip stream
         if not self.enable_preprocess:
@@ -135,31 +134,6 @@ class AfricanClip(pl.LightningModule):
     def print_requires_grad(self, model):
         for n, p in model.named_parameters():
             print(n, p.requires_grad)
-
-    def get_image_clip(self):
-        clip_model_config = { # "open_clip/model_configs/ViT-L-14.json"
-            "embed_dim": 768,
-            "vision_cfg": {
-                "image_size": 224,
-                "layers": 24,
-                "width": 1024,
-                "patch_size": 14
-            },
-            "text_cfg": {
-                "context_length": 77,
-                "vocab_size": 49408,
-                "width": 768,
-                "heads": 12,
-                "layers": 12
-            }
-        }            
-        image_clip = CLIP(clip_model_config['embed_dim'], 
-             clip_model_config['vision_cfg'], 
-             clip_model_config['text_cfg'])
-        
-        state_dict = torch.jit.load(self.IC_ckpt_path, map_location="cpu").visual.state_dict()
-        image_clip.load_state_dict(state_dict)
-        return image_clip
 
     def get_image_encoder(self, stream='IC'):
         """
