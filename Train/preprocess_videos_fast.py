@@ -31,11 +31,11 @@ def inference_save(_config, dataset, dataloader, image_encoder):
                     video_feats_fast = image_encoder(video_tensor_fast)
                     torch.save(video_feats_fast, video_feats_fast_fp)
 
-def batch_inference_save(_config, dataset, dataloader, image_encoder):
+def batch_inference_save(_config, dataset, dataloader, image_encoder, pretrained_type):
     with torch.no_grad():
         for batch_idx, (batch) in enumerate(tqdm(dataloader)):
             video_tensors_cat, video_tensors_n_frames, video_fps = batch
-            all_exists = np.all([os.path.exists(dataset.get_preprocess_feats_fp(video_fp)) for video_fp in video_fps])
+            all_exists = np.all([os.path.exists(dataset.get_preprocess_feats_fp(video_fp, pretrained_type)) for video_fp in video_fps])
             if all_exists:
                 continue
 
@@ -55,7 +55,7 @@ def batch_inference_save(_config, dataset, dataloader, image_encoder):
                 video_feats_fast = video_feats_tensors_cat[frane_st: frane_st+n_frames]
                 frane_st = frane_st+n_frames
 
-                video_feats_fast_fp = dataset.get_preprocess_feats_fp(video_fp)
+                video_feats_fast_fp = dataset.get_preprocess_feats_fp(video_fp, pretrained_type)
                 if not os.path.exists(video_feats_fast_fp):
                     torch.save(video_feats_fast, video_feats_fast_fp)
 

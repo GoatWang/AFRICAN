@@ -175,10 +175,10 @@ class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
             self.video_transform = self.video_transform_af
         else:
             raise NotImplementedError
-
+        
     def __getitem__(self, index):
         video_fp = self.video_fps[index]
-        video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp)
+        video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp, self.pretrained_type)
         if not os.path.exists(video_feats_fast_fp):
             video_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames, sample='all')[0]
             video_tensor_fast = self.video_aug(video_tensor_fast, self.video_transform)
