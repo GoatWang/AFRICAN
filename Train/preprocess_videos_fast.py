@@ -74,7 +74,7 @@ def main(_config):
         dataset_valid = AnimalKingdomDatasetPreprocess(_config, pretrained_type, split="val")
 
         _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
-        model = AfricanSlowfast(_config)
+        model = AfricanSlowfast(_config).to(_config['device'])
         dataset_train.produce_prompt_embedding(model.video_clip)
         dataset_valid.produce_prompt_embedding(model.video_clip)
 
@@ -90,3 +90,28 @@ def main(_config):
 
         # inference_save(_config, dataset_train, train_loader, image_encoder_fast)
         # inference_save(_config, dataset_valid, valid_loader, image_encoder_fast)
+
+
+
+# check the preprocessed result from diff branch are the same
+# import glob
+# import torch
+# from tqdm import notebook
+# import sys 
+# sys.path.append("/notebooks/AnimalKingdomCLIP/Train")
+# from VideoReader import read_feats_fast
+
+# feats_fp_new = glob.glob("/notebooks/AnimalKingdomCLIP/Train/preprocess_test/ViT-L-14/*.pt")
+# for idx, feat_fp_new in enumerate(notebook.tqdm(feats_fp_new)):
+#     feat_fp_old = feat_fp_new.replace("preprocess_test/ViT-L-14", "preprocess/video_feats/ViT-L-14")
+#     feat_old = torch.load(feat_fp_old).to('cpu')
+#     feat_new = torch.load(feat_fp_new).to('cpu')
+#     if not torch.all(torch.isclose(feat_old, feat_new, rtol=1e-05, atol=1e-05)):
+#         neq_idxs = torch.where(torch.isclose(feat_old, feat_new, rtol=1e-05, atol=1e-05) == False)
+#         print(idx)
+#         print(feat_old.shape, feat_new.shape)
+#         print(feat_old[neq_idxs][:10], feat_new[neq_idxs][:10])
+#         print(feat_old)
+#         print(feat_new)
+#         print("===========")
+    
