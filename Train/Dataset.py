@@ -88,50 +88,100 @@ class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
     """two samplings of video for two streams of model"""
     def __init__(self, config, split=""):
         super().__init__(config, split)
-        self.preprocess_dir_fast = config['preprocess_dir_fast']
-        self.ckpt_path_fast = config['ckpt_path_fast']
-        self.use_image_clip_fast = config['use_image_clip_fast']
-        self.num_frames_fast = config['num_frames_fast']
-        self.video_sampling_fast = config['video_sampling_fast']
-        self.enable_preprocess_fast = config['enable_preprocess_fast']
-        self.video_transform_fast = VideoTransformTorch(mode='val')  # do not transform
 
-    def get_preprocess_feats_fp(self, video_fp):
-        base_model_name_fast = os.path.basename(self.ckpt_path_fast).split('.')[0]
-        save_dir = os.path.join(self.preprocess_dir_fast, base_model_name_fast)
+        # slow stream
+        self.enable_video_clip = config['enable_video_clip']
+
+        # fast stream: image clip
+        self.preprocess_dir = config['preprocess_dir']
+        self.enable_image_clip = config['enable_image_clip']
+        if self.enable_image_clip:
+            self.ckpt_path_ic = config['ckpt_path_ic']
+            self.num_frames_ic = config['num_frames_ic']
+            self.video_sampling_ic = config['video_sampling_ic']
+            self.enable_preprocess_ic = config['enable_preprocess_ic']
+            self.video_transform_ic = VideoTransformTorch(mode='val')  # do not transform
+
+        # fast stream: african
+        self.enable_african = config['enable_african']
+        if self.enable_african:
+            self.ckpt_path_af = config['ckpt_path_af']
+            self.num_frames_af = config['num_frames_af']
+            self.video_sampling_af = config['video_sampling_af']
+            self.enable_preprocess_af = config['enable_preprocess_af']
+            self.video_transform_af = VideoTransformTorch(mode='val')  # do not transform
+
+        at_least_one_source = self.enable_video_clip or self.enable_image_clip or self.enable_african
+        assert at_least_one_source, "at least one data source should be enabled"
+
+    def get_preprocess_feats_fp(self, video_fp, pretrained_type):
+        """
+        pretrained_type: {"ic", "af"}
+        """        
+        if pretrained_type == "ic":
+            ckpt_path = self.ckpt_path_ic  
+        elif pretrained_type == "af":
+            ckpt_path = self.ckpt_path_af
+        else:
+            raise NotImplementedError
+        base_model_name_fast = os.path.basename(ckpt_path).split('.')[0]
+        save_dir = os.path.join(self.preprocess_dir, base_model_name_fast)
         Path(save_dir).mkdir(parents=True, exist_ok=True)
         return os.path.join(save_dir, os.path.basename(video_fp).split(".")[0] + ".pt")
 
     def __getitem__(self, index):
         video_fp = self.video_fps[index]
-
-        # slow stream
-        frames_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
-        frames_tensor = self.video_aug(frames_tensor, self.video_transform)            
         labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
         labels_onehot[self.labels[index]] = 1
 
-        # fast stream
-        self.enable_preprocess_fast
-        if self.enable_preprocess_fast:
-            video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp)
-            frames_feats_tensor_fast = read_feats_fast(video_feats_fast_fp, self.num_frames_fast, self.video_sampling_fast)
-            return frames_tensor, frames_feats_tensor_fast, labels_onehot, index
-        else:
-            frames_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames_fast, sample=self.video_sampling_fast)[0]
-            frames_tensor_fast = self.video_aug(frames_tensor_fast, self.video_transform_fast)
-            return frames_tensor, frames_tensor_fast, labels_onehot, index
+        # slow stream
+        frames_tensor_vc = torch.zeros(1, 3, 224, 224)
+        if self.enable_video_clip:
+            frames_tensor_vc = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
+            frames_tensor_vc = self.video_aug(frames_tensor_vc, self.video_transform)            
+
+        # fast stream: image clip
+        frames_tensor_ic = torch.zeros(1, 3, 224, 224)
+        if self.enable_image_clip:
+            if self.enable_preprocess_ic:
+                video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp, "ic")
+                frames_tensor_ic = read_feats_fast(video_feats_fast_fp, self.num_frames_ic, self.video_sampling_ic)
+            else:
+                frames_tensor_ic = read_frames_decord(video_fp, num_frames=self.num_frames_ic, sample=self.video_sampling_ic)[0]
+                frames_tensor_ic = self.video_aug(frames_tensor_ic, self.video_transform_ic)
+
+        # fast stream: african
+        frames_tensor_af = torch.zeros(1, 3, 224, 224)
+        if self.enable_african:
+            if self.enable_preprocess_af:
+                video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp, "ic")
+                frames_tensor_af = read_feats_fast(video_feats_fast_fp, self.num_frames_af, self.video_sampling_af)
+            else:
+                frames_tensor_af = read_frames_decord(video_fp, num_frames=self.num_frames_af, sample=self.video_sampling_af)[0]
+                frames_tensor_af = self.video_aug(frames_tensor_af, self.video_transform_af)
+
+        return frames_tensor_vc, frames_tensor_ic, frames_tensor_af, labels_onehot, index
              
 class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
-    def __init__(self, config, split=""):
+    def __init__(self, config, pretrained_type, split=""):
         super().__init__(config, split)
+        self.pretrained_type = pretrained_type
+
+        if pretrained_type == "ic":
+            self.num_frames = self.num_frames_ic
+            self.video_transform = self.video_transform_ic
+        elif pretrained_type == "af":
+            self.num_frames = self.num_frames_af
+            self.video_transform = self.video_transform_af
+        else:
+            raise NotImplementedError
 
     def __getitem__(self, index):
         video_fp = self.video_fps[index]
         video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp)
         if not os.path.exists(video_feats_fast_fp):
-            video_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames_fast, sample='all')[0]
-            video_tensor_fast = self.video_aug(video_tensor_fast, self.video_transform_fast)
+            video_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames, sample='all')[0]
+            video_tensor_fast = self.video_aug(video_tensor_fast, self.video_transform)
         else:
             # FOR ACCERLATION
             video_tensor_fast = torch.zeros(1, 3, 224, 224)
@@ -140,15 +190,16 @@ class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
 
 
 if __name__  == "__main__":
+    from torch import utils
     from config import config
     _config = config()
 
-    from torch import utils
     dataset_train = AnimalKingdomDataset(_config, split="train")
     dataset_valid = AnimalKingdomDataset(_config, split="val")
     train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
     print("len(train_loader)", len(train_loader))
+
     for batch_idx, batch in enumerate(train_loader):
       video_tensor, video_feats_fast, labels_onehot, index = batch
       print("video_tensor.shape", video_tensor.shape)

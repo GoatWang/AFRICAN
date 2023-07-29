@@ -4,6 +4,7 @@ import math
 from copy import deepcopy
 
 import torch
+import numpy as np
 from torch import nn
 import torchmetrics
 from Loss import get_loss_func
@@ -88,11 +89,10 @@ class AfricanSlowfast(pl.LightningModule):
         self.end_lr = config['end_lr']
         self.poly_decay_power = config['poly_decay_power']
 
-        self.slowfast = config['slowfast']
-        self.diff_sampling_fast = config['diff_sampling_fast']
-        self.enable_preprocess_fast = config['enable_preprocess_fast']
-
+        self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
         self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
+
+        self.enable_video_clip = config['enable_video_clip']
         self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
         if config['train_laryers'] == "vision":
             self.freeze_video_clip_text(self.video_clip)
@@ -102,23 +102,47 @@ class AfricanSlowfast(pl.LightningModule):
             # self.print_requires_grad(self.video_clip)
             
         # slowfast: enable fast stream
-        if self.slowfast:
-            if not self.enable_preprocess_fast:
-                self.image_encoder_fast = self.get_image_encoder_fast(config) # image encoder (fast stream)
-                self.freeze_image_encoder_fast_evl(self.image_encoder_fast)
-                # print("freeze_image_encoder_fast_evl")
-                # self.print_requires_grad(self.image_encoder_fast)
-
-            num_frames_fast = config['num_frames_fast'] if self.diff_sampling_fast else config['num_frames']
-            self.transformer_fast = TransformerFast(
-                num_frames_fast,
-                config['transformer_width_fast'],
-                config['transformer_layers_fast'],
-                config['transformer_heads_fast']
+        self.enable_image_clip = config['enable_image_clip']
+        if self.enable_image_clip:
+            self.enable_preprocess_ic = config['enable_preprocess_ic']
+            self.image_encoder_ic = self.get_image_encoder_fast(config, "ic")
+            self.freeze_image_encoder_fast_evl(self.image_encoder_ic)
+            num_frames_ic = config['num_frames_ic']
+            self.transformer_ic = TransformerFast(
+                num_frames_ic,
+                config['transformer_width_ic'],
+                config['transformer_layers_ic'],
+                config['transformer_heads_ic']
             )
-            self.w_slow = nn.Parameter(torch.randn(config['transformer_width_fast']))
-            self.w_fast = nn.Parameter(torch.randn(config['transformer_width_fast']))
-            self.bias = nn.Parameter(torch.randn(config['transformer_width_fast']))
+            # to be merged on image encoder featers (transformer_width_fast: 768)
+            self.w_vc = nn.Parameter(torch.randn(config['transformer_width_fast']))
+            self.w_ic = nn.Parameter(torch.randn(config['transformer_width_fast']))
+            self.bias_ic = nn.Parameter(torch.randn(config['transformer_width_fast']))
+        
+        self.enable_african = config['enable_african']
+        if self.enable_african:
+            self.enable_preprocess_af = config['enable_preprocess_af']
+            self.image_encoder_af = self.get_image_encoder_fast(config, "af")
+            self.freeze_image_encoder_fast_evl(self.image_encoder_af)
+            num_frames_af = config['num_frames_af']
+            self.transformer_af = TransformerFast(
+                num_frames_af,
+                config['transformer_width_af'],
+                config['transformer_layers_af'],
+                config['transformer_heads_af']
+            )
+
+            output_width = int(config['transformer_width_af'])
+            self.mlp_af = nn.Sequential(
+                nn.Linear(output_width, output_width//2),
+                nn.Linear(output_width//2, output_width//4),
+                nn.Linear(output_width//4, self.n_classes)
+            )
+
+            # to be merged on final layers (self.n_classes)
+            self.w_vcic = nn.Parameter(torch.ones(self.n_classes) * 0.9)
+            self.w_af = nn.Parameter(torch.ones(self.n_classes) * 0.1)
+            self.bias_af = nn.Parameter(torch.randn(self.n_classes))
 
     def print_requires_grad(self, model):
         for n, p in model.named_parameters():
@@ -126,7 +150,7 @@ class AfricanSlowfast(pl.LightningModule):
 
     def get_video_clip_model(self, config):
         clip, clip_preprocess = clip_kc_new.load( # class VideoIntern(nn.Module):
-            config["ckpt_path_imageclip"], # /pathto/ViT-L-14.pt
+            config["ckpt_path_imageclip_vc"], # /pathto/ViT-L-14.pt
             t_size=config["num_frames"], # num_frames=8
             n_layers=4,
             mlp_dropout=[config["clip_evl_dropout"]] * 4, # 0.0
@@ -138,7 +162,7 @@ class AfricanSlowfast(pl.LightningModule):
             use_checkpoint=config["clip_use_checkpoint"],
             checkpoint_num=config["clip_checkpoint_num"],
         )
-        ckpt = torch.load(config["ckpt_path_videoclip"], map_location="cpu")
+        ckpt = torch.load(config["ckpt_path_videoclip_vc"], map_location="cpu")
         state_dict = ckpt["state_dict"]
 
         sd = {k: v.cpu() for k, v in self.state_dict().items()}
@@ -156,7 +180,10 @@ class AfricanSlowfast(pl.LightningModule):
         self.load_state_dict(state_dict, strict=False)
         return clip
     
-    def get_image_encoder_fast(self, config):
+    def get_image_encoder_fast(self, config, pretrained_type):
+        """
+        pretrained_type: {"ic", "af"}
+        """
         clip_model_config = { # "open_clip/model_configs/ViT-L-14.json"
             "embed_dim": 768,
             "vision_cfg": {
@@ -167,15 +194,17 @@ class AfricanSlowfast(pl.LightningModule):
             },
         }
         image_encoder = _build_vision_tower(clip_model_config['embed_dim'], clip_model_config['vision_cfg'])
-        if config['use_image_clip_fast']:
+        if pretrained_type == "ic":
             # original_clip
-            state_dict_clip = torch.jit.load(config['ckpt_path_fast'], map_location="cpu").visual.state_dict()
-            image_encoder.load_state_dict(state_dict_clip)
-        else:
+            state_dict_ic = torch.jit.load(config['ckpt_path_ic'], map_location="cpu").visual.state_dict()
+            image_encoder.load_state_dict(state_dict_ic)
+        elif pretrained_type == "af":
             # pretrained african
-            state_dict_african = torch.load(config['ckpt_path_fast'], map_location="cpu")['state_dict']
-            state_dict_african = {name.replace("image_encoder.", ""): weights for name, weights in state_dict_african.items() if "image_encoder" in name}
-            image_encoder.load_state_dict(state_dict_african)
+            state_dict_af = torch.load(config['ckpt_path_af'], map_location="cpu")['state_dict']
+            state_dict_af = {name.replace("image_encoder.", ""): weights for name, weights in state_dict_af.items() if "image_encoder" in name}
+            image_encoder.load_state_dict(state_dict_af)
+        else:
+            raise ValueError("pretrained_type should be one of {ic, af}")
         return image_encoder
 
     def load_ckpt_state_dict(self, ckpt_fp):
@@ -273,53 +302,84 @@ class AfricanSlowfast(pl.LightningModule):
                 p.requires_grad = False
             elif "ln_pre" in n:
                 p.requires_grad = False
-                
-    def forward_frames_slow(self, frames_tensor):
+
+    def forward_frames_vc(self, frames_tensor):
         frames_tensor = frames_tensor.contiguous().transpose(1, 2)
         frames_feats, video_all_feats = self.video_clip.encode_video(
             frames_tensor, return_all_feats=True, mode='video'
         )
         return frames_feats
     
-    def forward_frames_fast(self, frames_tensor):
+    def forward_frames_ic(self, frames_tensor):
         """encode image into embedding"""
         B, F, C, H, W = frames_tensor.shape
         frames_tensor = frames_tensor.view(B*F, C, H, W)
-        frames_feats = self.image_encoder_fast(frames_tensor)
+        frames_feats = self.image_encoder_ic(frames_tensor)
         frames_feats = frames_feats.view(B, F, -1)
-        frames_feats = self.forward_frames_feats_fast(self, frames_feats)
+        frames_feats = self.forward_frames_feats_ic(self, frames_feats)
         return frames_feats
 
-    def forward_frames_feats_fast(self, frames_feats):
+    def forward_frames_feats_ic(self, frames_feats):
         """apply transformer on image embedding of each frames"""
         frames_feats = self.transformer_fast(frames_feats)
         return frames_feats
 
-    def forward(self, batch):
-        if not self.slowfast:
-            frames_tensor, labels_onehot, index = batch
-            frames_feats = self.forward_frames_slow(frames_tensor)
-        else:
-            if not self.diff_sampling_fast:
-                frames_tensor, labels_onehot, index = batch
-                frames_feats_slow = self.forward_frames_slow(frames_tensor)
-                frames_feats_fast = self.forward_frames_fast(frames_tensor)
-            else:
-                if not self.enable_preprocess_fast:
-                    frames_tensor, frames_tensor_fast, labels_onehot, index = batch
-                    frames_feats_slow = self.forward_frames_slow(frames_tensor)
-                    frames_feats_fast = self.forward_frames_fast(frames_tensor_fast)
-                else:
-                    frames_tensor, frames_feats_tensor_fast, labels_onehot, index = batch
-                    frames_feats_slow = self.forward_frames_slow(frames_tensor)
-                    frames_feats_fast = self.forward_frames_feats_fast(frames_feats_tensor_fast)
-            frames_feats = frames_feats_slow * self.w_slow + frames_feats_fast * self.w_fast + self.bias
+    def forward_frames_af(self, frames_tensor):
+        """encode image into embedding"""
+        B, F, C, H, W = frames_tensor.shape
+        frames_tensor = frames_tensor.view(B*F, C, H, W)
+        frames_feats = self.image_encoder_af(frames_tensor)
+        frames_feats = frames_feats.view(B, F, -1)
+        frames_feats = self.forward_frames_feats_af(self, frames_feats)
+        return frames_feats
 
-        video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
-        text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
-        t = self.video_clip.logit_scale.exp()
-        video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
-        video_logits = self.final_fc(video_logits)
+    def forward_frames_feats_af(self, frames_feats):
+        """apply transformer on image embedding of each frames"""
+        frames_feats = self.transformer_fast(frames_feats)
+        return frames_feats
+
+
+    def forward(self, batch):
+        frames_tensor_vc, frames_tensor_ic, frames_tensor_af, labels_onehot, index = batch
+
+        # enable_video_clip
+        frames_feats = None
+        if self.enable_video_clip:
+            frames_feats = self.forward_frames_vc(frames_tensor_vc)
+
+        # enable_image_clip
+        if self.enable_image_clip:
+            if self.enable_preprocess_ic:
+                frames_feats_ic = self.forward_frames_feats_ic(frames_tensor_ic)
+            else:
+                frames_feats_ic = self.forward_frames_ic(frames_tensor_ic)
+
+            if frames_feats is None:
+                frames_feats = frames_feats_ic
+            else:
+                frames_feats = frames_feats * self.w_vc + frames_feats_ic * self.w_ic + self.bias_ic
+
+        video_logits = None
+        if frames_feats is not None:
+            video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
+            text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
+            t = self.logit_scale.exp()
+            video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
+            video_logits = self.final_fc(video_logits)
+
+        # enable_african
+        if self.enable_african:
+            if self.enable_preprocess_af:
+                frames_feats_af = self.forward_frames_feats_af(frames_tensor_af)
+            else:
+                frames_feats_af = self.forward_frames_af(frames_tensor_af)
+
+            video_logits_af = self.mlp_af(frames_feats_af)
+            if video_logits is None:
+                video_logits = video_logits_af
+            else:
+                video_logits = video_logits * self.w_vcic + video_logits_af * self.w_af + self.bias_af
+
         return video_logits, labels_onehot
     
     # def infer(self, frames_tensor, rames_tensor_fast):

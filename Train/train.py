@@ -20,7 +20,7 @@ def main(_config):
     Path(_config['models_dir']).mkdir(parents=True, exist_ok=True)
 
     pl.seed_everything(_config["seed"])
-    Dataset = AnimalKingdomDatasetSlowFast if _config['enable_preprocess_fast'] else AnimalKingdomDataset
+    Dataset = AnimalKingdomDatasetSlowFast
     dataset_train = Dataset(_config, split="train")
     dataset_valid = Dataset(_config, split="val")
     _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']

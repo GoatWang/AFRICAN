@@ -63,23 +63,25 @@ def batch_inference_save(_config, dataset, dataloader, image_encoder):
 @ex.automain
 def main(_config):
     _config = copy.deepcopy(_config)
-    dataset_train = AnimalKingdomDatasetPreprocess(_config, split="train")
-    dataset_valid = AnimalKingdomDatasetPreprocess(_config, split="val")
 
-    _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
-    model = AfricanSlowfast(_config)
-    dataset_train.produce_prompt_embedding(model.video_clip)
-    dataset_valid.produce_prompt_embedding(model.video_clip)
+    for pretrained_type in _config['preprocess_pretrained_type']: 
+        dataset_train = AnimalKingdomDatasetPreprocess(_config, pretrained_type, split="train")
+        dataset_valid = AnimalKingdomDatasetPreprocess(_config, pretrained_type, split="val")
 
-    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
-    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
+        _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
+        model = AfricanSlowfast(_config)
+        dataset_train.produce_prompt_embedding(model.video_clip)
+        dataset_valid.produce_prompt_embedding(model.video_clip)
 
-    image_encoder_fast = model.get_image_encoder_fast(_config)
-    image_encoder_fast.to(_config['device'])
-    image_encoder_fast.eval()
+        train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
+        valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
 
-    batch_inference_save(_config, dataset_train, train_loader, image_encoder_fast)
-    batch_inference_save(_config, dataset_valid, valid_loader, image_encoder_fast)
+        image_encoder_fast = model.get_image_encoder_fast(_config, pretrained_type)
+        image_encoder_fast.to(_config['device'])
+        image_encoder_fast.eval()
 
-    # inference_save(_config, dataset_train, train_loader, image_encoder_fast)
-    # inference_save(_config, dataset_valid, valid_loader, image_encoder_fast)
+        batch_inference_save(_config, dataset_train, train_loader, image_encoder_fast)
+        batch_inference_save(_config, dataset_valid, valid_loader, image_encoder_fast)
+
+        # inference_save(_config, dataset_train, train_loader, image_encoder_fast)
+        # inference_save(_config, dataset_valid, valid_loader, image_encoder_fast)
