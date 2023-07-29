@@ -114,10 +114,10 @@ class AfricanSlowfast(pl.LightningModule):
                 config['transformer_layers_ic'],
                 config['transformer_heads_ic']
             )
-            # to be merged on image encoder featers (transformer_width_fast: 768)
-            self.w_vc = nn.Parameter(torch.randn(config['transformer_width_fast']))
-            self.w_ic = nn.Parameter(torch.randn(config['transformer_width_fast']))
-            self.bias_ic = nn.Parameter(torch.randn(config['transformer_width_fast']))
+            # to be merged on image encoder featers (transformer_width_ic: 768)
+            self.w_vc = nn.Parameter(torch.randn(config['transformer_width_ic']))
+            self.w_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
+            self.bias_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
         
         self.enable_african = config['enable_african']
         if self.enable_african:
