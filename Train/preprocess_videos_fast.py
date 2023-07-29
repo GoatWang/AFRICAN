@@ -80,8 +80,8 @@ def main(_config):
         image_encoder_fast.to(_config['device'])
         image_encoder_fast.eval()
 
-        batch_inference_save(_config, dataset_train, train_loader, image_encoder_fast)
-        batch_inference_save(_config, dataset_valid, valid_loader, image_encoder_fast)
+        batch_inference_save(_config, dataset_train, train_loader, image_encoder_fast, pretrained_type)
+        batch_inference_save(_config, dataset_valid, valid_loader, image_encoder_fast, pretrained_type)
 
         # inference_save(_config, dataset_train, train_loader, image_encoder_fast)
         # inference_save(_config, dataset_valid, valid_loader, image_encoder_fast)
