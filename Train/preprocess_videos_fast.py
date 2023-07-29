@@ -42,7 +42,7 @@ def batch_inference_save(_config, dataset, dataloader, image_encoder):
             # parallel inference
             video_tensors_cat = video_tensors_cat.to(_config['device'])
             video_feats_tensors_cat = torch.zeros(video_tensors_cat.shape[0], _config['transformer_width_fast'])
-            n_iters = int(np.ceil(video_feats_tensors_cat.shape[0] // _config['preprocess_batch_size']))
+            n_iters = int(np.ceil(video_feats_tensors_cat.shape[0] / _config['preprocess_batch_size']))
             for idx in range(n_iters):
                 st, end = idx*_config['preprocess_batch_size'], (idx+1)*_config['preprocess_batch_size']
                 video_tensors_batch = video_tensors_cat[st:end]
