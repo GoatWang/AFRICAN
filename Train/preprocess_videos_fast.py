@@ -32,6 +32,11 @@ def inference_save(_config, dataset, dataloader, image_encoder):
                     torch.save(video_feats_fast, video_feats_fast_fp)
 
 def batch_inference_save(_config, dataset, dataloader, image_encoder, pretrained_type):
+    if pretrained_type == 'ic':
+        transformer_width = _config['transformer_width_ic']
+    elif pretrained_type == 'af':
+        transformer_width = _config['transformer_width_af']
+
     with torch.no_grad():
         for batch_idx, (batch) in enumerate(tqdm(dataloader)):
             video_tensors_cat, video_tensors_n_frames, video_fps = batch
@@ -41,7 +46,7 @@ def batch_inference_save(_config, dataset, dataloader, image_encoder, pretrained
 
             # parallel inference
             video_tensors_cat = video_tensors_cat.to(_config['device'])
-            video_feats_tensors_cat = torch.zeros(video_tensors_cat.shape[0], _config['transformer_width_fast'])
+            video_feats_tensors_cat = torch.zeros(video_tensors_cat.shape[0], transformer_width)
             n_iters = int(np.ceil(video_feats_tensors_cat.shape[0] / _config['preprocess_batch_size']))
             for idx in range(n_iters):
                 st, end = idx*_config['preprocess_batch_size'], (idx+1)*_config['preprocess_batch_size']
