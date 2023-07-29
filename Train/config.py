@@ -73,7 +73,7 @@ def config():
     num_frames_af = 32
     video_sampling_af = 'rand' # 'rand', 'uniform', 'sequence_rand'
     enable_preprocess_af = True 
-    ckpt_path_af = os.path.abspath(os.path.join(base_dir, "weights", "clip_nodecay_infoNCE_8_rand_augmix_000030_epoch30.pt"))
+    ckpt_path_af = os.path.abspath(os.path.join(base_dir, "weights", "clip_nodecay_infoNCE_8_rand_augmix_000030_epoch30.ckpt"))
     transformer_width_af = 768
     transformer_layers_af = 6
     transformer_heads_af = 12
