@@ -115,3 +115,25 @@ def main(_config):
 #         print(feat_new)
 #         print("===========")
     
+
+# import glob
+# import torch
+# from tqdm import tqdm
+# import sys 
+# sys.path.append("/notebooks/AnimalKingdomCLIP/Train")
+# from VideoReader import read_feats_fast
+
+# feats_fp_new = glob.glob("/notebooks/AnimalKingdomCLIP/Train/preprocess/ViT-L-14/*.pt")
+# feats_fp_new = glob.glob("/notebooks/AnimalKingdomCLIP/Train/preprocess/uniform_32/*.pt")
+# for idx, feat_fp_new in enumerate(tqdm(feats_fp_new)):
+#     feat_fp_old = feat_fp_new.replace("ViT-L-14", "uniform_32")
+#     feat_old = torch.load(feat_fp_old).to('cpu')
+#     feat_new = torch.load(feat_fp_new).to('cpu')
+#     if not torch.all(torch.isclose(feat_old, feat_new, rtol=1e-05, atol=1e-05)):
+#         neq_idxs = torch.where(torch.isclose(feat_old, feat_new, rtol=1e-05, atol=1e-05) == False)
+#         print(idx)
+#         print(feat_old.shape, feat_new.shape)
+#         print(feat_old[neq_idxs][:10], feat_new[neq_idxs][:10])
+#         print(feat_old)
+#         print(feat_new)
+#         print("===========")

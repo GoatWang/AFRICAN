@@ -321,7 +321,7 @@ class AfricanSlowfast(pl.LightningModule):
 
     def forward_frames_feats_ic(self, frames_feats):
         """apply transformer on image embedding of each frames"""
-        frames_feats = self.transformer_fast(frames_feats)
+        frames_feats = self.transformer_ic(frames_feats)
         return frames_feats
 
     def forward_frames_af(self, frames_tensor):
@@ -335,7 +335,7 @@ class AfricanSlowfast(pl.LightningModule):
 
     def forward_frames_feats_af(self, frames_feats):
         """apply transformer on image embedding of each frames"""
-        frames_feats = self.transformer_fast(frames_feats)
+        frames_feats = self.transformer_af(frames_feats)
         return frames_feats
 
 
