@@ -89,7 +89,7 @@ class AfricanSlowfast(pl.LightningModule):
         self.end_lr = config['end_lr']
         self.poly_decay_power = config['poly_decay_power']
 
-        self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+        # self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
         self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
 
         self.enable_video_clip = config['enable_video_clip']
@@ -261,14 +261,6 @@ class AfricanSlowfast(pl.LightningModule):
             elif "positional_embedding" in n:
                 p.requires_grad = False
 
-    def freeze_clip(self):
-        for n, p in self.named_parameters():
-            # Unfreeze the projection layer
-            if any(x in n for x in ["text_projection", "visual_proj", "visual.proj"]):
-                continue
-            if any(x in n for x in clip_param_keys):
-                p.requires_grad = False
-
     def freeze_video_clip_text(self, model):
         for n, p in model.named_parameters():
             if "transformer" in n:
@@ -363,7 +355,7 @@ class AfricanSlowfast(pl.LightningModule):
         if frames_feats is not None:
             video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
             text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
-            t = self.logit_scale.exp()
+            t = self.video_clip.logit_scale.exp()
             video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
             video_logits = self.final_fc(video_logits)
 
