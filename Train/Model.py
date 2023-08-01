@@ -76,6 +76,18 @@ class TransformerFast(nn.Module):
 
 
 class AfricanSlowfast(pl.LightningModule):
+    """
+    VC: self init logit scale
+        # self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07)) 
+
+    VC2: use pretrained logit scale
+        # w = torch.load("/notebooks/AnimalKingdomCLIP/Train/weights/ViT-L-14.pt")
+        # [wei for k, wei in w.named_parameters() if "logit" in k]
+        # 4.6052
+        # w = torch.load("/notebooks/AnimalKingdomCLIP/Train/weights/InternVideo-MM-L-14.ckpt")
+        # [w['state_dict'][k] for k in w['state_dict'].keys() if "logit" in k]
+        # 4.6052
+    """
     def __init__(self, config):
         super().__init__()
         self.save_hyperparameters()
@@ -89,7 +101,6 @@ class AfricanSlowfast(pl.LightningModule):
         self.end_lr = config['end_lr']
         self.poly_decay_power = config['poly_decay_power']
 
-        # self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
         self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
 
         self.enable_video_clip = config['enable_video_clip']
@@ -524,8 +535,8 @@ if __name__ == "__main__":
     dataset_valid.produce_prompt_embedding(model.video_clip)
     model.set_text_feats(dataset_train.text_features)
 
-    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True) # TODO: DEBUG num_workers=4, maybe MACOS bug
-    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False) # TODO: DEBUG num_workers=4, maybe MACOS bug
+    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True)
+    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False)
 
     # # test otptimizer
     # optimizer = model.configure_optimizers()
