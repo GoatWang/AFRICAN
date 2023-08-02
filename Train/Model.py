@@ -362,28 +362,31 @@ class AfricanSlowfast(pl.LightningModule):
             else:
                 frames_feats = frames_feats * self.w_vc + frames_feats_ic * self.w_ic + self.bias_ic
 
-        video_logits = None
+        video_logits_vcic = None
         if frames_feats is not None:
             video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
             text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
             t = self.video_clip.logit_scale.exp()
-            video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
-            video_logits = self.final_fc(video_logits)
+            video_logits_vcic = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
+            video_logits_vcic = self.final_fc(video_logits_vcic)
 
         # enable_african
+        video_logits_af = None
         if self.enable_african:
             if self.enable_preprocess_af:
                 frames_feats_af = self.forward_frames_feats_af(frames_tensor_af)
             else:
                 frames_feats_af = self.forward_frames_af(frames_tensor_af)
-
             video_logits_af = self.mlp_af(frames_feats_af)
-            if video_logits is None:
-                video_logits = video_logits_af
-            else:
-                video_logits = video_logits * self.w_vcic + video_logits_af * self.w_af + self.bias_af
 
-        return video_logits, labels_onehot
+        if video_logits_vcic is None:
+            video_logits = video_logits_af
+        elif video_logits_af is None:
+            video_logits = video_logits_vcic
+        else:
+            # video_logits = video_logits_vcic * self.w_vcic + video_logits_af * self.w_af + self.bias_af
+
+        return video_logits_vcic, video_logits_af, video_logits, labels_onehot
     
     # def infer(self, frames_tensor, rames_tensor_fast):
     #     frames_tensor, frames_tensor_fast, labels_onehot, index = batch
@@ -396,18 +399,29 @@ class AfricanSlowfast(pl.LightningModule):
     #     video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
     #     video_logits = self.final_fc(video_logits)
     #     return video_logits
-        
+    
     def training_step(self, batch, batch_idx):
-        video_logits, labels_onehot = self(batch)
+        video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
+
+        if (video_logits_vcic is None) and (video_logits_af is None):
+            assert False, "video_logits_vcic and video_logits_af are both None"
+        elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
+            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+        else: # both of them are not None
+            loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
+            loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
+            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            loss = (loss_vcic + loss_af + loss_all) / 3
+            self.log("train_loss_vcic", loss_vcic)
+            self.log("train_loss_af", loss_af)
+        self.log("train_loss", loss_all)
+
         video_pred = torch.sigmoid(video_logits)
-        loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.train_metrics.update(video_pred, labels_onehot)
         self.train_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
         self.train_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
         self.train_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
         self.train_map_class.update(video_pred, labels_onehot)
-        on_step = batch_idx
-        self.log("train_loss", loss)
         return loss
 
     def on_train_epoch_end(self):
@@ -433,15 +447,27 @@ class AfricanSlowfast(pl.LightningModule):
         self.train_map_class.reset()
 
     def validation_step(self, batch, batch_idx):
-        video_logits, labels_onehot = self(batch)
+        video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
+
+        if (video_logits_vcic is None) and (video_logits_af is None):
+            assert False, "video_logits_vcic and video_logits_af are both None"
+        elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
+            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+        else: # both of them are not None
+            loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
+            loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
+            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            loss = (loss_vcic + loss_af + loss_all) / 3
+            self.log("valid_loss_vcic", loss_vcic)
+            self.log("valid_loss_af", loss_af)
+        self.log("valid_loss", loss_all)
+
         video_pred = torch.sigmoid(video_logits)
-        loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.valid_metrics.update(video_pred, labels_onehot)
         self.valid_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
         self.valid_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
         self.valid_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
         self.valid_map_class.update(video_pred, labels_onehot)
-        self.log("valid_loss", loss)
 
     def on_validation_epoch_end(self):
         _valid_metrics = self.valid_metrics.compute()
