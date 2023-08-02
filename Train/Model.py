@@ -384,7 +384,7 @@ class AfricanSlowfast(pl.LightningModule):
         elif video_logits_af is None:
             video_logits = video_logits_vcic
         else:
-            # video_logits = video_logits_vcic * self.w_vcic + video_logits_af * self.w_af + self.bias_af
+            video_logits = video_logits_vcic * self.w_vcic + video_logits_af * self.w_af + self.bias_af
 
         return video_logits_vcic, video_logits_af, video_logits, labels_onehot
     
