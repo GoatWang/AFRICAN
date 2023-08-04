@@ -59,6 +59,7 @@ def config():
     suffix_zfill_number = 3
     preprocess_batch_size = 512 # since there diff numbers of frame in each video, we need to cat them into a batch for parallel inference
     num_preaug_videos = 30
+    save_debug_frames = False
 
     ## image clip
     enable_image_clip = True
