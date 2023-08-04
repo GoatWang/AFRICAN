@@ -98,17 +98,19 @@ def main(_config):
         dataset_train.produce_prompt_embedding(model.video_clip)
         dataset_valid.produce_prompt_embedding(model.video_clip)
 
-        if _config['batch_size'] == 1:
-            print("batch_size can be more than 1")
-            print("batch_size can be more than 1")
-            print("batch_size can be more than 1")
-            print("batch_size can be more than 1")
-        train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
-        valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
-
         image_encoder_fast = model.get_image_encoder_fast(_config, pretrained_type)
         image_encoder_fast.to(_config['device'])
         image_encoder_fast.eval()
+
+        train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=False) # _config['batch_size']
+        valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False) # _config['batch_size']
+
+        inference_preaug_save(_config, dataset_train, train_loader, image_encoder_fast, pretrained_type)
+        inference_preaug_save(_config, dataset_valid, valid_loader, image_encoder_fast, pretrained_type)        
+
+        # for ful frame preprocessing
+        # train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
+        # valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
 
         # inference_save(_config, dataset_train, train_loader, image_encoder_fast)
         # inference_save(_config, dataset_valid, valid_loader, image_encoder_fast)
@@ -116,8 +118,6 @@ def main(_config):
         # batch_inference_save_all_frames(_config, dataset_train, train_loader, image_encoder_fast, pretrained_type)
         # batch_inference_save_all_frames(_config, dataset_valid, valid_loader, image_encoder_fast, pretrained_type)
 
-        inference_preaug_save(_config, dataset_train, train_loader, image_encoder_fast, pretrained_type)
-        inference_preaug_save(_config, dataset_valid, valid_loader, image_encoder_fast, pretrained_type)        
 
 
 
