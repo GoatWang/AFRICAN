@@ -184,9 +184,9 @@ class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
 
     def __getitem__(self, index):
         video_fp = self.video_fps[index]
-        suffixes = [str(i).zfill(self.suffix_zfill_number) for i in range(self.num_preaug_videos)]
-        video_feats_fast_fp = [os.path.exists(self.get_preprocess_feats_fp(video_fp, self.pretrained_type, suffix)) for suffix in suffixes]
-        if not np.all(video_feats_fast_fp):
+        suffixes = ["_" + str(i).zfill(self.suffix_zfill_number) for i in range(self.num_preaug_videos)]
+        video_feats_fast_fps = [os.path.exists(self.get_preprocess_feats_fp(video_fp, self.pretrained_type, suffix)) for suffix in suffixes]
+        if not np.all(video_feats_fast_fps):
             video_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
             video_tensor_fast = [self.video_aug(video_tensor_fast, self.video_transform) for i in range(self.num_preaug_videos)]
             video_tensor_fast = torch.stack(video_tensor_fast)
