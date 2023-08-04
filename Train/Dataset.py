@@ -173,9 +173,11 @@ class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
         
         if pretrained_type == "ic":
             self.num_frames = self.num_frames_ic
+            self.video_sampling = self.video_sampling_ic
             self.video_transform = self.video_transform_ic # depends on split
         elif pretrained_type == "af":
             self.num_frames = self.num_frames_af
+            self.video_sampling = self.video_sampling_af
             self.video_transform = self.video_transform_af # depends on split
         else:
             raise NotImplementedError
@@ -185,7 +187,7 @@ class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
         suffixes = [str(i).zfill(self.suffix_zfill_number) for i in range(self.num_preaug_videos)]
         video_feats_fast_fp = [os.path.exists(self.get_preprocess_feats_fp(video_fp, self.pretrained_type, suffix)) for suffix in suffixes]
         if not np.all(video_feats_fast_fp):
-            video_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.preprocess_sampling)[0]
+            video_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
             video_tensor_fast = [self.video_aug(video_tensor_fast, self.video_transform) for i in range(self.num_preaug_videos)]
             video_tensor_fast = torch.stack(video_tensor_fast)
         else:
