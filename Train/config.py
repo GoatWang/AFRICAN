@@ -58,7 +58,7 @@ def config():
     preprocess_dir = os.path.join(os.path.dirname(__file__), 'preprocess', "video_feats") 
     suffix_zfill_number = 3
     preprocess_batch_size = 512 # since there diff numbers of frame in each video, we need to cat them into a batch for parallel inference
-    num_preaug_videos = 20
+    num_preaug_videos = 30
 
     ## image clip
     enable_image_clip = True

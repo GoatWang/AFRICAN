@@ -20,16 +20,16 @@ def collate_func(batch):
     video_fps = [item[1] for item in batch]  # each element is of size (1, h*, w*). where (h*, w*) changes from mask to another.
     return video_tensors_cat, video_tensors_n_frames, video_fps
 
-def inference_save(_config, dataset, dataloader, image_encoder):
-    """dataloader without collate function with only batch_size=1"""
-    with torch.no_grad():
-        for batch_idx, (video_tensors_fast, video_fps) in enumerate(tqdm(dataloader)):
-            video_tensors_fast = video_tensors_fast.to(_config['device'])
-            for idx, (video_tensor_fast, video_fp) in enumerate(zip(video_tensors_fast, video_fps)):
-                video_feats_fast_fp = dataset.get_preprocess_feats_fp(video_fp)
-                if not os.path.exists(video_feats_fast_fp):
-                    video_feats_fast = image_encoder(video_tensor_fast)
-                    torch.save(video_feats_fast, video_feats_fast_fp)
+# def inference_save(_config, dataset, dataloader, image_encoder):
+#     """dataloader without collate function with only batch_size=1"""
+#     with torch.no_grad():
+#         for batch_idx, (video_tensors_fast, video_fps) in enumerate(tqdm(dataloader)):
+#             video_tensors_fast = video_tensors_fast.to(_config['device'])
+#             for idx, (video_tensor_fast, video_fp) in enumerate(zip(video_tensors_fast, video_fps)):
+#                 video_feats_fast_fp = dataset.get_preprocess_feats_fp(video_fp)
+#                 if not os.path.exists(video_feats_fast_fp):
+#                     video_feats_fast = image_encoder(video_tensor_fast)
+#                     torch.save(video_feats_fast, video_feats_fast_fp)
 
 # def batch_inference_save_all_frames(_config, dataset, dataloader, image_encoder, pretrained_type):
 #     if pretrained_type == 'ic':
@@ -82,8 +82,7 @@ def inference_preaug_save(_config, dataset, dataloader, image_encoder, pretraine
                     suffix = "_" + str(v).zfill(_config['suffix_zfill_number'])
                     video_feat_fast_fp = dataset.get_preprocess_feats_fp(video_fp, pretrained_type, suffix=suffix)
                     if not os.path.exists(video_feat_fast_fp):
-                        video_feats_fast = video_feats_fast[b, v]
-                        torch.save(video_feats_fast, video_feat_fast_fp)
+                        torch.save(video_feats_fast[b, v], video_feat_fast_fp)
 
 @ex.automain
 def main(_config):
