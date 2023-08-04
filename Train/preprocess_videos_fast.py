@@ -31,39 +31,59 @@ def inference_save(_config, dataset, dataloader, image_encoder):
                     video_feats_fast = image_encoder(video_tensor_fast)
                     torch.save(video_feats_fast, video_feats_fast_fp)
 
-def batch_inference_save(_config, dataset, dataloader, image_encoder, pretrained_type):
+# def batch_inference_save_all_frames(_config, dataset, dataloader, image_encoder, pretrained_type):
+#     if pretrained_type == 'ic':
+#         transformer_width = _config['transformer_width_ic']
+#     elif pretrained_type == 'af':
+#         transformer_width = _config['transformer_width_af']
+
+#     with torch.no_grad():
+#         for batch_idx, (batch) in enumerate(tqdm(dataloader)):
+#             video_tensors_cat, video_tensors_n_frames, video_fps = batch
+#             all_exists = np.all([os.path.exists(dataset.get_preprocess_feats_fp(video_fp, pretrained_type)) for video_fp in video_fps])
+#             if all_exists:
+#                 continue
+
+#             # parallel inference
+#             video_tensors_cat = video_tensors_cat.to(_config['device'])
+#             video_feats_tensors_cat = torch.zeros(video_tensors_cat.shape[0], transformer_width)
+#             n_iters = int(np.ceil(video_feats_tensors_cat.shape[0] / _config['preprocess_batch_size']))
+#             for idx in range(n_iters):
+#                 st, end = idx*_config['preprocess_batch_size'], (idx+1)*_config['preprocess_batch_size']
+#                 video_tensors_batch = video_tensors_cat[st:end]
+#                 video_feats_tensors_batch = image_encoder(video_tensors_batch)
+#                 video_feats_tensors_cat[st:end] = video_feats_tensors_batch
+
+#             # split into different videos $ save
+#             frane_st = 0
+#             for idx, (n_frames, video_fp) in enumerate(zip(video_tensors_n_frames, video_fps)):
+#                 video_feats_fast = video_feats_tensors_cat[frane_st: frane_st+n_frames]
+#                 frane_st = frane_st+n_frames
+
+#                 video_feats_fast_fp = dataset.get_preprocess_feats_fp(video_fp, pretrained_type)
+#                 if not os.path.exists(video_feats_fast_fp):
+#                     torch.save(video_feats_fast, video_feats_fast_fp)
+
+def inference_preaug_save(_config, dataset, dataloader, image_encoder, pretrained_type):
+    """dataloader without collate function with only batch_size=1"""
     if pretrained_type == 'ic':
         transformer_width = _config['transformer_width_ic']
     elif pretrained_type == 'af':
         transformer_width = _config['transformer_width_af']
 
     with torch.no_grad():
-        for batch_idx, (batch) in enumerate(tqdm(dataloader)):
-            video_tensors_cat, video_tensors_n_frames, video_fps = batch
-            all_exists = np.all([os.path.exists(dataset.get_preprocess_feats_fp(video_fp, pretrained_type)) for video_fp in video_fps])
-            if all_exists:
-                continue
-
-            # parallel inference
-            video_tensors_cat = video_tensors_cat.to(_config['device'])
-            video_feats_tensors_cat = torch.zeros(video_tensors_cat.shape[0], transformer_width)
-            n_iters = int(np.ceil(video_feats_tensors_cat.shape[0] / _config['preprocess_batch_size']))
-            for idx in range(n_iters):
-                st, end = idx*_config['preprocess_batch_size'], (idx+1)*_config['preprocess_batch_size']
-                video_tensors_batch = video_tensors_cat[st:end]
-                video_feats_tensors_batch = image_encoder(video_tensors_batch)
-                video_feats_tensors_cat[st:end] = video_feats_tensors_batch
-
-            # split into different videos $ save
-            frane_st = 0
-            for idx, (n_frames, video_fp) in enumerate(zip(video_tensors_n_frames, video_fps)):
-                video_feats_fast = video_feats_tensors_cat[frane_st: frane_st+n_frames]
-                frane_st = frane_st+n_frames
-
-                video_feats_fast_fp = dataset.get_preprocess_feats_fp(video_fp, pretrained_type)
-                if not os.path.exists(video_feats_fast_fp):
-                    torch.save(video_feats_fast, video_feats_fast_fp)
-
+        for batch_idx, (video_tensors_fast, video_fps) in enumerate(tqdm(dataloader)):
+            video_tensors_fast = video_tensors_fast.to(_config['device'])
+            B, V, F, C, H, W = video_tensors_fast.shape
+            video_feats_fast = image_encoder(video_tensors_fast.view(B*V*F, C, H, W)).view(B, V, F, transformer_width)
+            for b in range(B): # batch
+                for v in range(V): # number of preaug videos
+                    video_fp = video_fps[b]
+                    suffix = "_" + str(v).zfill(_config['suffix_zfill_number'])
+                    video_feat_fast_fp = dataset.get_preprocess_feats_fp(video_fp, pretrained_type, suffix=suffix)
+                    if not os.path.exists(video_feat_fast_fp):
+                        video_feats_fast = video_feats_fast[b, v]
+                        torch.save(video_feats_fast, video_feat_fast_fp)
 
 @ex.automain
 def main(_config):
@@ -78,6 +98,11 @@ def main(_config):
         dataset_train.produce_prompt_embedding(model.video_clip)
         dataset_valid.produce_prompt_embedding(model.video_clip)
 
+        if _config['batch_size'] == 1:
+            print("batch_size can be more than 1")
+            print("batch_size can be more than 1")
+            print("batch_size can be more than 1")
+            print("batch_size can be more than 1")
         train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
         valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], collate_fn=collate_func, shuffle=False) # _config['batch_size']
 
@@ -85,11 +110,15 @@ def main(_config):
         image_encoder_fast.to(_config['device'])
         image_encoder_fast.eval()
 
-        batch_inference_save(_config, dataset_train, train_loader, image_encoder_fast, pretrained_type)
-        batch_inference_save(_config, dataset_valid, valid_loader, image_encoder_fast, pretrained_type)
-
         # inference_save(_config, dataset_train, train_loader, image_encoder_fast)
         # inference_save(_config, dataset_valid, valid_loader, image_encoder_fast)
+
+        # batch_inference_save_all_frames(_config, dataset_train, train_loader, image_encoder_fast, pretrained_type)
+        # batch_inference_save_all_frames(_config, dataset_valid, valid_loader, image_encoder_fast, pretrained_type)
+
+        inference_preaug_save(_config, dataset_train, train_loader, image_encoder_fast, pretrained_type)
+        inference_preaug_save(_config, dataset_valid, valid_loader, image_encoder_fast, pretrained_type)        
+
 
 
 
