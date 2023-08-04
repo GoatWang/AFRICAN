@@ -91,6 +91,8 @@ def main(_config):
     for pretrained_type in _config['preprocess_pretrained_type']: 
         dataset_train = AnimalKingdomDatasetPreprocess(_config, pretrained_type, split="train")
         dataset_valid = AnimalKingdomDatasetPreprocess(_config, pretrained_type, split="val")
+        print("len(dataset_train)", len(dataset_train))
+        print("len(dataset_valid)", len(dataset_valid))
 
         _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
         model = AfricanSlowfast(_config).to(_config['device'])
