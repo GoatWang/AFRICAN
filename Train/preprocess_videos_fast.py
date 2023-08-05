@@ -75,19 +75,30 @@ def inference_preaug_save(_config, dataset, dataloader, image_encoder, pretraine
         for batch_idx, (video_tensors_fast, video_fps) in enumerate(tqdm(dataloader)):
             video_tensors_fast = video_tensors_fast.to(_config['device'])
             B, V, F, C, H, W = video_tensors_fast.shape
-            video_feats_fast = image_encoder(video_tensors_fast.view(B*V*F, C, H, W)).view(B, V, F, transformer_width)
+
+            all_exists = True
             for b in range(B): # batch
                 for v in range(V): # number of preaug videos
                     video_fp = video_fps[b]
                     suffix = "_" + str(v).zfill(_config['suffix_zfill_number'])
                     video_feat_fast_fp = dataset.get_preprocess_feats_fp(video_fp, pretrained_type, suffix=suffix)
                     if not os.path.exists(video_feat_fast_fp):
-                        torch.save(video_feats_fast[b, v].clone(), video_feat_fast_fp)
-                        if _config['save_debug_frames']:
-                            video_temp = video_tensors_fast[b, v].clone()
-                            video_temp = (video_temp - video_temp.min()) / (video_temp.max() - video_temp.min())
-                            video_temp = (video_temp * 255).type(torch.uint8) 
-                            torch.save(video_temp, video_feat_fast_fp.replace(".pt", "_debug.pt"))
+                        all_exists = False
+
+            if not all_exists:
+                video_feats_fast = image_encoder(video_tensors_fast.view(B*V*F, C, H, W)).view(B, V, F, transformer_width)
+                for b in range(B): # batch
+                    for v in range(V): # number of preaug videos
+                        video_fp = video_fps[b]
+                        suffix = "_" + str(v).zfill(_config['suffix_zfill_number'])
+                        video_feat_fast_fp = dataset.get_preprocess_feats_fp(video_fp, pretrained_type, suffix=suffix)
+                        if not os.path.exists(video_feat_fast_fp):
+                            torch.save(video_feats_fast[b, v].clone(), video_feat_fast_fp)
+                            if _config['save_debug_frames']:
+                                video_temp = video_tensors_fast[b, v].clone()
+                                video_temp = (video_temp - video_temp.min()) / (video_temp.max() - video_temp.min())
+                                video_temp = (video_temp * 255).type(torch.uint8) 
+                                torch.save(video_temp, video_feat_fast_fp.replace(".pt", "_debug.pt"))
 
 
 @ex.automain
@@ -109,8 +120,8 @@ def main(_config):
         image_encoder_fast.to(_config['device'])
         image_encoder_fast.eval()
 
-        train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=False) # _config['batch_size']
-        valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False) # _config['batch_size']
+        train_loader = utils.data.DataLoader(dataset_train, batch_size=1, shuffle=False) # _config['batch_size']
+        valid_loader = utils.data.DataLoader(dataset_valid, batch_size=1, shuffle=False) # _config['batch_size']
 
         inference_preaug_save(_config, dataset_train, train_loader, image_encoder_fast, pretrained_type)
         inference_preaug_save(_config, dataset_valid, valid_loader, image_encoder_fast, pretrained_type)        
