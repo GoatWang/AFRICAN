@@ -41,10 +41,10 @@ class MyCollate:
 
         feats_tensor_ic = torch.zeros(frames_tensor_fast.shape[0], frames_tensor_fast.shape[1], self.transformer_width_ic)
         if self.enable_image_clip:
-            feats_tensor_ic = self.batch_inference(self, self.image_encoder_ic, frames_tensor_fast.clone(), self.transformer_width_ic)
+            feats_tensor_ic = self.batch_inference(self.image_encoder_ic, frames_tensor_fast.clone(), self.transformer_width_ic)
 
         feats_tensor_af = torch.zeros(frames_tensor_fast.shape[0], frames_tensor_fast.shape[1], self.transformer_width_af)
         if self.enable_african:
-            feats_tensor_af = self.batch_inference(self, self.image_encoder_af, frames_tensor_fast.clone(), self.transformer_width_af)
+            feats_tensor_af = self.batch_inference(self.image_encoder_af, frames_tensor_fast.clone(), self.transformer_width_af)
 
         return frames_tensor_vc, feats_tensor_ic, feats_tensor_af, labels_onehot, index
