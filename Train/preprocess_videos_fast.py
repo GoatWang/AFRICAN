@@ -101,7 +101,9 @@ def inference_preaug_save(_config, dataset, dataloader, image_encoder, pretraine
                         video_feat_fast_fp = dataset.get_preprocess_feats_fp(video_fp, pretrained_type, suffix=suffix)
                         if not os.path.exists(video_feat_fast_fp):
                             st = time.time()
-                            torch.save(video_feats_fast[b, v].clone(), video_feat_fast_fp)
+                            # torch.save(video_feats_fast[b, v].clone(), video_feat_fast_fp)
+                            np.save(video_feats_fast[b, v].detach().cpu().numpy(), video_feat_fast_fp.replace(".pt", ".npy"))
+
                             print("save", time.time() - st)
                             if _config['save_debug_frames']:
                                 video_temp = video_tensors_fast[b, v].clone()
