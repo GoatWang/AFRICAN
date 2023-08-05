@@ -8,7 +8,7 @@ from Model import AfricanSlowfast
 from config import ex, config
 import pytorch_lightning as pl
 from datetime import datetime
-from DataLoader import MyCollate
+# from DataLoader import MyCollate
 from Dataset import AnimalKingdomDataset, AnimalKingdomDatasetSlowFast
 torch.manual_seed(0)
 
