@@ -147,7 +147,7 @@ class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
         # fast stream
         frames_tensor_fast = torch.zeros(1, 3, 224, 224)
         if self.enable_image_clip or self.enable_african:
-            frames_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames_ic, sample=self.video_sampling_ic)[0]
+            frames_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames_fast, sample=self.video_sampling_fast)[0]
             frames_tensor_fast = self.video_aug(frames_tensor_fast, self.video_transform)
 
         return frames_tensor_vc, frames_tensor_fast, labels_onehot, index
