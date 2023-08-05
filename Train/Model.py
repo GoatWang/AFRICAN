@@ -329,15 +329,16 @@ class AfricanSlowfast(pl.LightningModule):
     #     return feats_tensor
 
     def forward_frames_ic(self, frames_tensor):
-        B, F, C, H, W = frames_tensor.shape
-        video_tensors = frames_tensor.reshape(B*F, C, H, W)
-        feats_tensors = torch.zeros(B*F, self.transformer_width_ic, device=self.device)
-        n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
-        for idx in range(n_iters):
-            st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
-            feats_tensors[st:end] = self.image_encoder_ic(video_tensors[st:end])
-        feats_tensors = feats_tensors.reshape(B, F, self.transformer_width_ic)
-        return feats_tensors
+        with torch.no_grad():
+            B, F, C, H, W = frames_tensor.shape
+            video_tensors = frames_tensor.reshape(B*F, C, H, W)
+            feats_tensors = torch.zeros(B*F, self.transformer_width_ic, device=self.device)
+            n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
+            for idx in range(n_iters):
+                st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
+                feats_tensors[st:end] = self.image_encoder_ic(video_tensors[st:end])
+            feats_tensors = feats_tensors.reshape(B, F, self.transformer_width_ic)
+            return feats_tensors
 
     def forward_feats_ic(self, feats_tensor):
         """apply transformer on image embedding of each frames"""
@@ -354,15 +355,16 @@ class AfricanSlowfast(pl.LightningModule):
     #     return feats_tensor
 
     def forward_frames_af(self, frames_tensor):
-        B, F, C, H, W = frames_tensor.shape
-        video_tensors = frames_tensor.reshape(B*F, C, H, W)
-        feats_tensors = torch.zeros(B*F, self.transformer_width_af, device=self.device)
-        n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
-        for idx in range(n_iters):
-            st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
-            feats_tensors[st:end] = self.image_encoder_af(video_tensors[st:end])
-        feats_tensors = feats_tensors.reshape(B, F, self.transformer_width_af)
-        return feats_tensors
+        with torch.no_grad():
+            B, F, C, H, W = frames_tensor.shape
+            video_tensors = frames_tensor.reshape(B*F, C, H, W)
+            feats_tensors = torch.zeros(B*F, self.transformer_width_af, device=self.device)
+            n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
+            for idx in range(n_iters):
+                st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
+                feats_tensors[st:end] = self.image_encoder_af(video_tensors[st:end])
+            feats_tensors = feats_tensors.reshape(B, F, self.transformer_width_af)
+            return feats_tensors
 
     def forward_feats_af(self, feats_tensor):
         """apply transformer on image embedding of each frames"""
