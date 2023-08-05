@@ -182,6 +182,7 @@ class AfricanSlowfast(pl.LightningModule):
         )
         ckpt = torch.load(config["ckpt_path_videoclip_vc"], map_location="cpu")
         state_dict = ckpt["state_dict"]
+        print(state_dict.keys())
         transformer_width = state_dict["visual.conv1.weight"].shape[0]
 
         sd = {k: v.cpu() for k, v in self.state_dict().items()}
@@ -327,7 +328,7 @@ class AfricanSlowfast(pl.LightningModule):
             for idx in range(n_iters):
                 st, end = idx*self.preprocess_batch_size_vc, (idx+1)*self.preprocess_batch_size_vc
                 feats_tensor[st:end] = self.video_clip.visual(frames_tensor[st:end], return_all_feats=False, mode='video')
-                
+
         feats_tensor = self.video_clip.visual_ln_post(feats_tensor)
         feats_tensor = feats_tensor @ self.video_clip.visual_proj
         return feats_tensor
