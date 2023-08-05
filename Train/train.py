@@ -8,6 +8,7 @@ from Model import AfricanSlowfast
 from config import ex, config
 import pytorch_lightning as pl
 from datetime import datetime
+from DataLoader import MyCollate
 from Dataset import AnimalKingdomDataset, AnimalKingdomDatasetSlowFast
 torch.manual_seed(0)
 
@@ -36,8 +37,9 @@ def main(_config):
                       df_action[df_action['segment'] == 'middle'].index.tolist(), 
                       df_action[df_action['segment'] == 'tail'].index.tolist())
 
-    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True, num_workers=_config["data_workers"]) # bugs on MACOS
-    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"]) # bugs on MACOS
+    collate_func = MyCollate(_config, model.image_encoder_ic, model.image_encoder_af)
+    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True, num_workers=_config["data_workers"], collate_func=collate_func)
+    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"], collate_func=collate_func)
 
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         dirpath=_config['models_dir'], 

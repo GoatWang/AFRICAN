@@ -92,24 +92,28 @@ class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
         # slow stream
         self.enable_video_clip = config['enable_video_clip']
 
-        # fast stream: image clip
+        # fast stream
+        self.num_frames_fast = config['num_frames_fast']
+        self.video_sampling_fast = config['video_sampling_fast']
+
+        ## fast stream: image clip
         self.preprocess_dir = config['preprocess_dir']
         self.enable_image_clip = config['enable_image_clip']
         if self.enable_image_clip:
             self.ckpt_path_ic = config['ckpt_path_ic']
-            self.num_frames_ic = config['num_frames_ic']
-            self.video_sampling_ic = config['video_sampling_ic']
-            self.enable_preprocess_ic = config['enable_preprocess_ic']
-            self.video_transform_ic = VideoTransformTorch(mode='val')  # do not transform
+            # self.num_frames_ic = config['num_frames_ic']
+            # self.video_sampling_ic = config['video_sampling_ic']
+            # self.enable_preprocess_ic = config['enable_preprocess_ic']
+            # self.video_transform_ic = VideoTransformTorch(mode=split)  # do not transform
 
-        # fast stream: african
+        ## fast stream: african
         self.enable_african = config['enable_african']
         if self.enable_african:
             self.ckpt_path_af = config['ckpt_path_af']
-            self.num_frames_af = config['num_frames_af']
-            self.video_sampling_af = config['video_sampling_af']
-            self.enable_preprocess_af = config['enable_preprocess_af']
-            self.video_transform_af = VideoTransformTorch(mode='val')  # do not transform
+            # self.num_frames_af = config['num_frames_af']
+            # self.video_sampling_af = config['video_sampling_af']
+            # self.enable_preprocess_af = config['enable_preprocess_af']
+            # self.video_transform_af = VideoTransformTorch(mode='val')  # do not transform
 
         at_least_one_source = self.enable_video_clip or self.enable_image_clip or self.enable_african
         assert at_least_one_source, "at least one data source should be enabled"
@@ -140,53 +144,39 @@ class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
             frames_tensor_vc = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
             frames_tensor_vc = self.video_aug(frames_tensor_vc, self.video_transform)            
 
-        # fast stream: image clip
-        frames_tensor_ic = torch.zeros(1, 3, 224, 224)
-        if self.enable_image_clip:
-            if self.enable_preprocess_ic:
-                video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp, "ic")
-                frames_tensor_ic = read_feats_fast(video_feats_fast_fp, self.num_frames_ic, self.video_sampling_ic)
-            else:
-                frames_tensor_ic = read_frames_decord(video_fp, num_frames=self.num_frames_ic, sample=self.video_sampling_ic)[0]
-                frames_tensor_ic = self.video_aug(frames_tensor_ic, self.video_transform_ic)
+        # fast stream
+        frames_tensor_fast = torch.zeros(1, 3, 224, 224)
+        if self.enable_image_clip or self.enable_african:
+            frames_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames_ic, sample=self.video_sampling_ic)[0]
+            frames_tensor_fast = self.video_aug(frames_tensor_fast, self.video_transform)
 
-        # fast stream: african
-        frames_tensor_af = torch.zeros(1, 3, 224, 224)
-        if self.enable_african:
-            if self.enable_preprocess_af:
-                video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp, "ic")
-                frames_tensor_af = read_feats_fast(video_feats_fast_fp, self.num_frames_af, self.video_sampling_af)
-            else:
-                frames_tensor_af = read_frames_decord(video_fp, num_frames=self.num_frames_af, sample=self.video_sampling_af)[0]
-                frames_tensor_af = self.video_aug(frames_tensor_af, self.video_transform_af)
-
-        return frames_tensor_vc, frames_tensor_ic, frames_tensor_af, labels_onehot, index
+        return frames_tensor_vc, frames_tensor_fast, labels_onehot, index
              
-class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
-    def __init__(self, config, pretrained_type, split=""):
-        super().__init__(config, split)
-        self.pretrained_type = pretrained_type
+# class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
+#     def __init__(self, config, pretrained_type, split=""):
+#         super().__init__(config, split)
+#         self.pretrained_type = pretrained_type
 
-        if pretrained_type == "ic":
-            self.num_frames = self.num_frames_ic
-            self.video_transform = self.video_transform_ic
-        elif pretrained_type == "af":
-            self.num_frames = self.num_frames_af
-            self.video_transform = self.video_transform_af
-        else:
-            raise NotImplementedError
+#         if pretrained_type == "ic":
+#             self.num_frames = self.num_frames_ic
+#             self.video_transform = self.video_transform_ic
+#         elif pretrained_type == "af":
+#             self.num_frames = self.num_frames_af
+#             self.video_transform = self.video_transform_af
+#         else:
+#             raise NotImplementedError
         
-    def __getitem__(self, index):
-        video_fp = self.video_fps[index]
-        video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp, self.pretrained_type)
-        if not os.path.exists(video_feats_fast_fp):
-            video_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames, sample='all')[0]
-            video_tensor_fast = self.video_aug(video_tensor_fast, self.video_transform)
-        else:
-            # FOR ACCERLATION
-            video_tensor_fast = torch.zeros(1, 3, 224, 224)
+#     def __getitem__(self, index):
+#         video_fp = self.video_fps[index]
+#         video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp, self.pretrained_type)
+#         if not os.path.exists(video_feats_fast_fp):
+#             video_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames, sample='all')[0]
+#             video_tensor_fast = self.video_aug(video_tensor_fast, self.video_transform)
+#         else:
+#             # FOR ACCERLATION
+#             video_tensor_fast = torch.zeros(1, 3, 224, 224)
 
-        return video_tensor_fast, video_fp
+#         return video_tensor_fast, video_fp
 
 
 if __name__  == "__main__":

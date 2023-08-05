@@ -54,15 +54,19 @@ def config():
     ## fast stream preprocess setting
     # also means two different source for two streams of the model
     # affetct Model.py: if True, the dataset output should be video feature embedding, else output should be video frame
-    preprocess_pretrained_type = ['ic', 'af'] # 'image_clip', 'african'
-    preprocess_dir = os.path.join(os.path.dirname(__file__), 'preprocess', "video_feats") 
+    # preprocess_pretrained_type = ['ic', 'af'] # 'image_clip', 'african'
+    # preprocess_dir = os.path.join(os.path.dirname(__file__), 'preprocess', "video_feats") 
     preprocess_batch_size = 512 # since there diff numbers of frame in each video, we need to cat them into a batch for parallel inference
+    
+    # fast dataset
+    num_frames_fast = 32
+    video_sampling_fast = 'rand' # 'rand', 'uniform', 'sequence_rand'
 
     ## image clip
     enable_image_clip = True
-    num_frames_ic = 32
-    video_sampling_ic = 'rand' # 'rand', 'uniform', 'sequence_rand'
-    enable_preprocess_ic = True 
+    # num_frames_ic = 32
+    # video_sampling_ic = 'rand' # 'rand', 'uniform', 'sequence_rand'
+    # enable_preprocess_ic = True 
     ckpt_path_ic = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
     transformer_width_ic = 768
     transformer_layers_ic = 6
@@ -70,9 +74,9 @@ def config():
 
     ## african
     enable_african = True
-    num_frames_af = 32
-    video_sampling_af = 'rand' # 'rand', 'uniform', 'sequence_rand'
-    enable_preprocess_af = True 
+    # num_frames_af = 32
+    # video_sampling_af = 'rand' # 'rand', 'uniform', 'sequence_rand'
+    # enable_preprocess_af = True 
     ckpt_path_af = os.path.abspath(os.path.join(base_dir, "weights", "clip_nodecay_infoNCE_8_rand_augmix_000030_epoch30.ckpt"))
     transformer_width_af = 768
     transformer_layers_af = 6
