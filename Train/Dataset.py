@@ -187,13 +187,8 @@ class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
         suffixes = ["_" + str(i).zfill(self.suffix_zfill_number) for i in range(self.num_preaug_videos)]
         video_feats_fast_fps = [os.path.exists(self.get_preprocess_feats_fp(video_fp, self.pretrained_type, suffix)) for suffix in suffixes]
         if not np.all(video_feats_fast_fps):
-            import time 
-            st = time.time()
-            video_tensor_fast_raw = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
-            print("read", time.time() - st, "s")
-            st = time.time()
-            video_tensor_fast_aug = [self.video_aug(video_tensor_fast_raw, self.video_transform) for i in range(self.num_preaug_videos)]
-            print("aug", time.time() - st, "s")
+            video_tensor_fast_raw = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0] # 0.1s
+            video_tensor_fast_aug = [self.video_aug(video_tensor_fast_raw, self.video_transform) for i in range(self.num_preaug_videos)] # 10s
             video_tensor_fast_aug = torch.stack(video_tensor_fast_aug)
         else:
             # FOR ACCERLATION
