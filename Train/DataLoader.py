@@ -37,7 +37,7 @@ class MyCollate:
         frames_tensor_vc = torch.stack(frames_tensor_vc, dim=0)
         frames_tensor_fast = torch.stack(frames_tensor_fast, dim=0)
         labels_onehot = torch.stack(labels_onehot, dim=0)
-        index = torch.stack(index, dim=0)
+        index = list(index, dim=0)
 
         feats_tensor_ic = torch.zeros(frames_tensor_fast.shape[0], frames_tensor_fast.shape[1], self.transformer_width_ic)
         if self.enable_image_clip:
