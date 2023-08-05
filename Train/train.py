@@ -37,9 +37,9 @@ def main(_config):
                       df_action[df_action['segment'] == 'middle'].index.tolist(), 
                       df_action[df_action['segment'] == 'tail'].index.tolist())
 
-    collate_fn = MyCollate(_config, model.image_encoder_ic, model.image_encoder_af)
-    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True, num_workers=_config["data_workers"], collate_fn=collate_fn)
-    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"], collate_fn=collate_fn)
+    # collate_fn = MyCollate(_config, model.image_encoder_ic, model.image_encoder_af)
+    train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True, num_workers=_config["data_workers"])
+    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"])
 
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         dirpath=_config['models_dir'], 
@@ -56,7 +56,7 @@ def main(_config):
     csv_logger = pl.loggers.CSVLogger(save_dir=_config["log_dir"], name=_config['name'], version=datetime_str)
     csv_logger.log_hyperparams(_config)
     loggers=[csv_logger]
-    
+
     if _config['wandb']:
         wandb_logger = pl.loggers.WandbLogger(project='AnimalKingdom', save_dir=_config["log_dir"], name=_config['name'], version=model_version)
         wandb_logger.experiment.config.update(_config, allow_val_change=True)

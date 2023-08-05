@@ -91,6 +91,10 @@ class AfricanSlowfast(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.save_hyperparameters()
+        self.preprocess_batch_size = config['preprocess_batch_size']
+        self.transformer_width_ic = config['transformer_width_ic']
+        self.transformer_width_af = config['transformer_width_af']
+        
         self.lr = config["lr"]
         self.n_classes = config["n_classes"]
         self.optimizer = config["optimizer"]
@@ -315,37 +319,57 @@ class AfricanSlowfast(pl.LightningModule):
         )
         return frames_feats
     
-    def forward_frames_ic(self, frames_tensor):
-        """encode image into embedding"""
-        B, F, C, H, W = frames_tensor.shape
-        frames_tensor = frames_tensor.view(B*F, C, H, W)
-        feats_tensor = self.image_encoder_ic(frames_tensor)
-        feats_tensor = feats_tensor.view(B, F, -1)
-        feats_tensor = self.forward_feats_ic(self, feats_tensor)
-        return feats_tensor
+    # def forward_frames_ic(self, frames_tensor):
+    #     """encode image into embedding"""
+    #     B, F, C, H, W = frames_tensor.shape
+    #     frames_tensor = frames_tensor.view(B*F, C, H, W)
+    #     feats_tensor = self.image_encoder_ic(frames_tensor)
+    #     feats_tensor = feats_tensor.view(B, F, -1)
+    #     feats_tensor = self.forward_feats_ic(self, feats_tensor)
+    #     return feats_tensor
 
     def forward_feats_ic(self, feats_tensor):
         """apply transformer on image embedding of each frames"""
         feats_tensor = self.transformer_ic(feats_tensor)
         return feats_tensor
 
-    def forward_frames_af(self, frames_tensor):
-        """encode image into embedding"""
-        B, F, C, H, W = frames_tensor.shape
-        frames_tensor = frames_tensor.view(B*F, C, H, W)
-        feats_tensor = self.image_encoder_af(frames_tensor)
-        feats_tensor = feats_tensor.view(B, F, -1)
-        feats_tensor = self.forward_feats_af(self, feats_tensor)
-        return feats_tensor
+    # def forward_frames_af(self, frames_tensor):
+    #     """encode image into embedding"""
+    #     B, F, C, H, W = frames_tensor.shape
+    #     frames_tensor = frames_tensor.view(B*F, C, H, W)
+    #     feats_tensor = self.image_encoder_af(frames_tensor)
+    #     feats_tensor = feats_tensor.view(B, F, -1)
+    #     feats_tensor = self.forward_feats_af(self, feats_tensor)
+    #     return feats_tensor
 
     def forward_feats_af(self, feats_tensor):
         """apply transformer on image embedding of each frames"""
         feats_tensor = self.transformer_af(feats_tensor)
         return feats_tensor
 
+    def preprocess_encode_image(self, image_encoder, video_tensors_raw, transformer_width):
+        B, F, C, H, W = video_tensors_raw.shape
+        video_tensors = video_tensors_raw.reshape(B*F, C, H, W)
+        feats_tensors = torch.zeros(B*F, transformer_width)
+        n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
+        for idx in range(n_iters):
+            st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
+            feats_tensors[st:end] = image_encoder(video_tensors[st:end])
+        feats_tensors = feats_tensors.reshape(B, F, transformer_width)
+
+        # TODO: debug
+        debug = True
+        if debug:
+            feats_tensors_debug = torch.zeros(B, F, transformer_width)
+            for b in range(B):
+                feats_tensors_debug[b] = image_encoder(video_tensors_raw[b])
+            assert torch.all(torch.isclose(feats_tensors, feats_tensors_debug, rtol=1e-03)), "inference error"
+
+        return feats_tensors
 
     def forward(self, batch):
-        frames_tensor_vc, feats_tensor_ic, feats_tensor_af, labels_onehot, index = batch
+        # frames_tensor_vc, feats_tensor_ic, feats_tensor_af, labels_onehot, index = batch
+        frames_tensor_vc, frames_tensor_fast, labels_onehot, index = batch
 
         # enable_video_clip
         feats_tensor = None
@@ -354,6 +378,7 @@ class AfricanSlowfast(pl.LightningModule):
 
         # enable_image_clip
         if self.enable_image_clip:
+            feats_tensor_ic = self.preprocess_encode_image(self.image_encoder_ic, frames_tensor_fast, self.transformer_width_ic)
             feats_tensor_ic = self.forward_feats_ic(feats_tensor_ic)
 
             if feats_tensor is None:
@@ -372,6 +397,7 @@ class AfricanSlowfast(pl.LightningModule):
         # enable_african
         video_logits_af = None
         if self.enable_african:
+            feats_tensor_af = self.preprocess_encode_image(self.image_encoder_af, frames_tensor_fast, self.transformer_width_af)
             feats_tensor_af = self.forward_feats_af(feats_tensor_af)
             video_logits_af = self.mlp_af(feats_tensor_af)
 
