@@ -93,6 +93,7 @@ def inference_preaug_save(_config, dataset, dataloader, image_encoder, pretraine
             if all_exists == False:
                 st = time.time()
                 video_feats_fast = image_encoder(video_tensors_fast.view(B*V*F, C, H, W)).view(B, V, F, transformer_width)
+                video_feats_fast = video_feats_fast.detach().cpu().numpy()
                 print("video_feats_fast", time.time() - st)
                 for b in range(B): # batch
                     for v in range(V): # number of preaug videos
@@ -102,7 +103,7 @@ def inference_preaug_save(_config, dataset, dataloader, image_encoder, pretraine
                         if not os.path.exists(video_feat_fast_fp):
                             st = time.time()
                             # torch.save(video_feats_fast[b, v].clone(), video_feat_fast_fp)
-                            np.save(video_feat_fast_fp.replace(".pt", ".npy"), video_feats_fast[b, v].detach().cpu().numpy())
+                            np.save(video_feat_fast_fp.replace(".pt", ".npy"), video_feats_fast[b, v])
 
                             print("save", time.time() - st)
                             if _config['save_debug_frames']:
