@@ -363,7 +363,8 @@ class AfricanSlowfast(pl.LightningModule):
             feats_tensors_debug = torch.zeros(B, F, transformer_width)
             for b in range(B):
                 feats_tensors_debug[b] = image_encoder(video_tensors_raw[b])
-            print(torch.isclose(feats_tensors, feats_tensors_debug, rtol=1e-03))
+            print(len(torch.where(torch.isclose(feats_tensors, feats_tensors_debug, rtol=1e-03, atol=1e-03)[0])))
+            print(feats_tensors.shape)
             assert torch.all(torch.isclose(feats_tensors, feats_tensors_debug, rtol=1e-03, atol=1e-03)), "inference error"
 
         return feats_tensors
