@@ -76,8 +76,8 @@ def inference_preaug_save(_config, dataset, dataloader, image_encoder, pretraine
             video_tensors_fast = video_tensors_fast.to(_config['device'])
             B, V, F, C, H, W = video_tensors_fast.shape
 
-            all_exists = True
             for b in range(B): # batch
+                all_exists = True
                 for v in range(V): # number of preaug videos
                     video_fp = video_fps[b]
                     suffix = "_" + str(v).zfill(_config['suffix_zfill_number'])
@@ -88,8 +88,7 @@ def inference_preaug_save(_config, dataset, dataloader, image_encoder, pretraine
                 if all_exists == False:
                     break
 
-            if all_exists == False:
-                for b in range(B): # batch
+                if all_exists == False:
                     video_tensors_fast_sample = video_tensors_fast[b]
                     video_feats_fast_sample = image_encoder(video_tensors_fast_sample.view(V*F, C, H, W)).view(V, F, transformer_width) # 1.6s
                     video_feats_fast_sample = video_feats_fast_sample.detach().cpu() # 10s
