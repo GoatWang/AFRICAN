@@ -187,15 +187,20 @@ class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
         suffixes = ["_" + str(i).zfill(self.suffix_zfill_number) for i in range(self.num_preaug_videos)]
         video_feats_fast_fps = [os.path.exists(self.get_preprocess_feats_fp(video_fp, self.pretrained_type, suffix)) for suffix in suffixes]
         if not np.all(video_feats_fast_fps):
-            video_tensor_fast = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
-            video_tensor_fast = [self.video_aug(video_tensor_fast, self.video_transform) for i in range(self.num_preaug_videos)]
-            video_tensor_fast = torch.stack(video_tensor_fast)
+            import time 
+            st = time.time()
+            video_tensor_fast_raw = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
+            print("read", time.time() - st, "s")
+            st = time.time()
+            video_tensor_fast_aug = [self.video_aug(video_tensor_fast_raw, self.video_transform) for i in range(self.num_preaug_videos)]
+            print("aug", time.time() - st, "s")
+            video_tensor_fast_aug = torch.stack(video_tensor_fast_aug)
         else:
             # FOR ACCERLATION
-            video_tensor_fast = torch.zeros(self.num_preaug_videos, 1, 3, 224, 224)
+            video_tensor_fast_aug = torch.zeros(self.num_preaug_videos, 1, 3, 224, 224)
 
         # video_tensor_fast.shape = self.num_preaug_videos, num_frames, 3, 224, 224
-        return video_tensor_fast, video_fp
+        return video_tensor_fast_aug, video_fp
 
 
 if __name__  == "__main__":

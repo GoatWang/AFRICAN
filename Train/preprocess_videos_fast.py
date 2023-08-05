@@ -84,16 +84,25 @@ def inference_preaug_save(_config, dataset, dataloader, image_encoder, pretraine
                     video_feat_fast_fp = dataset.get_preprocess_feats_fp(video_fp, pretrained_type, suffix=suffix)
                     if not os.path.exists(video_feat_fast_fp):
                         all_exists = False
+                        break
+                if all_exists == False:
+                    break
 
-            if not all_exists:
+            import time
+            print("all_exists", all_exists)
+            if all_exists == False:
+                st = time.time()
                 video_feats_fast = image_encoder(video_tensors_fast.view(B*V*F, C, H, W)).view(B, V, F, transformer_width)
+                print("video_feats_fast", time.time() - st)
                 for b in range(B): # batch
                     for v in range(V): # number of preaug videos
                         video_fp = video_fps[b]
                         suffix = "_" + str(v).zfill(_config['suffix_zfill_number'])
                         video_feat_fast_fp = dataset.get_preprocess_feats_fp(video_fp, pretrained_type, suffix=suffix)
                         if not os.path.exists(video_feat_fast_fp):
+                            st = time.time()
                             torch.save(video_feats_fast[b, v].clone(), video_feat_fast_fp)
+                            print("save", time.time() - st)
                             if _config['save_debug_frames']:
                                 video_temp = video_tensors_fast[b, v].clone()
                                 video_temp = (video_temp - video_temp.min()) / (video_temp.max() - video_temp.min())
