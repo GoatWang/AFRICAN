@@ -52,10 +52,11 @@ def main(_config):
         save_last=True)
     summary_callback = pl.callbacks.ModelSummary(max_depth=1)
     lr_callback = pl.callbacks.LearningRateMonitor(logging_interval="step")
-    loggers=[csv_logger]
 
     csv_logger = pl.loggers.CSVLogger(save_dir=_config["log_dir"], name=_config['name'], version=datetime_str)
     csv_logger.log_hyperparams(_config)
+    loggers=[csv_logger]
+    
     if _config['wandb']:
         wandb_logger = pl.loggers.WandbLogger(project='AnimalKingdom', save_dir=_config["log_dir"], name=_config['name'], version=model_version)
         wandb_logger.experiment.config.update(_config, allow_val_change=True)
