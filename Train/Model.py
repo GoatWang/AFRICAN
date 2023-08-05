@@ -116,7 +116,6 @@ class AfricanSlowfast(pl.LightningModule):
         self.enable_image_clip = config['enable_image_clip']
         self.image_encoder_ic, self.image_encoder_af = None, None
         if self.enable_image_clip:
-            self.enable_preprocess_ic = config['enable_preprocess_ic']
             self.image_encoder_ic = self.get_image_encoder_fast(config, "ic")
             self.freeze_image_encoder_fast_evl(self.image_encoder_ic)
             num_frames_ic = config['num_frames_ic']
@@ -133,7 +132,6 @@ class AfricanSlowfast(pl.LightningModule):
         
         self.enable_african = config['enable_african']
         if self.enable_african:
-            self.enable_preprocess_af = config['enable_preprocess_af']
             self.image_encoder_af = self.get_image_encoder_fast(config, "af")
             self.freeze_image_encoder_fast_evl(self.image_encoder_af)
             num_frames_af = config['num_frames_af']
