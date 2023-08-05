@@ -337,6 +337,7 @@ class AfricanSlowfast(pl.LightningModule):
             st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
             feats_tensors[st:end] = self.image_encoder_ic(video_tensors[st:end])
         feats_tensors = feats_tensors.reshape(B, F, self.transformer_width_ic)
+        return feats_tensors
 
     def forward_feats_ic(self, feats_tensor):
         """apply transformer on image embedding of each frames"""
@@ -361,6 +362,7 @@ class AfricanSlowfast(pl.LightningModule):
             st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
             feats_tensors[st:end] = self.image_encoder_af(video_tensors[st:end])
         feats_tensors = feats_tensors.reshape(B, F, self.transformer_width_af)
+        return feats_tensors
 
     def forward_feats_af(self, feats_tensor):
         """apply transformer on image embedding of each frames"""
@@ -400,7 +402,7 @@ class AfricanSlowfast(pl.LightningModule):
 
         # enable_image_clip
         if self.enable_image_clip:
-            feats_tensor_ic = self.preprocess_encode_image(self.image_encoder_ic, frames_tensor_fast, self.transformer_width_ic)
+            feats_tensor_ic = self.forward_frames_ic(frames_tensor_fast)
             feats_tensor_ic = self.forward_feats_ic(feats_tensor_ic)
 
             if feats_tensor is None:
@@ -419,7 +421,7 @@ class AfricanSlowfast(pl.LightningModule):
         # enable_african
         video_logits_af = None
         if self.enable_african:
-            feats_tensor_af = self.preprocess_encode_image(self.image_encoder_af, frames_tensor_fast, self.transformer_width_af)
+            feats_tensor_af = self.forward_frames_af(frames_tensor_fast)
             feats_tensor_af = self.forward_feats_af(feats_tensor_af)
             video_logits_af = self.mlp_af(feats_tensor_af)
 
