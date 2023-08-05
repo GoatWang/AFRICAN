@@ -3,6 +3,7 @@ import numpy as np
 
 class MyCollate:
     def __init__(self, config, image_encoder_ic, image_encoder_af):
+        self.device = config['device']
         self.preprocess_batch_size = config['preprocess_batch_size']
         self.transformer_width_ic = config['transformer_width_ic']
         self.transformer_width_af = config['transformer_width_af']
@@ -35,7 +36,7 @@ class MyCollate:
         # frames_tensor_vc, frames_tensor_fast, labels_onehot, index
         frames_tensor_vc, frames_tensor_fast, labels_onehot, index = list(zip(*batch))
         frames_tensor_vc = torch.stack(frames_tensor_vc, dim=0)
-        frames_tensor_fast = torch.stack(frames_tensor_fast, dim=0)
+        frames_tensor_fast = torch.stack(frames_tensor_fast, dim=0).to(self.device)
         labels_onehot = torch.stack(labels_onehot, dim=0)
         index = list(index)
 
