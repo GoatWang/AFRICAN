@@ -110,6 +110,9 @@ class AfricanSlowfast(pl.LightningModule):
 
         self.enable_video_clip = config['enable_video_clip']
         self.video_clip, self.transformer_width_vc = self.get_video_clip_model(config) # video encoder (slow stream)
+        print("transformer_width_vc", self.transformer_width_vc)
+        print("transformer_width_vc", self.transformer_width_vc)
+        print("transformer_width_vc", self.transformer_width_vc)
         if config['train_laryers'] == "vision":
             self.freeze_video_clip_text(self.video_clip)
         if config['train_laryers'] == "vision_proj":
@@ -182,8 +185,7 @@ class AfricanSlowfast(pl.LightningModule):
         )
         ckpt = torch.load(config["ckpt_path_videoclip_vc"], map_location="cpu")
         state_dict = ckpt["state_dict"]
-        print(state_dict.keys())
-        transformer_width = state_dict["visual.conv1.weight"].shape[0]
+        transformer_width = state_dict["clip.visual.conv1.weight"].shape[0]
 
         sd = {k: v.cpu() for k, v in self.state_dict().items()}
         for k in list(state_dict.keys()):
