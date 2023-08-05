@@ -331,7 +331,7 @@ class AfricanSlowfast(pl.LightningModule):
     def forward_frames_ic(self, frames_tensor):
         B, F, C, H, W = frames_tensor.shape
         video_tensors = frames_tensor.reshape(B*F, C, H, W)
-        feats_tensors = torch.zeros(B*F, self.transformer_width_ic)
+        feats_tensors = torch.zeros(B*F, self.transformer_width_ic, device=self.device)
         n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
         for idx in range(n_iters):
             st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
@@ -356,7 +356,7 @@ class AfricanSlowfast(pl.LightningModule):
     def forward_frames_af(self, frames_tensor):
         B, F, C, H, W = frames_tensor.shape
         video_tensors = frames_tensor.reshape(B*F, C, H, W)
-        feats_tensors = torch.zeros(B*F, self.transformer_width_af)
+        feats_tensors = torch.zeros(B*F, self.transformer_width_af, device=self.device)
         n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
         for idx in range(n_iters):
             st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
