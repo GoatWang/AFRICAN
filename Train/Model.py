@@ -314,11 +314,15 @@ class AfricanSlowfast(pl.LightningModule):
 
     def forward_frames_vc(self, frames_tensor):
         frames_tensor = frames_tensor.contiguous().transpose(1, 2)
-        frames_feats, video_all_feats = self.video_clip.encode_video(
-            frames_tensor, return_all_feats=True, mode='video'
-        )
+        # frames_feats, video_all_feats = self.video_clip.encode_video(
+        #     frames_tensor, return_all_feats=True, mode='video'
+        # )
+        with torch.no_grad():
+            frames_feats, video_all_feats = self.video_clip.visual(frames_tensor, return_all_feats=True, mode='video') # [N, C], [L, N, T, C]
+        frames_feats = self.video_clip.visual_ln_post(frames_feats)
+        frames_feats = frames_feats @ self.video_clip.visual_proj
         return frames_feats
-    
+
     # def forward_frames_ic(self, frames_tensor):
     #     """encode image into embedding"""
     #     B, F, C, H, W = frames_tensor.shape
