@@ -91,7 +91,8 @@ class AfricanSlowfast(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.save_hyperparameters()
-        self.preprocess_batch_size = config['preprocess_batch_size']
+        self.preprocess_batch_size_vc = config['preprocess_batch_size_vc']
+        self.preprocess_batch_size_fast = config['preprocess_batch_size_fast']
         self.transformer_width_ic = config['transformer_width_ic']
         self.transformer_width_af = config['transformer_width_af']
         
@@ -108,7 +109,7 @@ class AfricanSlowfast(pl.LightningModule):
         self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
 
         self.enable_video_clip = config['enable_video_clip']
-        self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
+        self.video_clip, self.transformer_width_vc = self.get_video_clip_model(config) # video encoder (slow stream)
         if config['train_laryers'] == "vision":
             self.freeze_video_clip_text(self.video_clip)
         if config['train_laryers'] == "vision_proj":
@@ -181,6 +182,7 @@ class AfricanSlowfast(pl.LightningModule):
         )
         ckpt = torch.load(config["ckpt_path_videoclip_vc"], map_location="cpu")
         state_dict = ckpt["state_dict"]
+        transformer_width = state_dict["visual.conv1.weight"].shape[0]
 
         sd = {k: v.cpu() for k, v in self.state_dict().items()}
         for k in list(state_dict.keys()):
@@ -195,7 +197,7 @@ class AfricanSlowfast(pl.LightningModule):
                 del state_dict[k]
 
         self.load_state_dict(state_dict, strict=False)
-        return clip
+        return clip, transformer_width
     
     def get_image_encoder_fast(self, config, pretrained_type):
         """
@@ -317,11 +319,18 @@ class AfricanSlowfast(pl.LightningModule):
         # frames_feats, video_all_feats = self.video_clip.encode_video(
         #     frames_tensor, return_all_feats=True, mode='video'
         # )
+
+        # memory efficiency
         with torch.no_grad():
-            frames_feats, video_all_feats = self.video_clip.visual(frames_tensor, return_all_feats=True, mode='video') # [N, C], [L, N, T, C]
-        frames_feats = self.video_clip.visual_ln_post(frames_feats)
-        frames_feats = frames_feats @ self.video_clip.visual_proj
-        return frames_feats
+            feats_tensor = torch.zeros(frames_tensor.shape[0], self.transformer_width_vc, device=self.device)
+            n_iters = int(np.ceil(frames_tensor.shape[0] / self.preprocess_batch_size_vc))
+            for idx in range(n_iters):
+                st, end = idx*self.preprocess_batch_size_vc, (idx+1)*self.preprocess_batch_size_vc
+                feats_tensor[st:end] = self.video_clip.visual(frames_tensor[st:end], return_all_feats=False, mode='video')
+                
+        feats_tensor = self.video_clip.visual_ln_post(feats_tensor)
+        feats_tensor = feats_tensor @ self.video_clip.visual_proj
+        return feats_tensor
 
     # def forward_frames_ic(self, frames_tensor):
     #     """encode image into embedding"""
@@ -333,13 +342,14 @@ class AfricanSlowfast(pl.LightningModule):
     #     return feats_tensor
 
     def forward_frames_ic(self, frames_tensor):
+        # memory efficiency
         with torch.no_grad():
             B, F, C, H, W = frames_tensor.shape
             video_tensors = frames_tensor.reshape(B*F, C, H, W)
             feats_tensors = torch.zeros(B*F, self.transformer_width_ic, device=self.device)
-            n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
+            n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size_fast))
             for idx in range(n_iters):
-                st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
+                st, end = idx*self.preprocess_batch_size_fast, (idx+1)*self.preprocess_batch_size_fast
                 feats_tensors[st:end] = self.image_encoder_ic(video_tensors[st:end])
             feats_tensors = feats_tensors.reshape(B, F, self.transformer_width_ic)
             return feats_tensors
@@ -359,13 +369,14 @@ class AfricanSlowfast(pl.LightningModule):
     #     return feats_tensor
 
     def forward_frames_af(self, frames_tensor):
+        # memory efficiency
         with torch.no_grad():
             B, F, C, H, W = frames_tensor.shape
             video_tensors = frames_tensor.reshape(B*F, C, H, W)
             feats_tensors = torch.zeros(B*F, self.transformer_width_af, device=self.device)
-            n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
+            n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size_fast))
             for idx in range(n_iters):
-                st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
+                st, end = idx*self.preprocess_batch_size_fast, (idx+1)*self.preprocess_batch_size_fast
                 feats_tensors[st:end] = self.image_encoder_af(video_tensors[st:end])
             feats_tensors = feats_tensors.reshape(B, F, self.transformer_width_af)
             return feats_tensors

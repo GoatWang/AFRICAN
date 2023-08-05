@@ -31,7 +31,6 @@ def config():
     warmup_steps = 10000
     end_lr = 0.0 # for poly decay
     poly_decay_power = 1 # for poly decay
-
     data_workers = 12
     functional_test_size = None
     
@@ -57,7 +56,8 @@ def config():
     # affetct Model.py: if True, the dataset output should be video feature embedding, else output should be video frame
     # preprocess_pretrained_type = ['ic', 'af'] # 'image_clip', 'african'
     preprocess_dir = os.path.join(os.path.dirname(__file__), 'preprocess', "video_feats") 
-    preprocess_batch_size = 512 # since there diff numbers of frame in each video, we need to cat them into a batch for parallel inference
+    preprocess_batch_size_vc = 64 # since there diff numbers of frame in each video, we need to cat them into a batch for parallel inference
+    preprocess_batch_size_fast = 512 # since there diff numbers of frame in each video, we need to cat them into a batch for parallel inference
     
     # fast dataset
     num_frames_fast = 32
