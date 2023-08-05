@@ -328,6 +328,16 @@ class AfricanSlowfast(pl.LightningModule):
     #     feats_tensor = self.forward_feats_ic(self, feats_tensor)
     #     return feats_tensor
 
+    def forward_frames_ic(self, frames_tensor):
+        B, F, C, H, W = frames_tensor.shape
+        video_tensors = frames_tensor.reshape(B*F, C, H, W)
+        feats_tensors = torch.zeros(B*F, self.transformer_width_ic)
+        n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
+        for idx in range(n_iters):
+            st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
+            feats_tensors[st:end] = self.image_encoder_ic(video_tensors[st:end])
+        feats_tensors = feats_tensors.reshape(B, F, self.transformer_width_ic)
+
     def forward_feats_ic(self, feats_tensor):
         """apply transformer on image embedding of each frames"""
         feats_tensor = self.transformer_ic(feats_tensor)
@@ -342,32 +352,42 @@ class AfricanSlowfast(pl.LightningModule):
     #     feats_tensor = self.forward_feats_af(self, feats_tensor)
     #     return feats_tensor
 
+    def forward_frames_af(self, frames_tensor):
+        B, F, C, H, W = frames_tensor.shape
+        video_tensors = frames_tensor.reshape(B*F, C, H, W)
+        feats_tensors = torch.zeros(B*F, self.transformer_width_af)
+        n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
+        for idx in range(n_iters):
+            st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
+            feats_tensors[st:end] = self.image_encoder_af(video_tensors[st:end])
+        feats_tensors = feats_tensors.reshape(B, F, self.transformer_width_af)
+
     def forward_feats_af(self, feats_tensor):
         """apply transformer on image embedding of each frames"""
         feats_tensor = self.transformer_af(feats_tensor)
         return feats_tensor
 
-    def preprocess_encode_image(self, image_encoder, video_tensors_raw, transformer_width):
-        B, F, C, H, W = video_tensors_raw.shape
-        video_tensors = video_tensors_raw.reshape(B*F, C, H, W)
-        feats_tensors = torch.zeros(B*F, transformer_width)
-        n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
-        for idx in range(n_iters):
-            st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
-            feats_tensors[st:end] = image_encoder(video_tensors[st:end])
-        feats_tensors = feats_tensors.reshape(B, F, transformer_width)
+    # def preprocess_encode_image(self, image_encoder, video_tensors_raw, transformer_width):
+    #     B, F, C, H, W = video_tensors_raw.shape
+    #     video_tensors = video_tensors_raw.reshape(B*F, C, H, W)
+    #     feats_tensors = torch.zeros(B*F, transformer_width)
+    #     n_iters = int(np.ceil(feats_tensors.shape[0] / self.preprocess_batch_size))
+    #     for idx in range(n_iters):
+    #         st, end = idx*self.preprocess_batch_size, (idx+1)*self.preprocess_batch_size
+    #         feats_tensors[st:end] = image_encoder(video_tensors[st:end])
+    #     feats_tensors = feats_tensors.reshape(B, F, transformer_width)
 
-        # TODO: debug
-        debug = True
-        if debug:
-            feats_tensors_debug = torch.zeros(B, F, transformer_width)
-            for b in range(B):
-                feats_tensors_debug[b] = image_encoder(video_tensors_raw[b])
-            print(len(torch.where(torch.isclose(feats_tensors, feats_tensors_debug, rtol=1e-03, atol=1e-03)[0])))
-            print(feats_tensors.shape)
-            assert torch.all(torch.isclose(feats_tensors, feats_tensors_debug, rtol=1e-03, atol=1e-03)), "inference error"
+    #     # # TODO: debug
+    #     # debug = True
+    #     # if debug:
+    #     #     feats_tensors_debug = torch.zeros(B, F, transformer_width)
+    #     #     for b in range(B):
+    #     #         feats_tensors_debug[b] = image_encoder(video_tensors_raw[b])
+    #     #     print(len(torch.where(torch.isclose(feats_tensors, feats_tensors_debug, rtol=1e-03, atol=1e-03)[0])))
+    #     #     print(feats_tensors.shape)
+    #     #     assert torch.all(torch.isclose(feats_tensors, feats_tensors_debug, rtol=1e-03, atol=1e-03)), "inference error"
 
-        return feats_tensors
+    #     return feats_tensors
 
     def forward(self, batch):
         # frames_tensor_vc, feats_tensor_ic, feats_tensor_af, labels_onehot, index = batch
