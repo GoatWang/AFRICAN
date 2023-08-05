@@ -394,6 +394,10 @@ class AfricanSlowfast(pl.LightningModule):
     def forward(self, batch):
         # frames_tensor_vc, feats_tensor_ic, feats_tensor_af, labels_onehot, index = batch
         frames_tensor_vc, frames_tensor_fast, labels_onehot, index = batch
+        print(frames_tensor_vc.dtype)
+        print(frames_tensor_vc.shape)
+        print(frames_tensor_fast.dtype)
+        print(frames_tensor_fast.shape)
 
         # enable_video_clip
         feats_tensor = None
