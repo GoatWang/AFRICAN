@@ -143,6 +143,19 @@ def main(_config):
 
 
 
+# %cd /storage/preprocess/ViT-L-14
+# !ls -lt --time=access | head -n 10
+# ##### !ls --time=access | head -n 3 | xargs -I {} rm {}
+# !ls | tail -n 3 | xargs -I {} rm {}
+# !ls -lt --time=access | head -n 10
+# %cd /notebooks
+
+# !python3 /notebooks/AnimalKingdomCLIP/Train/preprocess_videos_fast.py with 'batch_size=2' \
+# 'num_preaug_videos=30' \
+# 'preprocess_dir=/storage/preprocess' \
+# 'preprocess_pretrained_type=["ic"]' \
+# 'data_dir="/storage/AnimalKingdom/action_recognition"' 
+
 
 # !python3 /notebooks/AnimalKingdomCLIP/Train/preprocess_videos_fast.py with 'batch_size=2' \
 # 'num_preaug_videos=30' \
@@ -154,9 +167,48 @@ def main(_config):
 # # 'save_debug_frames=True' \
 
 
+# import os
+# import glob
+# import torch
+# import numpy as np
+# from matplotlib import pyplot as plt
 
+# pt_fps_frame = sorted(glob.glob("/storage/preprocess/ViT-L-14/*_debug.pt"))
+# for i in range(0, 20):
+#     pt_fp_frame = pt_fps_frame[i]
+#     pt_fp = pt_fp_frame.replace("_debug.pt", ".pt")
+#     print(pt_fp)
+#     feats = torch.load(pt_fp).detach().cpu().numpy()
+#     frames = torch.load(pt_fp_frame).detach().cpu().numpy().transpose(0, 2, 3, 1)
+#     print(frames.shape)
+#     print(frames.dtype)
+    
+# import os
+# import glob
+# import torch
+# import numpy as np
+# from matplotlib import pyplot as plt
 
-
+# pt_fps_frame = sorted(glob.glob("/storage/preprocess/ViT-L-14/*_debug.pt"))
+# for i in range(0, 20):
+#     pt_fp_frame = pt_fps_frame[i]
+#     pt_fp = pt_fp_frame.replace("_debug.pt", ".pt")
+#     print(pt_fp)
+#     feats = torch.load(pt_fp).detach().cpu().numpy()
+#     frames = torch.load(pt_fp_frame).detach().cpu().numpy().transpose(0, 2, 3, 1)
+#     print(frames.shape)
+#     print(frames.dtype)
+    
+    
+#     # feats = feats.detach().cpu().numpy()
+#     # plt.figure(figsize=(20, 3))
+#     # plt.imshow(feats)
+#     # plt.show()
+    
+#     fig, axes = plt.subplots(1, 8, figsize=(13, 3))
+#     for idx, ax in enumerate(axes):
+#         ax.imshow(frames[idx])
+#     plt.show()
 
 # check the preprocessed result from diff branch are the same
 # import glob
