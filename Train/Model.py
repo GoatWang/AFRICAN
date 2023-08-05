@@ -110,9 +110,6 @@ class AfricanSlowfast(pl.LightningModule):
 
         self.enable_video_clip = config['enable_video_clip']
         self.video_clip, self.transformer_width_vc = self.get_video_clip_model(config) # video encoder (slow stream)
-        print("transformer_width_vc", self.transformer_width_vc)
-        print("transformer_width_vc", self.transformer_width_vc)
-        print("transformer_width_vc", self.transformer_width_vc)
         if config['train_laryers'] == "vision":
             self.freeze_video_clip_text(self.video_clip)
         if config['train_laryers'] == "vision_proj":
