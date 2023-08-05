@@ -144,6 +144,19 @@ def main(_config):
 
 
 
+# !python3 /notebooks/AnimalKingdomCLIP/Train/preprocess_videos_fast.py with 'batch_size=2' \
+# 'num_preaug_videos=30' \
+# 'preprocess_dir=/storage/preprocess' \
+# 'preprocess_pretrained_type=["af"]' \
+# 'data_dir="/storage/AnimalKingdom/action_recognition"' 
+
+# # 'functional_test_size=1' \
+# # 'save_debug_frames=True' \
+
+
+
+
+
 
 # check the preprocessed result from diff branch are the same
 # import glob
