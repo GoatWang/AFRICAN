@@ -12,6 +12,7 @@ def config():
     seed = 2023
 
     # for save
+    wandb = True
     log_dir = os.path.abspath(os.path.join(base_dir, "logs"))
     model_dir = os.path.abspath(os.path.join(base_dir, "ckpts"))
     data_dir = os.path.join(base_dir, "..", "..", "data", "AnimalKingdom", "action_recognition")
