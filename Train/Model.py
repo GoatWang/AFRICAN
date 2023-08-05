@@ -111,16 +111,18 @@ class AfricanSlowfast(pl.LightningModule):
             self.freeze_video_clip_evl(self.video_clip)
             # print("freeze_video_clip_evl")
             # self.print_requires_grad(self.video_clip)
-            
-        # slowfast: enable fast stream
+
+        # slowfast    
+        self.num_frames_fast = config['num_frames_fast']
+
+        ## slowfast: enable image clip
+        self.image_encoder_ic = None
         self.enable_image_clip = config['enable_image_clip']
-        self.image_encoder_ic, self.image_encoder_af = None, None
         if self.enable_image_clip:
             self.image_encoder_ic = self.get_image_encoder_fast(config, "ic")
             self.freeze_image_encoder_fast_evl(self.image_encoder_ic)
-            num_frames_ic = config['num_frames_ic']
             self.transformer_ic = TransformerFast(
-                num_frames_ic,
+                self.num_frames_fast,
                 config['transformer_width_ic'],
                 config['transformer_layers_ic'],
                 config['transformer_heads_ic']
@@ -130,13 +132,14 @@ class AfricanSlowfast(pl.LightningModule):
             self.w_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
             self.bias_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
         
+        ## slowfast: enable african
+        self.image_encoder_af = None
         self.enable_african = config['enable_african']
         if self.enable_african:
             self.image_encoder_af = self.get_image_encoder_fast(config, "af")
             self.freeze_image_encoder_fast_evl(self.image_encoder_af)
-            num_frames_af = config['num_frames_af']
             self.transformer_af = TransformerFast(
-                num_frames_af,
+                self.num_frames_fast,
                 config['transformer_width_af'],
                 config['transformer_layers_af'],
                 config['transformer_heads_af']
