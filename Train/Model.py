@@ -406,7 +406,7 @@ class AfricanSlowfast(pl.LightningModule):
         if (video_logits_vcic is None) and (video_logits_af is None):
             assert False, "video_logits_vcic and video_logits_af are both None"
         elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
-            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         else: # both of them are not None
             loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
             loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
@@ -452,7 +452,7 @@ class AfricanSlowfast(pl.LightningModule):
         if (video_logits_vcic is None) and (video_logits_af is None):
             assert False, "video_logits_vcic and video_logits_af are both None"
         elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
-            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         else: # both of them are not None
             loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
             loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
