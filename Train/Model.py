@@ -406,7 +406,8 @@ class AfricanSlowfast(pl.LightningModule):
         if (video_logits_vcic is None) and (video_logits_af is None):
             assert False, "video_logits_vcic and video_logits_af are both None"
         elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
-            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            self.log("train_loss", loss)
         else: # both of them are not None
             loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
             loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
@@ -414,7 +415,7 @@ class AfricanSlowfast(pl.LightningModule):
             loss = (loss_vcic + loss_af + loss_all) / 3
             self.log("train_loss_vcic", loss_vcic)
             self.log("train_loss_af", loss_af)
-        self.log("train_loss", loss_all)
+            self.log("train_loss", loss_all)
 
         video_pred = torch.sigmoid(video_logits)
         self.train_metrics.update(video_pred, labels_onehot)
@@ -452,7 +453,8 @@ class AfricanSlowfast(pl.LightningModule):
         if (video_logits_vcic is None) and (video_logits_af is None):
             assert False, "video_logits_vcic and video_logits_af are both None"
         elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
-            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            self.log("valid_loss", loss)
         else: # both of them are not None
             loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
             loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
@@ -460,7 +462,7 @@ class AfricanSlowfast(pl.LightningModule):
             loss = (loss_vcic + loss_af + loss_all) / 3
             self.log("valid_loss_vcic", loss_vcic)
             self.log("valid_loss_af", loss_af)
-        self.log("valid_loss", loss_all)
+            self.log("valid_loss", loss_all)
 
         video_pred = torch.sigmoid(video_logits)
         self.valid_metrics.update(video_pred, labels_onehot)
