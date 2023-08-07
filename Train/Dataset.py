@@ -154,7 +154,7 @@ class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
         frames_tensor_af = torch.zeros(1, 3, 224, 224)
         if self.enable_african:
             if self.enable_preprocess_af:
-                video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp, "ic")
+                video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp, "af")
                 frames_tensor_af = read_feats_fast(video_feats_fast_fp, self.num_frames_af, self.video_sampling_af)
             else:
                 frames_tensor_af = read_frames_decord(video_fp, num_frames=self.num_frames_af, sample=self.video_sampling_af)[0]
