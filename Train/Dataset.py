@@ -135,32 +135,12 @@ class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
         labels_onehot[self.labels[index]] = 1
 
         # slow stream
-        frames_tensor_vc = torch.zeros(1, 3, 224, 224)
+        frames_tensor = torch.zeros(1, 3, 224, 224)
         if self.enable_video_clip:
-            frames_tensor_vc = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
-            frames_tensor_vc = self.video_aug(frames_tensor_vc, self.video_transform)            
+            frames_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
+            frames_tensor = self.video_aug(frames_tensor, self.video_transform)            
 
-        # fast stream: image clip
-        frames_tensor_ic = torch.zeros(1, 3, 224, 224)
-        if self.enable_image_clip:
-            if self.enable_preprocess_ic:
-                video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp, "ic")
-                frames_tensor_ic = read_feats_fast(video_feats_fast_fp, self.num_frames_ic, self.video_sampling_ic)
-            else:
-                frames_tensor_ic = read_frames_decord(video_fp, num_frames=self.num_frames_ic, sample=self.video_sampling_ic)[0]
-                frames_tensor_ic = self.video_aug(frames_tensor_ic, self.video_transform_ic)
-
-        # fast stream: african
-        frames_tensor_af = torch.zeros(1, 3, 224, 224)
-        if self.enable_african:
-            if self.enable_preprocess_af:
-                video_feats_fast_fp = self.get_preprocess_feats_fp(video_fp, "af")
-                frames_tensor_af = read_feats_fast(video_feats_fast_fp, self.num_frames_af, self.video_sampling_af)
-            else:
-                frames_tensor_af = read_frames_decord(video_fp, num_frames=self.num_frames_af, sample=self.video_sampling_af)[0]
-                frames_tensor_af = self.video_aug(frames_tensor_af, self.video_transform_af)
-
-        return frames_tensor_vc, frames_tensor_ic, frames_tensor_af, labels_onehot, index
+        return frames_tensor, labels_onehot, index
              
 class AnimalKingdomDatasetPreprocess(AnimalKingdomDatasetSlowFast):
     def __init__(self, config, pretrained_type, split=""):

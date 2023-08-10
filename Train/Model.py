@@ -343,24 +343,17 @@ class AfricanSlowfast(pl.LightningModule):
 
 
     def forward(self, batch):
-        frames_tensor_vc, frames_tensor_ic, frames_tensor_af, labels_onehot, index = batch
+        frames_tensor, labels_onehot, index = batch
 
         # enable_video_clip
         frames_feats = None
         if self.enable_video_clip:
-            frames_feats = self.forward_frames_vc(frames_tensor_vc)
+            frames_feats = self.forward_frames_vc(frames_tensor)
 
         # enable_image_clip
         if self.enable_image_clip:
-            if self.enable_preprocess_ic:
-                frames_feats_ic = self.forward_frames_feats_ic(frames_tensor_ic)
-            else:
-                frames_feats_ic = self.forward_frames_ic(frames_tensor_ic)
-
-            if frames_feats is None:
-                frames_feats = frames_feats_ic
-            else:
-                frames_feats = frames_feats * self.w_vc + frames_feats_ic * self.w_ic + self.bias_ic
+            frames_feats_ic = self.forward_frames_ic(frames_tensor)
+            frames_feats = frames_feats * self.w_vc + frames_feats_ic * self.w_ic + self.bias_ic
 
         video_logits_vcic = None
         if frames_feats is not None:
@@ -373,10 +366,7 @@ class AfricanSlowfast(pl.LightningModule):
         # enable_african
         video_logits_af = None
         if self.enable_african:
-            if self.enable_preprocess_af:
-                frames_feats_af = self.forward_frames_feats_af(frames_tensor_af)
-            else:
-                frames_feats_af = self.forward_frames_af(frames_tensor_af)
+            frames_feats_af = self.forward_frames_af(frames_tensor)
             video_logits_af = self.mlp_af(frames_feats_af)
 
         if video_logits_vcic is None:
