@@ -93,7 +93,6 @@ class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
         self.enable_video_clip = config['enable_video_clip']
 
         # fast stream
-        self.preprocess_dir = config['preprocess_dir']
         self.enable_african = config['enable_african']
         at_least_one_source = self.enable_video_clip or self.enable_image_clip or self.enable_african
         assert at_least_one_source, "at least one data source should be enabled"
