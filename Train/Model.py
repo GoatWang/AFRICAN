@@ -94,6 +94,9 @@ class AfricanSlowfast(pl.LightningModule):
         self.lr = config["lr"]
         self.n_classes = config["n_classes"]
         self.optimizer = config["optimizer"]
+        self.image_encoder_batch_size = config["image_encoder_batch_size"]
+        self.transformer_width_ic = config['transformer_width_ic']
+        self.transformer_width_af = config['transformer_width_af']
 
         self.num_frames = config['num_frames']
         self.decay_power = config['decay_power']
@@ -309,35 +312,76 @@ class AfricanSlowfast(pl.LightningModule):
             frames_tensor, return_all_feats=True, mode='video'
         )
         return frames_feats
-    
-    def forward_frames_ic(self, frames_tensor):
-        """encode image into embedding"""
-        B, F, C, H, W = frames_tensor.shape
-        frames_tensor = frames_tensor.view(B*F, C, H, W)
-        frames_feats = self.image_encoder_ic(frames_tensor)
-        frames_feats = frames_feats.view(B, F, -1)
-        frames_feats = self.forward_frames_feats_ic(frames_feats)
-        return frames_feats
 
+    # # memory efficiency: not in use
+    # def forward_frames_vc_memef(self, frames_tensor):
+    #     frames_tensor = frames_tensor.contiguous().transpose(1, 2)
+    #     with torch.no_grad():
+    #         feats_tensor = torch.zeros(frames_tensor.shape[0], self.transformer_width_vc, device=self.device)
+    #         n_iters = int(np.ceil(frames_tensor.shape[0] / self.preprocess_batch_size_vc))
+    #         for idx in range(n_iters):
+    #             st, end = idx*self.preprocess_batch_size_vc, (idx+1)*self.preprocess_batch_size_vc
+    #             feats_tensor[st:end] = self.video_clip.visual(frames_tensor[st:end], return_all_feats=False, mode='video')
+
+    #     feats_tensor = self.video_clip.visual_ln_post(feats_tensor)
+    #     feats_tensor = feats_tensor @ self.video_clip.visual_proj
+    #     return feats_tensor    
+    
+    # def forward_frames_ic(self, frames_tensor):
+    #     """encode image into embedding"""
+    #     B, F, C, H, W = frames_tensor.shape
+    #     frames_tensor = frames_tensor.view(B*F, C, H, W)
+    #     frames_feats = self.image_encoder_ic(frames_tensor)
+    #     frames_feats = frames_feats.view(B, F, -1)
+    #     frames_feats = self.forward_frames_feats_ic(frames_feats)
+    #     return frames_feats
+    
+    # memory efficiency
+    def forward_frames_ic_memef(self, frames_tensor):
+        with torch.no_grad():
+            B, F, C, H, W = frames_tensor.shape
+            frames_tensor = frames_tensor.reshape(B*F, C, H, W)
+            frames_feats = torch.zeros(B*F, self.transformer_width_ic, device=self.device)
+            n_iters = int(np.ceil(frames_feats.shape[0] / self.image_encoder_batch_size))
+            for idx in range(n_iters):
+                st, end = idx*self.image_encoder_batch_size, (idx+1)*self.image_encoder_batch_size
+                frames_feats[st:end] = self.image_encoder_ic(frames_tensor[st:end])
+            frames_feats = frames_feats.reshape(B, F, self.transformer_width_ic)
+            frames_feats = self.forward_frames_feats_ic(frames_feats)
+            return frames_feats
+    
     def forward_frames_feats_ic(self, frames_feats):
         """apply transformer on image embedding of each frames"""
         frames_feats = self.transformer_ic(frames_feats)
         return frames_feats
 
-    def forward_frames_af(self, frames_tensor):
-        """encode image into embedding"""
-        B, F, C, H, W = frames_tensor.shape
-        frames_tensor = frames_tensor.view(B*F, C, H, W)
-        frames_feats = self.image_encoder_af(frames_tensor)
-        frames_feats = frames_feats.view(B, F, -1)
-        frames_feats = self.forward_frames_feats_af(frames_feats)
-        return frames_feats
+    # def forward_frames_af(self, frames_tensor):
+    #     """encode image into embedding"""
+    #     B, F, C, H, W = frames_tensor.shape
+    #     frames_tensor = frames_tensor.view(B*F, C, H, W)
+    #     frames_feats = self.image_encoder_af(frames_tensor)
+    #     frames_feats = frames_feats.view(B, F, -1)
+    #     frames_feats = self.forward_frames_feats_af(frames_feats)
+    #     return frames_feats
+    
+    # memory efficiency
+    def forward_frames_af_memef(self, frames_tensor):
+        with torch.no_grad():
+            B, F, C, H, W = frames_tensor.shape
+            frames_tensor = frames_tensor.reshape(B*F, C, H, W)
+            frames_feats = torch.zeros(B*F, self.transformer_width_af, device=self.device)
+            n_iters = int(np.ceil(frames_feats.shape[0] / self.image_encoder_batch_size))
+            for idx in range(n_iters):
+                st, end = idx*self.image_encoder_batch_size, (idx+1)*self.image_encoder_batch_size
+                frames_feats[st:end] = self.image_encoder_af(frames_tensor[st:end])
+            frames_feats = frames_feats.reshape(B, F, self.transformer_width_af)
+            frames_feats = self.forward_frames_feats_af(frames_feats)
+            return frames_feats
 
     def forward_frames_feats_af(self, frames_feats):
         """apply transformer on image embedding of each frames"""
         frames_feats = self.transformer_af(frames_feats)
         return frames_feats
-
 
     def forward(self, batch):
         frames_tensor, labels_onehot, index = batch
@@ -347,9 +391,9 @@ class AfricanSlowfast(pl.LightningModule):
         if self.enable_video_clip:
             frames_feats = self.forward_frames_vc(frames_tensor)
 
-        # enable_image_clip
+        # enable_image_clip        
         if self.enable_image_clip:
-            frames_feats_ic = self.forward_frames_ic(frames_tensor)
+            frames_feats_ic = self.forward_frames_ic_memef(frames_tensor)
             if frames_feats is None:
                 frames_feats = frames_feats_ic
             else:
@@ -366,7 +410,7 @@ class AfricanSlowfast(pl.LightningModule):
         # enable_african
         video_logits_af = None
         if self.enable_african:
-            frames_feats_af = self.forward_frames_af(frames_tensor)
+            frames_feats_af = self.forward_frames_af_memef(frames_tensor)
             video_logits_af = self.mlp_af(frames_feats_af)
 
         if video_logits_vcic is None:

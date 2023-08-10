@@ -51,6 +51,7 @@ def config():
     clip_checkpoint_num = [0, 0, 0]
 
     ## image clip
+    image_encoder_batch_size = 512
     enable_image_clip = True
     ckpt_path_ic = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
     transformer_width_ic = 768
