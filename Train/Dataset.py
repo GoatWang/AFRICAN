@@ -95,7 +95,7 @@ class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
         # fast stream
         self.enable_image_clip = config['enable_image_clip']
         self.enable_african = config['enable_african']
-        
+
         at_least_one_source = self.enable_video_clip or self.enable_image_clip or self.enable_african
         assert at_least_one_source, "at least one data source should be enabled"
 
@@ -104,11 +104,9 @@ class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
         labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
         labels_onehot[self.labels[index]] = 1
 
-        # slow stream
         frames_tensor = torch.zeros(1, 3, 224, 224)
-        if self.enable_video_clip:
-            frames_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
-            frames_tensor = self.video_aug(frames_tensor, self.video_transform)            
+        frames_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
+        frames_tensor = self.video_aug(frames_tensor, self.video_transform)            
 
         return frames_tensor, labels_onehot, index
              
