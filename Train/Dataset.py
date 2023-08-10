@@ -103,11 +103,8 @@ class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
         video_fp = self.video_fps[index]
         labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
         labels_onehot[self.labels[index]] = 1
-
-        frames_tensor = torch.zeros(1, 3, 224, 224)
         frames_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
         frames_tensor = self.video_aug(frames_tensor, self.video_transform)            
-
         return frames_tensor, labels_onehot, index
              
 if __name__  == "__main__":
