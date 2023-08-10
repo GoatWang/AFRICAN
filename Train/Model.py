@@ -316,7 +316,7 @@ class AfricanSlowfast(pl.LightningModule):
         frames_tensor = frames_tensor.view(B*F, C, H, W)
         frames_feats = self.image_encoder_ic(frames_tensor)
         frames_feats = frames_feats.view(B, F, -1)
-        frames_feats = self.forward_frames_feats_ic(self, frames_feats)
+        frames_feats = self.forward_frames_feats_ic(frames_feats)
         return frames_feats
 
     def forward_frames_feats_ic(self, frames_feats):
@@ -330,7 +330,7 @@ class AfricanSlowfast(pl.LightningModule):
         frames_tensor = frames_tensor.view(B*F, C, H, W)
         frames_feats = self.image_encoder_af(frames_tensor)
         frames_feats = frames_feats.view(B, F, -1)
-        frames_feats = self.forward_frames_feats_af(self, frames_feats)
+        frames_feats = self.forward_frames_feats_af(frames_feats)
         return frames_feats
 
     def forward_frames_feats_af(self, frames_feats):
