@@ -523,9 +523,9 @@ class AfricanSlowfast(pl.LightningModule):
             heatmaps[i] = heatmap
 
         # batch_size first
-        images_raw = images_raw.reshape(B, F, H, W, C)
-        attn_maps = attn_maps.reshape(B, F, H, W, C)
-        heatmaps = heatmaps.reshape(B, F, H, W, C)
+        images_raw = images_raw.reshape(B, F, *images_raw.shape[-3:])
+        attn_maps = attn_maps.reshape(B, F, *attn_maps.shape[-2:])
+        heatmaps = heatmaps.reshape(B, F, *heatmaps.shape[-3:])
 
         return images_raw, attn_maps, heatmaps
 
