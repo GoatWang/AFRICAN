@@ -71,7 +71,7 @@ def main(_config):
         video_raw, video_aug = video_raw.unsqueeze(0), video_aug.unsqueeze(0)
         images_raw, attn_maps, heatmaps_ic = model.draw_image_encoder_att_map(video_raw, video_aug, image_encoder="ic")
         images_raw, attn_maps, heatmaps_af = model.draw_image_encoder_att_map(video_raw, video_aug, image_encoder="af")
-        heatmaps_ic, heatmaps_af = heatmaps_ic[0], heatmaps_af[0]
+        images_raw, heatmaps_ic, heatmaps_af = images_raw[0], heatmaps_ic[0], heatmaps_af[0]
 
         fig_fp = os.path.join(_config['attn_map_save_dir'], str(idx).zfill(5) + ".png")
         plot_attention_map_v2(images_raw, heatmaps_ic, heatmaps_af, fig_fp=fig_fp)
