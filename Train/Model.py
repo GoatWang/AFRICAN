@@ -422,7 +422,7 @@ class AfricanSlowfast(pl.LightningModule):
 
         return video_logits_vcic, video_logits_af, video_logits, labels_onehot
     
-    def forward_for_visualize(self, image, model_visual):
+    def forward_image_encoder_att_map(self, image, image_encoder):
         """
         # video_tensors, labels_onehot = next(iter(valid_loader))
         # video_tensor1, video_tensor2, labels_onehot = video_tensors[0].to(_config['device']), video_tensors[1].to(_config['device']), labels_onehot.to(_config['device'])
@@ -432,28 +432,28 @@ class AfricanSlowfast(pl.LightningModule):
         # print(x1.shape)
         # print(x2.shape)
 
-        # pooled, tokens, attn_output_weights_layers = forward_for_visual(model_visual, x1)
+        # pooled, tokens, attn_output_weights_layers = forward_for_visual(image_encoder, x1)
         # print("len(attn_output_weights_layers)", len(attn_output_weights_layers))
         # print("attn_output_weights_layers[0].shape", attn_output_weights_layers[0].shape)
         """
         x = image
-        x = model_visual.conv1(x)  # shape = [*, width, grid, grid]
+        x = image_encoder.conv1(x)  # shape = [*, width, grid, grid]
         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
         x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
 
         # class embeddings and positional embeddings
         x = torch.cat(
-            [model_visual.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device),
+            [image_encoder.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device),
             x], dim=1)  # shape = [*, grid ** 2 + 1, width]
-        x = x + model_visual.positional_embedding.to(x.dtype)
+        x = x + image_encoder.positional_embedding.to(x.dtype)
 
         # a patch_dropout of 0. would mean it is disabled and this function would do nothing but return what was passed in
-        x = model_visual.patch_dropout(x)
-        x = model_visual.ln_pre(x)
+        x = image_encoder.patch_dropout(x)
+        x = image_encoder.ln_pre(x)
 
         x = x.permute(1, 0, 2)  # NLD -> LND
         
-        model_transformer = model_visual.transformer
+        model_transformer = image_encoder.transformer
         attn_output_weights_layers = []
         for resblock in model_transformer.resblocks:
             # resblock.attention(q_x=resblock.ln_1(x), k_x=None, v_x=None, attn_mask=None)
@@ -465,15 +465,22 @@ class AfricanSlowfast(pl.LightningModule):
             attn_output_weights_layers.append(attn_output_weights)
             
         x = x.permute(1, 0, 2)  # LND -> NLD
-        pooled, tokens = model_visual._global_pool(x)
-        pooled = model_visual.ln_post(pooled)
-        pooled = pooled @ model_visual.proj
+        pooled, tokens = image_encoder._global_pool(x)
+        pooled = image_encoder.ln_post(pooled)
+        pooled = pooled @ image_encoder.proj
         return pooled, tokens, attn_output_weights_layers
 
-    def get_attention_map(self, img, img_tensor, model_visual, get_mask=False, device='cpu'):
+    def get_attention_map(self, batch, image_encoder, get_mask=False, device='cpu'):
+        """use AnimalKingdomDatasetVisualize Dataset to get attention map"""
         import cv2
+        video_fp, video_raw, video_aug, labels_onehot, index = batch 
+        assert  video_aug.shape[0] == 1, "only support batch size 1"
+
         with torch.no_grad():
-            pooled, tokens, attn_output_weights_layers = self.forward_for_visualize(img_tensor.unsqueeze(0), model_visual)
+            video_aug = video_aug.to(device)
+            B, F, C, H, W = video_aug.shape
+            images_aug = video_aug.reshape(B*F, C, H, W)
+            pooled, tokens, attn_output_weights_layers = self.forward_image_encoder_att_map(images_aug, image_encoder)
 
         att_mat = torch.stack(attn_output_weights_layers).squeeze(1)
 
@@ -497,11 +504,15 @@ class AfricanSlowfast(pl.LightningModule):
         grid_size = int(np.sqrt(aug_att_mat.size(-1)))
         mask = v[0, 1:].reshape(grid_size, grid_size).detach().cpu().numpy()
         
+
         mask = cv2.resize(mask / mask.max(), img.shape[:2])
         heatmap = cv2.applyColorMap((mask*255).astype(np.uint8), cv2.COLORMAP_JET)
         result = cv2.addWeighted(img, 0.7, heatmap, 0.3, 0.0)
         
         return mask, heatmap, result    
+    
+
+
     # def get_attn_map_vc(self, frames_feats):
     # def get_attn_map_ic(self, frames_feats):
     # def get_attn_map_af(self, frames_feats):

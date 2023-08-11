@@ -107,17 +107,19 @@ class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
         frames_tensor = self.video_aug(frames_tensor, self.video_transform)            
         return frames_tensor, labels_onehot, index
              
-
-
 class AnimalKingdomDatasetVisualize(AnimalKingdomDataset):
     """two samplings of video for two streams of model"""
+    def __init__(self, config, split=""):
+        super().__init__(config, split)
+        self.video_transform = VideoTransformTorch(mode='val')  # train or val model
+
     def __getitem__(self, index):
         video_fp = self.video_fps[index]
         labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
         labels_onehot[self.labels[index]] = 1
-        frames_tensor_raw = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
-        frames_tensor_aug = self.video_aug(frames_tensor_raw, self.video_transform)            
-        return video_fp, frames_tensor_aug, labels_onehot, index
+        video_raw = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
+        video_aug = self.video_aug(video_raw, self.video_transform)            
+        return video_fp, video_raw, video_aug, labels_onehot, index
                           
 if __name__  == "__main__":
     from torch import utils
