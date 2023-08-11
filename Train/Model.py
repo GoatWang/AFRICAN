@@ -486,7 +486,7 @@ class AfricanSlowfast(pl.LightningModule):
         images_aug = video_aug.reshape(B*F, C, H, W).to(self.device)
         with torch.no_grad():
             video_aug = video_aug.to(self.device)
-            pooled, tokens, attn_output_weights_layers = self.forward_image_encoder_att_map(images_aug, image_encoder)
+            attn_output_weights_layers = self.forward_image_encoder_att_map(images_aug, image_encoder)
 
         # tranpose to batch first
         att_mat = torch.stack(attn_output_weights_layers).permute(1, 0, 2, 3, 4)
