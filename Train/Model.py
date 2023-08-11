@@ -1,4 +1,5 @@
 import os
+import cv2
 import json
 import math
 from copy import deepcopy
@@ -422,7 +423,7 @@ class AfricanSlowfast(pl.LightningModule):
 
         return video_logits_vcic, video_logits_af, video_logits, labels_onehot
     
-    def forward_image_encoder_att_map(self, image, image_encoder):
+    def forward_image_encoder_att_map(self, image, image_encoder, return_attn_only=True):
         """
         # video_tensors, labels_onehot = next(iter(valid_loader))
         # video_tensor1, video_tensor2, labels_onehot = video_tensors[0].to(_config['device']), video_tensors[1].to(_config['device']), labels_onehot.to(_config['device'])
@@ -464,54 +465,69 @@ class AfricanSlowfast(pl.LightningModule):
             x = x + resblock.ls_2(resblock.mlp(resblock.ln_2(x)))
             attn_output_weights_layers.append(attn_output_weights)
             
-        x = x.permute(1, 0, 2)  # LND -> NLD
-        pooled, tokens = image_encoder._global_pool(x)
-        pooled = image_encoder.ln_post(pooled)
-        pooled = pooled @ image_encoder.proj
-        return pooled, tokens, attn_output_weights_layers
+        if return_attn_only:
+            return attn_output_weights_layers
+        else:
+            x = x.permute(1, 0, 2)  # LND -> NLD
+            pooled, tokens = image_encoder._global_pool(x)
+            pooled = image_encoder.ln_post(pooled)
+            pooled = pooled @ image_encoder.proj
+            return pooled, tokens, attn_output_weights_layers
 
-    def get_attention_map(self, batch, image_encoder, get_mask=False, device='cpu'):
+    def draw_image_encoder_att_map(self, video_raw, video_aug, image_encoder="ic"):
         """use AnimalKingdomDatasetVisualize Dataset to get attention map"""
-        import cv2
-        video_fp, video_raw, video_aug, labels_onehot, index = batch 
-        assert  video_aug.shape[0] == 1, "only support batch size 1"
+        image_encoder = self.image_encoder_ic if image_encoder == "ic" else self.image_encoder_af
 
+        B, F, C, H, W = video_raw.shape
+        _, _, _, H_src, W_src = video_raw.shape
+        images_raw = video_raw.detach().cpu().numpy().reshape(B*F, C, H_src, W_src).transpose(0, 2, 3, 1)
+        images_raw = np.stack([cv2.resize(image_raw, (H, W)) for image_raw in images_raw])
+        
+        images_aug = video_aug.reshape(B*F, C, H, W).to(self.device)
         with torch.no_grad():
-            video_aug = video_aug.to(device)
-            B, F, C, H, W = video_aug.shape
-            images_aug = video_aug.reshape(B*F, C, H, W)
+            video_aug = video_aug.to(self.device)
             pooled, tokens, attn_output_weights_layers = self.forward_image_encoder_att_map(images_aug, image_encoder)
 
-        att_mat = torch.stack(attn_output_weights_layers).squeeze(1)
+        # tranpose to batch first
+        att_mat = torch.stack(attn_output_weights_layers).permute(1, 0, 2, 3, 4)
 
         # Average the attention weights across all heads.
-        att_mat = torch.mean(att_mat, dim=1)
+        att_mat = torch.mean(att_mat, dim=2)
 
         # To account for residual connections, we add an identity matrix to the
         # attention matrix and re-normalize the weights.
-        residual_att = torch.eye(att_mat.size(1)).to(device)
+        residual_att = torch.eye(att_mat.size(2)).to(self.device)
         aug_att_mat = att_mat + residual_att
         aug_att_mat = aug_att_mat / aug_att_mat.sum(dim=-1).unsqueeze(-1)
 
         # Recursively multiply the weight matrices
-        joint_attentions = torch.zeros(aug_att_mat.size()).to(device)
-        joint_attentions[0] = aug_att_mat[0]
+        joint_attentions = torch.zeros(aug_att_mat.size()).to(self.device)
+        joint_attentions[:, 0] = aug_att_mat[:, 0]
+        for n in range(1, aug_att_mat.size(1)):
+            joint_attentions[:, n] = torch.bmm(aug_att_mat[:, n], joint_attentions[:, n-1])
         
-        for n in range(1, aug_att_mat.size(0)):
-            joint_attentions[n] = torch.matmul(aug_att_mat[n], joint_attentions[n-1])
-            
-        v = joint_attentions[-1]
+        # generate attn map
+        bs = aug_att_mat.shape[0]
         grid_size = int(np.sqrt(aug_att_mat.size(-1)))
-        mask = v[0, 1:].reshape(grid_size, grid_size).detach().cpu().numpy()
-        
+        attn_maps = joint_attentions[:, -1, 0, 1:]
+        attn_maps = attn_maps / torch.max(attn_maps, dim=1)[0].unsqueeze(-1)
+        attn_maps = attn_maps.reshape(bs, grid_size, grid_size).detach().cpu().numpy()
 
-        mask = cv2.resize(mask / mask.max(), img.shape[:2])
-        heatmap = cv2.applyColorMap((mask*255).astype(np.uint8), cv2.COLORMAP_JET)
-        result = cv2.addWeighted(img, 0.7, heatmap, 0.3, 0.0)
-        
-        return mask, heatmap, result    
-    
+        # generate heatmap
+        heatmaps = np.zeros_like(images_raw)
+        for i in range(images_raw.shape[0]):
+            image_raw = images_raw[i]
+            attn_map = cv2.resize(attn_maps[i], image_raw.shape[:2])
+            heatmap = cv2.applyColorMap((attn_map*255).astype(np.uint8), cv2.COLORMAP_JET)
+            heatmap = cv2.addWeighted(image_raw, 0.7, heatmap, 0.3, 0.0)
+            heatmaps[i] = heatmap
 
+        # batch_size first
+        images_raw = images_raw.reshape(B, F, H, W, C)
+        attn_maps = attn_maps.reshape(B, F, H, W, C)
+        heatmaps = heatmaps.reshape(B, F, H, W, C)
+
+        return images_raw, attn_maps, heatmaps
 
     # def get_attn_map_vc(self, frames_feats):
     # def get_attn_map_ic(self, frames_feats):
