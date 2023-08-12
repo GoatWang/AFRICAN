@@ -114,9 +114,10 @@ class AfricanSlowfast(pl.LightningModule):
             self.freeze_video_clip_text(self.video_clip)
         if config['train_laryers'] == "vision_proj":
             self.freeze_video_clip_evl(self.video_clip)
-        if config['train_laryers'] == "vision_tn4_proj":
-            self.freeze_video_clip_evl_exclude_tn4(self.video_clip)
             print("freeze_video_clip_evl")
+        if config['train_laryers'] == "vision_tn4_proj":
+            self.freeze_video_clip_evl_exclude_tn4()
+            print("freeze_video_clip_evl_exclude_tn4")
             self.print_requires_grad(self.video_clip)
             
         # slowfast: enable fast stream
@@ -260,8 +261,8 @@ class AfricanSlowfast(pl.LightningModule):
         self.train_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
         self.valid_map_class = torchmetrics.classification.MultilabelAccuracy(num_labels=self.n_classes, average=None)
 
-    def freeze_video_clip_evl(self, model):
-        for n, p in model.named_parameters():
+    def freeze_video_clip_evl(self):
+        for n, p in self.video_clip.named_parameters():
             if (
                 "visual" in n
                 and "visual_ln_post" not in n # and "visual_ln_post" not in n "visual.ln_post"
@@ -275,16 +276,16 @@ class AfricanSlowfast(pl.LightningModule):
             elif "positional_embedding" in n:
                 p.requires_grad = False
 
-    def freeze_video_clip_evl_exclude_tn4(self, model):
+    def freeze_video_clip_evl_exclude_tn4(self):
         '''
         input: video_clip
         exclude last 4 layers in vision transformer
         '''
-        model.freeze_video_clip_evl(model)
-        for resblock in model.visual.transformer.resblocks[-4:]:
+        self.freeze_video_clip_evl()
+        for resblock in self.video_clip.visual.transformer.resblocks[-4:]:
             resblock.requires_grad_(True)
-        model.visual.transformer.dpe.requires_grad_(True)
-        model.visual.transformer.dec.requires_grad_(True)
+        self.video_clip.visual.transformer.dpe.requires_grad_(True)
+        self.video_clip.visual.transformer.dec.requires_grad_(True)
 
     def freeze_video_clip_text(self, model):
         for n, p in model.named_parameters():
