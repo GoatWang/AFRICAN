@@ -71,10 +71,10 @@ def main(_config):
     for idx in [30, 60, 80, 85, 90, 140, 147, 153]:
         video_fp, video_raw, video_aug, labels_onehot, index = dataset_valid[idx]
         video_raw, video_aug = video_raw.unsqueeze(0), video_aug.unsqueeze(0)
-        images_raw, attn_maps, heatmaps_vc = model.draw_att_map(video_raw, video_aug, encoder_type="vc")
-        images_raw, attn_maps, heatmaps_ic = model.draw_att_map(video_raw, video_aug, encoder_type="ic")
-        images_raw, attn_maps, heatmaps_af = model.draw_att_map(video_raw, video_aug, encoder_type="af")
-        images_raw, heatmaps_ic, heatmaps_af = images_raw[0], heatmaps_ic[0], heatmaps_af[0]
+        images_raw, attn_maps, heatmaps_vc = model.draw_att_map(video_raw, video_aug, encoder_type="vc") # heatmaps_vc.shape = []
+        images_raw, attn_maps, heatmaps_ic = model.draw_att_map(video_raw, video_aug, encoder_type="ic") # heatmaps_ic.shape = []
+        images_raw, attn_maps, heatmaps_af = model.draw_att_map(video_raw, video_aug, encoder_type="af") # heatmaps_af.shape = []
+        images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af = images_raw[0], heatmaps_vc[0], heatmaps_ic[0], heatmaps_af[0]
 
         fig_fp = os.path.join(_config['attn_map_save_dir'], str(idx).zfill(5) + ".png")
         plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig_fp=fig_fp)
