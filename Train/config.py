@@ -39,7 +39,7 @@ def config():
 
     # fast stream: Video Clip model
     enable_video_clip = True
-    train_laryers = "vision_proj" # vision or vision_proj
+    train_laryers = "vision_proj" # vision or vision_proj or vision_tn4_proj
     ckpt_path_imageclip_vc = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
     ckpt_path_videoclip_vc = os.path.abspath(os.path.join(base_dir, "weights", "InternVideo-MM-L-14.ckpt"))
     num_frames = 8
@@ -67,6 +67,6 @@ def config():
     transformer_layers_af = 6
     transformer_heads_af = 12
 
-
     # Viusialize Attn Map
+    number_of_attn_map = 30
     attn_map_save_dir = os.path.abspath(os.path.join(base_dir, "temp", "attn_map"))

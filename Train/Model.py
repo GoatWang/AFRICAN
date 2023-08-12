@@ -114,8 +114,10 @@ class AfricanSlowfast(pl.LightningModule):
             self.freeze_video_clip_text(self.video_clip)
         if config['train_laryers'] == "vision_proj":
             self.freeze_video_clip_evl(self.video_clip)
-            # print("freeze_video_clip_evl")
-            # self.print_requires_grad(self.video_clip)
+        if config['train_laryers'] == "vision_tn4_proj":
+            self.freeze_video_clip_evl_exclude_tn4(self.video_clip)
+            print("freeze_video_clip_evl")
+            self.print_requires_grad(self.video_clip)
             
         # slowfast: enable fast stream
         self.enable_image_clip = config['enable_image_clip']
@@ -273,6 +275,17 @@ class AfricanSlowfast(pl.LightningModule):
             elif "positional_embedding" in n:
                 p.requires_grad = False
 
+    def freeze_video_clip_evl_exclude_tn4(self, model):
+        '''
+        input: video_clip
+        exclude last 4 layers in vision transformer
+        '''
+        model.freeze_video_clip_evl(model)
+        for resblock in model.visual.transformer.resblocks[-4:]:
+            resblock.requires_grad_(True)
+        model.visual.transformer.dpe.requires_grad_(True)
+        model.visual.transformer.dec.requires_grad_(True)
+
     def freeze_video_clip_text(self, model):
         for n, p in model.named_parameters():
             if "transformer" in n:
@@ -289,8 +302,11 @@ class AfricanSlowfast(pl.LightningModule):
                 p.requires_grad = False
 
     def freeze_image_encoder_fast_evl(self, model):
+        """
+        these layers upadted: class_embedding, proj, ln_post.weight, ln_post.bias
+        """
         for n, p in model.named_parameters():
-            if (
+            if ( # no layers coms in
                 "visual" in n
                 and "ln_post" not in n # and "visual_ln_post" not in n
                 and "proj" not in n # and "visual_proj" not in n
