@@ -518,8 +518,6 @@ class AfricanSlowfast(pl.LightningModule):
 
     def draw_att_map(self, video_raw, video_aug, encoder_type="ic"):
         """use AnimalKingdomDatasetVisualize Dataset to get attention map"""
-        image_encoder = self.image_encoder_ic if image_encoder == "ic" else self.image_encoder_af
-
         B, F, C, H, W = video_aug.shape
         _, _, _, H_src, W_src = video_raw.shape
         images_raw = video_raw.detach().cpu().numpy().reshape(B*F, C, H_src, W_src).transpose(0, 2, 3, 1)
