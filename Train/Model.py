@@ -21,7 +21,7 @@ from transformers import (
     get_cosine_schedule_with_warmup,
 )
 
-class TransformerFast(nn.Module):
+class TemporalTransformer(nn.Module):
     def __init__(
             self,
             seq_len: int = 32,
@@ -110,6 +110,16 @@ class AfricanSlowfast(pl.LightningModule):
 
         self.enable_video_clip = config['enable_video_clip']
         self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
+        self.transformer_vc = TemporalTransformer(
+            self.num_frames,
+            config['transformer_width_vc'],
+            config['transformer_layers_vc'],
+            config['transformer_heads_vc']
+        )
+        self.w_vc_clstoken = nn.Parameter(torch.randn(config['transformer_width_vc']))
+        self.w_ic_features = nn.Parameter(torch.randn(config['transformer_width_vc']))
+        self.bias_vc = nn.Parameter(torch.randn(config['transformer_width_vc']))
+
         if config['train_laryers'] == "vision":
             self.freeze_video_clip_text(self.video_clip)
         if config['train_laryers'] == "vision_proj":
@@ -125,7 +135,7 @@ class AfricanSlowfast(pl.LightningModule):
         if self.enable_image_clip:
             self.image_encoder_ic = self.get_image_encoder_fast(config, "ic")
             self.freeze_image_encoder_fast_evl(self.image_encoder_ic)
-            self.transformer_ic = TransformerFast(
+            self.transformer_ic = TemporalTransformer(
                 self.num_frames,
                 config['transformer_width_ic'],
                 config['transformer_layers_ic'],
@@ -140,7 +150,7 @@ class AfricanSlowfast(pl.LightningModule):
         if self.enable_african:
             self.image_encoder_af = self.get_image_encoder_fast(config, "af")
             self.freeze_image_encoder_fast_evl(self.image_encoder_af)
-            self.transformer_af = TransformerFast(
+            self.transformer_af = TemporalTransformer(
                 self.num_frames,
                 config['transformer_width_af'],
                 config['transformer_layers_af'],
@@ -326,9 +336,23 @@ class AfricanSlowfast(pl.LightningModule):
 
     def forward_frames_vc(self, frames_tensor):
         frames_tensor = frames_tensor.contiguous().transpose(1, 2)
+
+        # cls token (Intern Video Setting)
         frames_feats, video_all_feats = self.video_clip.encode_video(
             frames_tensor, return_all_feats=True, mode='video'
         )
+
+        # all feature for running temporal transformer
+        x_feats = video_all_feats[1:]
+        x_feats = x_feats.permute(1, 2, 0, 3)
+        B, F, L, W = x_feats.shape
+        x_feats = x_feats.reshape(-1, W) @ self.video_clip.visual_proj
+        x_feats = x_feats.reshape(B, F, L, x_feats.shape[-1])
+        x_feats = torch.sum(x_feats, dim=2)
+        x_feats = self.transformer_vc(x_feats)
+
+        # weighted sum
+        frames_feats = frames_feats * self.w_vc_clstoken + x_feats * self.w_ic_features + self.bias_vc
         return frames_feats
 
     # # memory efficiency: not in use
@@ -736,7 +760,7 @@ if __name__ == "__main__":
     # from config import config
     # _config = config()
     
-    # transformer_fast = TransformerFast(
+    # transformer_fast = TemporalTransformer(
     #     config['num_frames_fast'], # config['num_frames']
     #     config['transformer_width_fast'],
     #     config['transformer_layers_fast'],

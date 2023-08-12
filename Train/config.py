@@ -49,6 +49,9 @@ def config():
     clip_dpr = 0.0
     clip_use_checkpoint = False
     clip_checkpoint_num = [0, 0, 0]
+    transformer_width_vc = 768
+    transformer_layers_vc = 6
+    transformer_heads_vc = 12
 
     # second stream
     image_encoder_batch_size = 512

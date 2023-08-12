@@ -213,6 +213,7 @@ class VideoIntern(nn.Module):
             x = x @ self.visual_proj
 
         if return_all_feats:
+            # feats.shape = [257, 1, 8, 1024]
             return x, feats  # [N, C], [L, N, T, C]
 
         return x
