@@ -19,7 +19,7 @@ def turn_off_axis_ticks(ax):
 
 def plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig_fp=None):
     n_rows, n_cols = 4, 8
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 7))
     
     for ci in range(n_cols):
         image_raw, heatmap_vc, heatmap_ic, heatmap_af = images_raw[ci], heatmaps_vc[ci], heatmaps_ic[ci], heatmaps_af[ci]
@@ -68,7 +68,8 @@ def main(_config):
     model.to(_config['device'])
     model.eval()
 
-    for idx in [30, 60, 80, 85, 90, 140, 147, 153]:
+    # for idx in [30, 60, 80, 85, 90, 140, 147, 153]:
+    for idx in np.random.choice(range(len(dataset_valid)), 30):
         video_fp, video_raw, video_aug, labels_onehot, index = dataset_valid[idx]
         video_raw, video_aug = video_raw.unsqueeze(0), video_aug.unsqueeze(0)
         images_raw, attn_maps, heatmaps_vc = model.draw_att_map(video_raw, video_aug, encoder_type="vc") # heatmaps_vc.shape = []
@@ -76,7 +77,9 @@ def main(_config):
         images_raw, attn_maps, heatmaps_af = model.draw_att_map(video_raw, video_aug, encoder_type="af") # heatmaps_af.shape = []
         images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af = images_raw[0], heatmaps_vc[0], heatmaps_ic[0], heatmaps_af[0]
 
-        fig_fp = os.path.join(_config['attn_map_save_dir'], str(idx).zfill(5) + ".png")
+        # fig_fp = os.path.join(_config['attn_map_save_dir'], str(idx).zfill(5) + ".png")
+        fig_fn = os.path.basename(video_fp).split('.')[0] + ".png"
+        fig_fp = os.path.join(_config['attn_map_save_dir'], fig_fn)
         plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig_fp=fig_fp)
 
 
