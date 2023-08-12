@@ -118,7 +118,7 @@ class AfricanSlowfast(pl.LightningModule):
         if config['train_laryers'] == "vision_tn4_proj":
             self.freeze_video_clip_evl_exclude_tn4()
             print("freeze_video_clip_evl_exclude_tn4")
-            self.print_requires_grad(self.video_clip)
+        # self.print_requires_grad(self.video_clip)
             
         # slowfast: enable fast stream
         self.enable_image_clip = config['enable_image_clip']
