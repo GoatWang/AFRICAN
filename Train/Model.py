@@ -504,7 +504,7 @@ class AfricanSlowfast(pl.LightningModule):
             x = q_x + resblock.ls_1(x_attn)
             x = x + resblock.ls_2(resblock.mlp(resblock.ln_2(x)))
             attn_output_weights_layers.append(attn_output_weights)
-        attn_output_weights_layers = torch.stack(attn_output_weights_layers)
+        attn_output_weights_layers = torch.stack(attn_output_weights_layers).permute(1, 0, 2, 3, 4)
             
         if return_attn_only:
             return attn_output_weights_layers # torch.Size([24, 8, 16, 257, 257])
@@ -515,7 +515,7 @@ class AfricanSlowfast(pl.LightningModule):
             pooled = pooled @ image_encoder.proj
             return pooled, tokens, attn_output_weights_layers
 
-    def draw_image_encoder_att_map(self, video_raw, video_aug, image_encoder="ic"):
+    def draw_att_map(self, video_raw, video_aug, encoder_type="ic"):
         """use AnimalKingdomDatasetVisualize Dataset to get attention map"""
         image_encoder = self.image_encoder_ic if image_encoder == "ic" else self.image_encoder_af
 
@@ -524,14 +524,20 @@ class AfricanSlowfast(pl.LightningModule):
         images_raw = video_raw.detach().cpu().numpy().reshape(B*F, C, H_src, W_src).transpose(0, 2, 3, 1)
         images_raw = np.stack([cv2.resize(image_raw, (H, W)) for image_raw in images_raw])
         
-        images_aug = video_aug.reshape(B*F, C, H, W).to(self.device)
         with torch.no_grad():
-            video_aug = video_aug.to(self.device)
-            attn_output_weights_layers = self.forward_image_encoder_att_map(images_aug, image_encoder)
+            if encoder_type == "vc":
+                video_aug = video_aug.to(self.device)
+                att_mat = self.forward_video_encoder_att_map(video_aug)
+            elif encoder_type == "ic":
+                images_aug = video_aug.reshape(B*F, C, H, W).to(self.device)
+                att_mat = self.forward_image_encoder_att_map(images_aug, self.image_encoder_ic)
+            elif encoder_type == "af":
+                images_aug = video_aug.reshape(B*F, C, H, W).to(self.device)
+                att_mat = self.forward_image_encoder_att_map(images_aug, self.image_encoder_af)
+            else:
+                raise NotImplementedError
 
-        # tranpose to batch first
-        att_mat = attn_output_weights_layers.permute(1, 0, 2, 3, 4)
-
+        # att_mat.shape = Layers, B*F, H, W = torch.Size([24, 8, 257, 257])
         # Average the attention weights across all heads.
         att_mat = torch.mean(att_mat, dim=2)
 
