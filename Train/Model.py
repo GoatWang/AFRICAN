@@ -504,7 +504,8 @@ class AfricanSlowfast(pl.LightningModule):
             x = q_x + resblock.ls_1(x_attn)
             x = x + resblock.ls_2(resblock.mlp(resblock.ln_2(x)))
             attn_output_weights_layers.append(attn_output_weights)
-        attn_output_weights_layers = torch.stack(attn_output_weights_layers).permute(1, 0, 2, 3, 4)
+        attn_output_weights_layers = torch.stack(attn_output_weights_layers)
+        attn_output_weights_layers = torch.mean(attn_output_weights_layers, dim=2)
             
         if return_attn_only:
             return attn_output_weights_layers # torch.Size([24, 8, 16, 257, 257])
@@ -539,8 +540,8 @@ class AfricanSlowfast(pl.LightningModule):
 
         # att_mat.shape = Layers, B*F, H, W = torch.Size([24, 8, 257, 257])
         # Average the attention weights across all heads.
-        att_mat = torch.mean(att_mat, dim=2)
-
+        att_mat = att_mat.permute(1, 0, 2, 3)
+        
         # To account for residual connections, we add an identity matrix to the
         # attention matrix and re-normalize the weights.
         residual_att = torch.eye(att_mat.size(2)).to(self.device)
