@@ -79,3 +79,10 @@ def main(_config):
 
 
 
+# !python3 /notebooks/AnimalKingdomCLIP/Train/plot_attn_map.py with \
+# 'data_dir="/storage/AnimalKingdom/action_recognition"' \
+# 'device="cuda"' 'enable_video_clip=False' 'enable_image_clip=True' 'enable_african=True'
+
+# %cd /notebooks/AnimalKingdomCLIP/Train/temp
+# !tar -cvzf attn_map.tar.gz attn_map
+# %cd /notebooks

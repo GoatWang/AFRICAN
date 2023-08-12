@@ -423,6 +423,44 @@ class AfricanSlowfast(pl.LightningModule):
 
         return video_logits_vcic, video_logits_af, video_logits, labels_onehot
     
+    def forward_video_encoder_att_map(self, video):
+        visual = self.video_clip.visual
+
+        x = video
+        x = x.contiguous().transpose(1, 2)
+        x = visual.conv1(x)  # shape = [*, width, grid, grid]
+
+        # prepare patches, cls embedding and positional embedding
+        N, C, T, H, W = x.shape # bs, width, num_frames, grid_rows, grid_cols
+        x = x.permute(0, 2, 3, 4, 1).reshape(N * T, H * W, C) # [1*8, 16*16, 1024], 8 frames/video, 16*16 patches/frame, 1024 dim/patch
+        #              1024                               for boradcast 8            1024                                         (8, 256, 1024) 
+        x = torch.cat([visual.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width] # [1*8, 257, 1024]
+        x = x + visual.positional_embedding.to(x.dtype) # [1*8, 257, 1024]
+        x = visual.ln_pre(x) # [1*8, 257, 1024]
+        x = x.permute(1, 0, 2)  # NLD -> LND  # [257, 8, 1024]
+
+        # transformer
+        transformer = visual.transformer
+        attn_output_weights_layers = []
+        for i, resblock in enumerate(transformer.resblocks):
+            x = resblock(x, self.num_frames) # 257, 8, 1024
+
+            x_in = x
+            x = resblock.ln_1(x)
+            q, k, x, attn_output_weights = resblock.attn(x, x, x, need_weights=True, return_qk=True)
+            x = x_in + resblock.drop_path(x)
+
+            x_in = x
+            x = resblock.ln_2(x)
+            x = resblock.mlp(x)
+            x = x_in + resblock.drop_path(x)
+
+            attn_output_weights_layers.append(attn_output_weights)
+            
+        attn_output_weights_layers = torch.stack(attn_output_weights_layers)
+        return attn_output_weights_layers
+
+
     def forward_image_encoder_att_map(self, image, image_encoder, return_attn_only=True):
         """
         # video_tensors, labels_onehot = next(iter(valid_loader))
@@ -436,6 +474,8 @@ class AfricanSlowfast(pl.LightningModule):
         # pooled, tokens, attn_output_weights_layers = forward_for_visual(image_encoder, x1)
         # print("len(attn_output_weights_layers)", len(attn_output_weights_layers))
         # print("attn_output_weights_layers[0].shape", attn_output_weights_layers[0].shape)
+
+        return attn_output_weights_layers.shape = torch.Size([24, 8, 16, 257, 257])
         """
         x = image
         x = image_encoder.conv1(x)  # shape = [*, width, grid, grid]
@@ -452,7 +492,7 @@ class AfricanSlowfast(pl.LightningModule):
         x = image_encoder.patch_dropout(x)
         x = image_encoder.ln_pre(x)
 
-        x = x.permute(1, 0, 2)  # NLD -> LND
+        x = x.permute(1, 0, 2)  # NLD -> LND = [8, 257, 1024] -> [257, 8, 1024]
         
         model_transformer = image_encoder.transformer
         attn_output_weights_layers = []
@@ -464,9 +504,10 @@ class AfricanSlowfast(pl.LightningModule):
             x = q_x + resblock.ls_1(x_attn)
             x = x + resblock.ls_2(resblock.mlp(resblock.ln_2(x)))
             attn_output_weights_layers.append(attn_output_weights)
+        attn_output_weights_layers = torch.stack(attn_output_weights_layers)
             
         if return_attn_only:
-            return attn_output_weights_layers
+            return attn_output_weights_layers # torch.Size([24, 8, 16, 257, 257])
         else:
             x = x.permute(1, 0, 2)  # LND -> NLD
             pooled, tokens = image_encoder._global_pool(x)
@@ -489,7 +530,7 @@ class AfricanSlowfast(pl.LightningModule):
             attn_output_weights_layers = self.forward_image_encoder_att_map(images_aug, image_encoder)
 
         # tranpose to batch first
-        att_mat = torch.stack(attn_output_weights_layers).permute(1, 0, 2, 3, 4)
+        att_mat = attn_output_weights_layers.permute(1, 0, 2, 3, 4)
 
         # Average the attention weights across all heads.
         att_mat = torch.mean(att_mat, dim=2)
