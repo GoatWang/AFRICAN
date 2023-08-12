@@ -81,6 +81,7 @@ def main(_config):
         fig_fn = os.path.basename(video_fp).split('.')[0] + ".png"
         fig_fp = os.path.join(_config['attn_map_save_dir'], fig_fn)
         plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig_fp=fig_fp)
+        print("file saved to", fig_fp)
 
 
 
