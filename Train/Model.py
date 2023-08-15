@@ -110,24 +110,36 @@ class AfricanSlowfast(pl.LightningModule):
 
         self.enable_video_clip = config['enable_video_clip']
         self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
-        self.transformer_vc = TemporalTransformer(
-            self.num_frames,
-            config['transformer_width_vc'],
-            config['transformer_layers_vc'],
-            config['transformer_heads_vc']
-        )
-        self.w_vc_clstoken = nn.Parameter(torch.randn(config['transformer_width_vc']))
-        self.w_ic_features = nn.Parameter(torch.randn(config['transformer_width_vc']))
-        self.bias_vc = nn.Parameter(torch.randn(config['transformer_width_vc']))
+        self.transformer_proj_vc = config['transformer_proj_vc']
+        if self.transformer_proj_vc:
+            self.transformer_vc = TemporalTransformer(
+                self.num_frames,
+                config['transformer_width_vc'],
+                config['transformer_layers_vc'],
+                config['transformer_heads_vc']
+            )
+            self.w_vc_clstoken = nn.Parameter(torch.randn(config['transformer_width_vc']))
+            self.w_ic_features = nn.Parameter(torch.randn(config['transformer_width_vc']))
+            self.bias_vc = nn.Parameter(torch.randn(config['transformer_width_vc']))
 
         if config['train_laryers'] == "vision":
             self.freeze_video_clip_text(self.video_clip)
+            
         if config['train_laryers'] == "vision_proj":
             self.freeze_video_clip_evl()
             print("freeze_video_clip_evl")
+
         if config['train_laryers'] == "vision_tn4_proj":
             self.freeze_video_clip_evl_exclude_tn4()
             print("freeze_video_clip_evl_exclude_tn4")
+
+        if config['train_laryers'] == "vision_tn2_proj":
+            self.freeze_video_clip_evl_exclude_tn2()
+            print("freeze_video_clip_evl_exclude_tn2")
+
+        if config['train_laryers'] == "vision_dd_proj":
+            self.freeze_video_clip_evl_exclude_dd()
+            print("freeze_video_clip_evl_exclude_dd")
         # self.print_requires_grad(self.video_clip)
             
         # slowfast: enable fast stream
@@ -288,12 +300,29 @@ class AfricanSlowfast(pl.LightningModule):
 
     def freeze_video_clip_evl_exclude_tn4(self):
         '''
-        input: video_clip
         exclude last 4 layers in vision transformer
         '''
         self.freeze_video_clip_evl()
         for resblock in self.video_clip.visual.transformer.resblocks[-4:]:
             resblock.requires_grad_(True)
+        self.video_clip.visual.transformer.dpe.requires_grad_(True)
+        self.video_clip.visual.transformer.dec.requires_grad_(True)
+
+    def freeze_video_clip_evl_exclude_tn2(self):
+        '''
+        exclude last 2 layers in vision transformer
+        '''
+        self.freeze_video_clip_evl()
+        for resblock in self.video_clip.visual.transformer.resblocks[-2:]:
+            resblock.requires_grad_(True)
+        self.video_clip.visual.transformer.dpe.requires_grad_(True)
+        self.video_clip.visual.transformer.dec.requires_grad_(True)
+
+    def freeze_video_clip_evl_exclude_dd(self):
+        '''
+        exclude dpe and dec layers in vision transformer
+        '''
+        self.freeze_video_clip_evl()
         self.video_clip.visual.transformer.dpe.requires_grad_(True)
         self.video_clip.visual.transformer.dec.requires_grad_(True)
 
@@ -342,17 +371,18 @@ class AfricanSlowfast(pl.LightningModule):
             frames_tensor, return_all_feats=True, mode='video'
         )
 
-        # all feature for running temporal transformer
-        x_feats = video_all_feats[1:]
-        x_feats = x_feats.permute(1, 2, 0, 3)
-        B, F, L, W = x_feats.shape
-        x_feats = x_feats.reshape(-1, W) @ self.video_clip.visual_proj
-        x_feats = x_feats.reshape(B, F, L, x_feats.shape[-1])
-        x_feats = torch.sum(x_feats, dim=2)
-        x_feats = self.transformer_vc(x_feats)
+        if self.transformer_proj_vc:
+            # all feature for running temporal transformer
+            x_feats = video_all_feats[1:]
+            x_feats = x_feats.permute(1, 2, 0, 3)
+            B, F, L, W = x_feats.shape
+            x_feats = x_feats.reshape(-1, W) @ self.video_clip.visual_proj
+            x_feats = x_feats.reshape(B, F, L, x_feats.shape[-1])
+            x_feats = torch.sum(x_feats, dim=2)
+            x_feats = self.transformer_vc(x_feats)
 
-        # weighted sum
-        frames_feats = frames_feats * self.w_vc_clstoken + x_feats * self.w_ic_features + self.bias_vc
+            # weighted sum
+            frames_feats = frames_feats * self.w_vc_clstoken + x_feats * self.w_ic_features + self.bias_vc
         return frames_feats
 
     # # memory efficiency: not in use

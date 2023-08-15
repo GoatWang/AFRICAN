@@ -49,6 +49,7 @@ def config():
     clip_dpr = 0.0
     clip_use_checkpoint = False
     clip_checkpoint_num = [0, 0, 0]
+    transformer_proj_vc = True
     transformer_width_vc = 768
     transformer_layers_vc = 6
     transformer_heads_vc = 12
