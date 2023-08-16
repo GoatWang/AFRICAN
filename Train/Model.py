@@ -79,7 +79,11 @@ class TemporalTransformer(nn.Module):
 class AfricanSlowfast(pl.LightningModule):
     """
     VC: self init logit scale
-        # self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07)) 
+        ```
+        # from open_clip import load_openai_model, get_tokenizer
+        # clip_ic = load_openai_model("/notebooks/AnimalKingdomCLIP/Train/weights/ViT-L-14.pt")
+        # model.video_clip.logit_scale, clip_ic.logit_scale    
+        ```
 
     VC2: use pretrained logit scale
         # w = torch.load("/notebooks/AnimalKingdomCLIP/Train/weights/ViT-L-14.pt")
@@ -95,9 +99,6 @@ class AfricanSlowfast(pl.LightningModule):
         self.lr = config["lr"]
         self.n_classes = config["n_classes"]
         self.optimizer = config["optimizer"]
-        self.image_encoder_batch_size = config["image_encoder_batch_size"]
-        self.transformer_width_ic = config['transformer_width_ic']
-        self.transformer_width_af = config['transformer_width_af']
 
         self.num_frames = config['num_frames']
         self.decay_power = config['decay_power']
@@ -106,66 +107,75 @@ class AfricanSlowfast(pl.LightningModule):
         self.end_lr = config['end_lr']
         self.poly_decay_power = config['poly_decay_power']
 
-        self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
-
         self.enable_video_clip = config['enable_video_clip']
-        self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
-        self.transformer_proj_vc = config['transformer_proj_vc']
-        if self.transformer_proj_vc:
-            self.transformer_vc = TemporalTransformer(
-                self.num_frames,
-                config['transformer_width_vc'],
-                config['transformer_layers_vc'],
-                config['transformer_heads_vc']
-            )
-            self.w_vc_clstoken = nn.Parameter(torch.randn(config['transformer_width_vc']))
-            self.w_ic_features = nn.Parameter(torch.randn(config['transformer_width_vc']))
-            self.bias_vc = nn.Parameter(torch.randn(config['transformer_width_vc']))
+        if self.enable_video_clip:
+            self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
+            self.freeze_vc_layers(config['train_layers'])
+            self.logit_scale_vc = nn.Parameter(torch.ones([]) * 4.6052) 
+
+            # transformer_proj_vc
+            self.transformer_width_vc = config['transformer_width_vc']
+            self.transformer_proj_vc = config['transformer_proj_vc']
+            if self.transformer_proj_vc:
+                self.transformer_vc = TemporalTransformer(
+                    self.num_frames,
+                    self.transformer_width_vc,
+                    config['transformer_layers_vc'],
+                    config['transformer_heads_vc']
+                )
+                self.w_vc_clstoken = nn.Parameter(torch.randn(self.transformer_width_vc))
+                self.w_ic_features = nn.Parameter(torch.randn(self.transformer_width_vc))
+                self.bias_vc = nn.Parameter(torch.randn(self.transformer_width_vc))
+
+            # text_proj_vc
+            self.use_text_proj_vc = config['use_text_proj_vc']
+            if self.use_text_proj_vc:
+                self.text_proj_vc = nn.Linear(self.transformer_width_vc, self.transformer_width_vc)
+
+            # self.final_fc_vc
+            self.final_fc_vc = torch.nn.Linear(self.n_classes, self.n_classes)
+            # self.print_requires_grad(self.video_clip)
             
-        self.use_text_proj = config['use_text_proj']
-        if self.use_text_proj:
-            self.text_proj = nn.Linear(config['transformer_width_vc'], config['transformer_width_vc'])
+            # weights for vc
+            self.w_vc = nn.Parameter(torch.randn(self.n_classes))
 
-        if config['train_laryers'] == "vision":
-            self.freeze_video_clip_text(self.video_clip)
-            
-        if config['train_laryers'] == "vision_proj":
-            self.freeze_video_clip_evl()
-            print("freeze_video_clip_evl")
-
-        if config['train_laryers'] == "vision_tn4_proj":
-            self.freeze_video_clip_evl_exclude_tn4()
-            print("freeze_video_clip_evl_exclude_tn4")
-
-        if config['train_laryers'] == "vision_tn2_proj":
-            self.freeze_video_clip_evl_exclude_tn2()
-            print("freeze_video_clip_evl_exclude_tn2")
-
-        if config['train_laryers'] == "vision_dd_proj":
-            self.freeze_video_clip_evl_exclude_dd()
-            print("freeze_video_clip_evl_exclude_dd")
-        # self.print_requires_grad(self.video_clip)
-            
         # slowfast: enable fast stream
+        self.image_encoder_batch_size = config["image_encoder_batch_size"]
+
+        ## enable_image_clip
         self.enable_image_clip = config['enable_image_clip']
         if self.enable_image_clip:
             self.image_encoder_ic = self.get_image_encoder_fast(config, "ic")
             self.freeze_image_encoder_fast_evl(self.image_encoder_ic)
+            self.logit_scale_ic = nn.Parameter(torch.ones([]) * 4.6052) 
+
+            # transformer_proj_ic
+            self.transformer_width_ic = config['transformer_width_ic']
             self.transformer_ic = TemporalTransformer(
                 self.num_frames,
-                config['transformer_width_ic'],
+                self.transformer_width_ic,
                 config['transformer_layers_ic'],
                 config['transformer_heads_ic']
             )
-            # to be merged on image encoder featers (transformer_width_ic: 768)
-            self.w_vc = nn.Parameter(torch.randn(config['transformer_width_ic']))
-            self.w_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
-            self.bias_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
-        
+
+            # text_proj_ic
+            self.use_text_proj_ic = config['use_text_proj_ic']
+            if self.use_text_proj_ic:
+                self.text_proj_ic = nn.Linear(self.transformer_width_ic, self.transformer_width_ic)
+
+            # self.final_fc_ic
+            self.final_fc_ic = torch.nn.Linear(self.n_classes, self.n_classes)
+
+            # weights for ic
+            self.w_ic = nn.Parameter(torch.randn(self.n_classes))
+
+        ## enable_african
         self.enable_african = config['enable_african']
         if self.enable_african:
+            self.transformer_width_af = config['transformer_width_af']
             self.image_encoder_af = self.get_image_encoder_fast(config, "af")
             self.freeze_image_encoder_fast_evl(self.image_encoder_af)
+            
             self.transformer_af = TemporalTransformer(
                 self.num_frames,
                 config['transformer_width_af'],
@@ -175,15 +185,23 @@ class AfricanSlowfast(pl.LightningModule):
 
             output_width = int(config['transformer_width_af'])
             self.mlp_af = nn.Sequential(
+                nn.Linear(output_width, output_width),
+                nn.ReLU(),
+                nn.Linear(output_width, output_width),
+                nn.ReLU(),
                 nn.Linear(output_width, output_width//2),
+                nn.ReLU(),
                 nn.Linear(output_width//2, output_width//4),
+                nn.ReLU(),
                 nn.Linear(output_width//4, self.n_classes)
             )
+            # weights for af
+            self.w_af = nn.Parameter(torch.randn(self.n_classes))
 
-            # to be merged on final layers (self.n_classes)
-            self.w_vcic = nn.Parameter(torch.ones(self.n_classes) * 0.9)
-            self.w_af = nn.Parameter(torch.ones(self.n_classes) * 0.1)
-            self.bias_af = nn.Parameter(torch.randn(self.n_classes))
+        if (not self.enable_video_clip) and (not self.enable_image_clip) and (not self.enable_african):
+            raise ValueError("at least one stream should be enabled") 
+        else:
+            self.w_bias = nn.Parameter(torch.randn(self.n_classes))
 
     def print_requires_grad(self, model):
         for n, p in model.named_parameters():
@@ -253,8 +271,11 @@ class AfricanSlowfast(pl.LightningModule):
         state_dict = ckpt["state_dict"]
         self.load_state_dict(state_dict, strict=False)
 
-    def set_text_feats(self, text_feats):
-        self.text_feats = text_feats.clone().requires_grad_(False)
+    def set_text_feats_vc(self, text_feats_vc):
+        self.text_feats_vc = text_feats_vc.clone().requires_grad_(False)
+
+    def set_text_feats_ic(self, text_feats_ic):
+        self.text_feats_ic = text_feats_ic.clone().requires_grad_(False)
 
     def set_class_names(self, class_names):
         self.class_names = class_names
@@ -330,6 +351,24 @@ class AfricanSlowfast(pl.LightningModule):
         self.video_clip.visual.transformer.dpe.requires_grad_(True)
         self.video_clip.visual.transformer.dec.requires_grad_(True)
 
+    def freeze_vc_layers(self, train_laryers):
+        if train_laryers == "vision":
+            self.freeze_video_clip_text(self.video_clip)
+        elif train_laryers == "vision_proj":
+            self.freeze_video_clip_evl()
+            print("freeze_video_clip_evl")
+        elif train_laryers == "vision_tn4_proj":
+            self.freeze_video_clip_evl_exclude_tn4()
+            print("freeze_video_clip_evl_exclude_tn4")
+        elif train_laryers == "vision_tn2_proj":
+            self.freeze_video_clip_evl_exclude_tn2()
+            print("freeze_video_clip_evl_exclude_tn2")
+        elif train_laryers == "vision_dd_proj":
+            self.freeze_video_clip_evl_exclude_dd()
+            print("freeze_video_clip_evl_exclude_dd")
+        else:
+            raise ValueError("train_laryers should be one of {vision, vision_proj, vision_tn4_proj, vision_tn2_proj, vision_dd_proj}")
+        
     def freeze_video_clip_text(self, model):
         for n, p in model.named_parameters():
             if "transformer" in n:
@@ -459,33 +498,47 @@ class AfricanSlowfast(pl.LightningModule):
         frames_feats = self.transformer_af(frames_feats)
         return frames_feats
 
+    def cal_similarity_logit(self, frames_feats, text_feats, logit_scale, final_fc):
+        video_feats = torch.nn.functional.normalize(frames_feats.t(), dim=1) # (n, 768)
+        text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
+        t = logit_scale.exp()
+        video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
+        video_logits = final_fc(video_logits)
+        return video_logits
+
     def forward(self, batch):
         frames_tensor, labels_onehot, index = batch
-
+        
+        video_logits_vc = None
         # enable_video_clip
-        frames_feats = None
+        video_logits_vc = None
         if self.enable_video_clip:
-            frames_feats = self.forward_frames_vc(frames_tensor)
+            # text embedding
+            text_feats_vc = self.text_feats
+            if self.use_text_proj_vc:
+                text_feats_vc = self.text_proj_vc(text_feats_vc)
 
-        # enable_image_clip        
+            # video embedding
+            frames_feats_vc = self.forward_frames_vc(frames_tensor)
+            video_logits_vc = self.cal_similarity_logit(self, frames_feats_vc, text_feats_vc, self.logit_scale_vc, self.final_fc_vc)
+
+            # add to video_logits
+            video_logits = video_logits_vc * self.w_vc
+
+        # enable_image_clip
+        video_logits_ic = None
         if self.enable_image_clip:
+            # text embedding
+            text_feats_ic = self.text_feats_ic
+            if self.use_text_proj_ic:
+                text_feats_ic = self.text_proj_ic(text_feats_ic)
+
+            # video embedding
             frames_feats_ic = self.forward_frames_memef_ic(frames_tensor)
-            if frames_feats is None:
-                frames_feats = frames_feats_ic
-            else:
-                frames_feats = frames_feats * self.w_vc + frames_feats_ic * self.w_ic + self.bias_ic
+            video_logits_ic = self.cal_similarity_logit(self, frames_feats_ic, text_feats_ic, self.logit_scale_ic, self.final_fc_ic)
 
-        video_logits_vcic = None
-        if frames_feats is not None:
-            text_feats = self.text_feats
-            if self.use_text_proj:
-                text_feats = self.text_proj(self.text_feats)
-
-            video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
-            text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
-            t = self.video_clip.logit_scale.exp()
-            video_logits_vcic = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
-            video_logits_vcic = self.final_fc(video_logits_vcic)
+            # add to video_logits
+            video_logits = video_logits_ic * self.w_ic
 
         # enable_african
         video_logits_af = None
@@ -493,14 +546,144 @@ class AfricanSlowfast(pl.LightningModule):
             frames_feats_af = self.forward_frames_memef_af(frames_tensor)
             video_logits_af = self.mlp_af(frames_feats_af)
 
-        if video_logits_vcic is None:
-            video_logits = video_logits_af
-        elif video_logits_af is None:
-            video_logits = video_logits_vcic
-        else:
-            video_logits = video_logits_vcic * self.w_vcic + video_logits_af * self.w_af + self.bias_af
+            # add to video_logits
+            video_logits = video_logits_af * self.w_af
+            
+        video_logits = video_logits + self.w_bias
+        return video_logits_vc, video_logits_ic, video_logits_af, video_logits, labels_onehot
 
-        return video_logits_vcic, video_logits_af, video_logits, labels_onehot
+    # def infer(self, frames_tensor, rames_tensor_fast):
+    #     frames_tensor, frames_tensor_fast, labels_onehot, index = batch
+    #     frames_feats_slow = self.forward_frames_slow(frames_tensor)
+    #     frames_feats_fast = self.forward_frames_fast(frames_tensor_fast)
+    #     frames_feats = frames_feats_slow * self.w_slow + frames_feats_fast * self.w_fast + self.bias
+    #     video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
+    #     text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
+    #     t = self.video_clip.logit_scale.exp()
+    #     video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
+    #     video_logits = self.final_fc(video_logits)
+    #     return video_logits
+    
+    def training_step(self, batch, batch_idx):
+        video_logits_vc, video_logits_ic, video_logits_af, video_logits, labels_onehot = self(batch)
+
+        if video_logits_vc is not None:
+            loss_vc = self.loss_func(video_logits_vc, labels_onehot.type(torch.float32))
+            self.log("train_loss_vc", loss_vc)
+        if video_logits_ic is not None:
+            loss_ic = self.loss_func(video_logits_ic, labels_onehot.type(torch.float32))
+            self.log("train_loss_ic", loss_ic)
+        if video_logits_af is not None:
+            loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
+            self.log("train_loss_af", loss_af)
+        
+        loss = video_logits.loss_func(video_logits, labels_onehot.type(torch.float32))
+        self.log("train_loss", loss)
+
+        video_pred = torch.sigmoid(video_logits)
+        self.train_metrics.update(video_pred, labels_onehot)
+        self.train_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
+        self.train_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
+        self.train_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
+        self.train_map_class.update(video_pred, labels_onehot)
+        return loss
+
+    def on_train_epoch_end(self):
+        _train_metrics = self.train_metrics.compute()
+        self.log_dict(_train_metrics)
+        self.train_metrics.reset()
+
+        _train_map_head = self.train_map_head.compute()
+        self.log("train_map_head", _train_map_head)
+        self.train_map_head.reset()
+
+        _train_map_middle = self.train_map_middle.compute()
+        self.log("train_map_middle", _train_map_middle)
+        self.train_map_middle.reset()
+
+        _train_map_tail = self.train_map_tail.compute()
+        self.log("train_map_tail", _train_map_tail)
+        self.train_map_tail.reset()
+
+        _train_map_class = self.train_map_class.compute()
+        for i in range(self.n_classes):
+            self.log('train_map_' + self.class_names[i], _train_map_class[i])
+        self.train_map_class.reset()
+
+    def validation_step(self, batch, batch_idx):
+        video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
+
+        if (video_logits_vcic is None) and (video_logits_af is None):
+            assert False, "video_logits_vcic and video_logits_af are both None"
+        elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
+            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            self.log("valid_loss", loss)
+        else: # both of them are not None
+            loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
+            loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
+            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            loss = (loss_vcic + loss_af + loss_all) / 3
+            self.log("valid_loss_vcic", loss_vcic)
+            self.log("valid_loss_af", loss_af)
+            self.log("valid_loss", loss_all)
+
+        video_pred = torch.sigmoid(video_logits)
+        self.valid_metrics.update(video_pred, labels_onehot)
+        self.valid_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
+        self.valid_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
+        self.valid_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
+        self.valid_map_class.update(video_pred, labels_onehot)
+
+    def on_validation_epoch_end(self):
+        _valid_metrics = self.valid_metrics.compute()
+        self.log_dict(_valid_metrics)
+        self.valid_metrics.reset()
+
+        _valid_map_head = self.valid_map_head.compute()
+        self.log("valid_map_head", _valid_map_head)
+        self.valid_map_head.reset()
+
+        _valid_map_middle = self.valid_map_middle.compute()
+        self.log("valid_map_middle", _valid_map_middle)
+        self.valid_map_middle.reset()
+
+        _valid_map_tail = self.valid_map_tail.compute()
+        self.log("valid_map_tail", _valid_map_tail)
+        self.valid_map_tail.reset()
+
+        _valid_map_class = self.valid_map_class.compute()
+        for i in range(self.n_classes):
+            self.log('valid_map_' + self.class_names[i], _valid_map_class[i])
+        self.valid_map_class.reset()
+
+    def configure_optimizers(self):
+        if self.optimizer == 'adam':
+            optimizer = torch.optim.Adam([p for p in self.parameters() if p.requires_grad], lr=self.lr)
+        elif self.optimizer == 'adamw':
+            optimizer = torch.optim.AdamW([p for p in self.parameters() if p.requires_grad], lr=self.lr, eps=1e-6, betas=(0.9, 0.98))
+        else:
+            assert False, f"Unknown optimizer: {optimizer}"
+
+        if self.decay_power == "no_decay":
+            return optimizer
+        else:
+            if self.decay_power == "cosine":
+                scheduler = get_cosine_schedule_with_warmup(
+                    optimizer,
+                    num_warmup_steps=self.warmup_steps,
+                    num_training_steps=self.max_steps,
+                )
+            elif self.decay_power == "poly":
+                scheduler = get_polynomial_decay_schedule_with_warmup(
+                    optimizer,
+                    num_warmup_steps=self.warmup_steps,
+                    num_training_steps=self.max_steps,
+                    lr_end=self.end_lr,
+                    power=self.poly_decay_power,
+                )
+            sched = {"scheduler": scheduler, "interval": "step"}
+
+            return ([optimizer], [sched])    
     
     def forward_video_encoder_att_map(self, video):
         visual = self.video_clip.visual
@@ -654,145 +837,6 @@ class AfricanSlowfast(pl.LightningModule):
 
         return images_raw, attn_maps, heatmaps
 
-    # def get_attn_map_vc(self, frames_feats):
-    # def get_attn_map_ic(self, frames_feats):
-    # def get_attn_map_af(self, frames_feats):
-
-
-    # def infer(self, frames_tensor, rames_tensor_fast):
-    #     frames_tensor, frames_tensor_fast, labels_onehot, index = batch
-    #     frames_feats_slow = self.forward_frames_slow(frames_tensor)
-    #     frames_feats_fast = self.forward_frames_fast(frames_tensor_fast)
-    #     frames_feats = frames_feats_slow * self.w_slow + frames_feats_fast * self.w_fast + self.bias
-    #     video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
-    #     text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
-    #     t = self.video_clip.logit_scale.exp()
-    #     video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
-    #     video_logits = self.final_fc(video_logits)
-    #     return video_logits
-    
-    def training_step(self, batch, batch_idx):
-        video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
-
-        if (video_logits_vcic is None) and (video_logits_af is None):
-            assert False, "video_logits_vcic and video_logits_af are both None"
-        elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
-            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            self.log("train_loss", loss)
-        else: # both of them are not None
-            loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
-            loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
-            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            loss = (loss_vcic + loss_af + loss_all) / 3
-            self.log("train_loss_vcic", loss_vcic)
-            self.log("train_loss_af", loss_af)
-            self.log("train_loss", loss_all)
-
-        video_pred = torch.sigmoid(video_logits)
-        self.train_metrics.update(video_pred, labels_onehot)
-        self.train_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
-        self.train_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
-        self.train_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
-        self.train_map_class.update(video_pred, labels_onehot)
-        return loss
-
-    def on_train_epoch_end(self):
-        _train_metrics = self.train_metrics.compute()
-        self.log_dict(_train_metrics)
-        self.train_metrics.reset()
-
-        _train_map_head = self.train_map_head.compute()
-        self.log("train_map_head", _train_map_head)
-        self.train_map_head.reset()
-
-        _train_map_middle = self.train_map_middle.compute()
-        self.log("train_map_middle", _train_map_middle)
-        self.train_map_middle.reset()
-
-        _train_map_tail = self.train_map_tail.compute()
-        self.log("train_map_tail", _train_map_tail)
-        self.train_map_tail.reset()
-
-        _train_map_class = self.train_map_class.compute()
-        for i in range(self.n_classes):
-            self.log('train_map_' + self.class_names[i], _train_map_class[i])
-        self.train_map_class.reset()
-
-    def validation_step(self, batch, batch_idx):
-        video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
-
-        if (video_logits_vcic is None) and (video_logits_af is None):
-            assert False, "video_logits_vcic and video_logits_af are both None"
-        elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
-            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            self.log("valid_loss", loss)
-        else: # both of them are not None
-            loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
-            loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
-            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            loss = (loss_vcic + loss_af + loss_all) / 3
-            self.log("valid_loss_vcic", loss_vcic)
-            self.log("valid_loss_af", loss_af)
-            self.log("valid_loss", loss_all)
-
-        video_pred = torch.sigmoid(video_logits)
-        self.valid_metrics.update(video_pred, labels_onehot)
-        self.valid_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
-        self.valid_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
-        self.valid_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
-        self.valid_map_class.update(video_pred, labels_onehot)
-
-    def on_validation_epoch_end(self):
-        _valid_metrics = self.valid_metrics.compute()
-        self.log_dict(_valid_metrics)
-        self.valid_metrics.reset()
-
-        _valid_map_head = self.valid_map_head.compute()
-        self.log("valid_map_head", _valid_map_head)
-        self.valid_map_head.reset()
-
-        _valid_map_middle = self.valid_map_middle.compute()
-        self.log("valid_map_middle", _valid_map_middle)
-        self.valid_map_middle.reset()
-
-        _valid_map_tail = self.valid_map_tail.compute()
-        self.log("valid_map_tail", _valid_map_tail)
-        self.valid_map_tail.reset()
-
-        _valid_map_class = self.valid_map_class.compute()
-        for i in range(self.n_classes):
-            self.log('valid_map_' + self.class_names[i], _valid_map_class[i])
-        self.valid_map_class.reset()
-
-    def configure_optimizers(self):
-        if self.optimizer == 'adam':
-            optimizer = torch.optim.Adam([p for p in self.parameters() if p.requires_grad], lr=self.lr)
-        elif self.optimizer == 'adamw':
-            optimizer = torch.optim.AdamW([p for p in self.parameters() if p.requires_grad], lr=self.lr, eps=1e-6, betas=(0.9, 0.98))
-        else:
-            assert False, f"Unknown optimizer: {optimizer}"
-
-        if self.decay_power == "no_decay":
-            return optimizer
-        else:
-            if self.decay_power == "cosine":
-                scheduler = get_cosine_schedule_with_warmup(
-                    optimizer,
-                    num_warmup_steps=self.warmup_steps,
-                    num_training_steps=self.max_steps,
-                )
-            elif self.decay_power == "poly":
-                scheduler = get_polynomial_decay_schedule_with_warmup(
-                    optimizer,
-                    num_warmup_steps=self.warmup_steps,
-                    num_training_steps=self.max_steps,
-                    lr_end=self.end_lr,
-                    power=self.poly_decay_power,
-                )
-            sched = {"scheduler": scheduler, "interval": "step"}
-
-            return ([optimizer], [sched])    
-    
 if __name__ == "__main__":    
     # # fast stream
     # from config import config

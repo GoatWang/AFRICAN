@@ -1,3 +1,6 @@
+# Branch
+teic: text embedding image encoder
+
 # Experiments
 ## VideoCLIP (X: DONE, D: Doing, S:Suspend, C:Cancel)
 - [X] Test VideoCLIP baseline

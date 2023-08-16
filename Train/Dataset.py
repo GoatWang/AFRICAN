@@ -23,6 +23,8 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.num_frames = config['num_frames']
         self.video_sampling = config['video_sampling']
         self.functional_test_size = config['functional_test_size']
+        self.ckpt_path_ic = config['ckpt_path_ic']
+        self.use_text_embedding_ic = config['use_text_embedding_ic']
             
         # self.text_column_name = "questions"
         self.video_transform = VideoTransformTorch(mode=self.split)  # train or val model
@@ -71,6 +73,22 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             self.text_features = text_features
         else:
             self.text_features = torch.from_numpy(np.load(npy_fp)).to(self.device)
+
+        if self.use_text_embedding_ic:
+            npy_fp_ic = os.path.join("temp", "text_features_ic.npy")
+            if not os.path.exists(npy_fp_ic) or force:
+                from open_clip import load_openai_model, get_tokenizer
+                clip_name = os.path.basename(self.ckpt_path_ic).split(".")[0]
+                clip_ic = load_openai_model(self.ckpt_path_ic).to(self.device)
+                text = get_tokenizer(clip_name)(df_action['prompt']).to(self.device)
+                with torch.no_grad():
+                    text_features_ic = clip_ic.encode_text(text)
+                    text_features_ic = torch.nn.functional.normalize(text_features_ic)
+                np.save(npy_fp, text_features.cpu().detach().numpy())
+                self.text_features_ic = text_features_ic
+            else:
+                self.text_features_ic = torch.from_numpy(np.load(npy_fp_ic)).to(self.device)
+
 
     def __getitem__(self, index):
         video_fp = self.video_fps[index]

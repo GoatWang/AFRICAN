@@ -49,11 +49,11 @@ def config():
     clip_dpr = 0.0
     clip_use_checkpoint = False
     clip_checkpoint_num = [0, 0, 0]
-    transformer_proj_vc = True
+    transformer_proj_vc = False
     transformer_width_vc = 768
     transformer_layers_vc = 6
     transformer_heads_vc = 12
-    use_text_proj = False
+    use_text_proj_vc = False
 
     # second stream
     image_encoder_batch_size = 512
@@ -64,6 +64,7 @@ def config():
     transformer_width_ic = 768
     transformer_layers_ic = 6
     transformer_heads_ic = 12
+    use_text_proj_ic = False
 
     ## african
     enable_african = True
