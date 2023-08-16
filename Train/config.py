@@ -53,6 +53,7 @@ def config():
     transformer_width_vc = 768
     transformer_layers_vc = 6
     transformer_heads_vc = 12
+    use_text_proj = False
 
     # second stream
     image_encoder_batch_size = 512

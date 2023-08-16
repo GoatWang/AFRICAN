@@ -121,6 +121,10 @@ class AfricanSlowfast(pl.LightningModule):
             self.w_vc_clstoken = nn.Parameter(torch.randn(config['transformer_width_vc']))
             self.w_ic_features = nn.Parameter(torch.randn(config['transformer_width_vc']))
             self.bias_vc = nn.Parameter(torch.randn(config['transformer_width_vc']))
+            
+        self.use_text_proj = config['use_text_proj']
+        if self.use_text_proj:
+            self.text_proj = nn.Linear(config['transformer_width_vc'], config['transformer_width_vc'])
 
         if config['train_laryers'] == "vision":
             self.freeze_video_clip_text(self.video_clip)
@@ -473,8 +477,12 @@ class AfricanSlowfast(pl.LightningModule):
 
         video_logits_vcic = None
         if frames_feats is not None:
+            text_feats = self.text_feats
+            if self.use_text_proj:
+                text_feats = self.text_proj(self.text_feats)
+
             video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
-            text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
+            text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
             t = self.video_clip.logit_scale.exp()
             video_logits_vcic = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
             video_logits_vcic = self.final_fc(video_logits_vcic)
