@@ -574,18 +574,25 @@ class AfricanSlowfast(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         video_logits_vc, video_logits_ic, video_logits_af, video_logits, labels_onehot = self(batch)
 
+        loss_all = 0
+
+        loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+        self.log("train_loss", loss)
+        loss_all += loss
+
         if video_logits_vc is not None:
             loss_vc = self.loss_func(video_logits_vc, labels_onehot.type(torch.float32))
             self.log("train_loss_vc", loss_vc)
+            loss_all += loss_vc
         if video_logits_ic is not None:
             loss_ic = self.loss_func(video_logits_ic, labels_onehot.type(torch.float32))
             self.log("train_loss_ic", loss_ic)
+            loss_all += loss_ic
         if video_logits_af is not None:
             loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
             self.log("train_loss_af", loss_af)
+            loss_all += loss_af
         
-        loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-        self.log("train_loss", loss)
 
         video_pred = torch.sigmoid(video_logits)
         self.train_metrics.update(video_pred, labels_onehot)
@@ -593,8 +600,7 @@ class AfricanSlowfast(pl.LightningModule):
         self.train_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
         self.train_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
         self.train_map_class.update(video_pred, labels_onehot)
-        
-        loss_all = loss_vc + loss_ic + loss_af + loss
+
         return loss_all
 
     def on_train_epoch_end(self):
