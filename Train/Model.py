@@ -135,10 +135,11 @@ class AfricanSlowfast(pl.LightningModule):
             # self.final_fc_vc
             # self.final_fc_vc = torch.nn.Linear(self.n_classes, self.n_classes)
             self.final_fc_vc = nn.Sequential(
-                nn.Linear(self.transformer_width_vc *2, self.transformer_width_vc//1), # => 768
-                nn.Linear(self.transformer_width_vc//1, self.transformer_width_vc//2), # => 384
-                nn.Linear(self.transformer_width_vc//2, self.transformer_width_vc//4), # => 192
-                nn.Linear(self.transformer_width_vc//4, self.n_classes), # => 140
+                nn.Linear(self.transformer_width_vc*2, self.transformer_width_vc//2), # => 384
+                nn.Linear(self.transformer_width_vc//2, self.transformer_width_vc//8), # => 96
+                nn.Linear(self.transformer_width_vc//8, self.transformer_width_vc//32), # => 24
+                nn.Linear(self.transformer_width_vc//32, self.transformer_width_vc//128), # => 12
+                nn.Linear(self.transformer_width_vc//128, 1), # => 1
             )
             # self.print_requires_grad(self.video_clip)
             
@@ -172,11 +173,12 @@ class AfricanSlowfast(pl.LightningModule):
             # self.final_fc_ic
             # self.final_fc_ic = torch.nn.Linear(self.n_classes, self.n_classes)
             self.final_fc_ic = nn.Sequential(
-                nn.Linear(self.transformer_width_ic *2, self.transformer_width_ic//1), # => 768
-                nn.Linear(self.transformer_width_ic//1, self.transformer_width_ic//2), # => 384
-                nn.Linear(self.transformer_width_ic//2, self.transformer_width_ic//4), # => 192
-                nn.Linear(self.transformer_width_ic//4, self.n_classes), # => 140
-            )            
+                nn.Linear(self.transformer_width_ic*2, self.transformer_width_ic//2), # => 384
+                nn.Linear(self.transformer_width_ic//2, self.transformer_width_ic//8), # => 96
+                nn.Linear(self.transformer_width_ic//8, self.transformer_width_ic//32), # => 24
+                nn.Linear(self.transformer_width_ic//32, self.transformer_width_ic//128), # => 12
+                nn.Linear(self.transformer_width_ic//128, 1), # => 1
+            )
 
             # weights for ic
             self.w_ic = nn.Parameter(torch.randn(self.n_classes))
