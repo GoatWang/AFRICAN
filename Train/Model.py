@@ -133,7 +133,14 @@ class AfricanSlowfast(pl.LightningModule):
                 self.text_proj_vc = nn.Linear(self.transformer_width_vc, self.transformer_width_vc)
 
             # self.final_fc_vc
-            self.final_fc_vc = torch.nn.Linear(self.n_classes, self.n_classes)
+            # self.final_fc_vc = torch.nn.Linear(self.n_classes, self.n_classes)
+            self.final_fc_vc = nn.Sequential(
+                nn.Linear(self.n_classes, self.n_classes),
+                nn.Linear(self.n_classes, self.n_classes),
+                nn.Linear(self.n_classes, self.n_classes),
+                nn.Linear(self.n_classes, self.n_classes),
+                nn.Linear(self.n_classes, self.n_classes),
+            )
             # self.print_requires_grad(self.video_clip)
             
             # weights for vc
@@ -164,7 +171,14 @@ class AfricanSlowfast(pl.LightningModule):
                 self.text_proj_ic = nn.Linear(self.transformer_width_ic, self.transformer_width_ic)
 
             # self.final_fc_ic
-            self.final_fc_ic = torch.nn.Linear(self.n_classes, self.n_classes)
+            # self.final_fc_ic = torch.nn.Linear(self.n_classes, self.n_classes)
+            self.final_fc_ic = nn.Sequential(
+                nn.Linear(self.n_classes, self.n_classes),
+                nn.Linear(self.n_classes, self.n_classes),
+                nn.Linear(self.n_classes, self.n_classes),
+                nn.Linear(self.n_classes, self.n_classes),
+                nn.Linear(self.n_classes, self.n_classes),
+            )
 
             # weights for ic
             self.w_ic = nn.Parameter(torch.randn(self.n_classes))
@@ -186,13 +200,9 @@ class AfricanSlowfast(pl.LightningModule):
             output_width = int(config['transformer_width_af'])
             self.mlp_af = nn.Sequential(
                 nn.Linear(output_width, output_width),
-                nn.ReLU(),
                 nn.Linear(output_width, output_width),
-                nn.ReLU(),
                 nn.Linear(output_width, output_width//2),
-                nn.ReLU(),
                 nn.Linear(output_width//2, output_width//4),
-                nn.ReLU(),
                 nn.Linear(output_width//4, self.n_classes)
             )
             # weights for af
