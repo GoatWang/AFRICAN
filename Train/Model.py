@@ -521,7 +521,7 @@ class AfricanSlowfast(pl.LightningModule):
 
             # video embedding
             frames_feats_vc = self.forward_frames_vc(frames_tensor)
-            video_logits_vc = self.cal_similarity_logit(self, frames_feats_vc, text_feats_vc, self.logit_scale_vc, self.final_fc_vc)
+            video_logits_vc = self.cal_similarity_logit(frames_feats_vc, text_feats_vc, self.logit_scale_vc, self.final_fc_vc)
 
             # add to video_logits
             video_logits += video_logits_vc * self.w_vc
@@ -536,7 +536,7 @@ class AfricanSlowfast(pl.LightningModule):
 
             # video embedding
             frames_feats_ic = self.forward_frames_memef_ic(frames_tensor)
-            video_logits_ic = self.cal_similarity_logit(self, frames_feats_ic, text_feats_ic, self.logit_scale_ic, self.final_fc_ic)
+            video_logits_ic = self.cal_similarity_logit(frames_feats_ic, text_feats_ic, self.logit_scale_ic, self.final_fc_ic)
 
             # add to video_logits
             video_logits += video_logits_ic * self.w_ic
