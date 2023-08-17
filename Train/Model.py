@@ -593,7 +593,9 @@ class AfricanSlowfast(pl.LightningModule):
         self.train_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
         self.train_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
         self.train_map_class.update(video_pred, labels_onehot)
-        return loss
+        
+        loss_all = loss_vc + loss_ic + loss_af + loss
+        return loss_all
 
     def on_train_epoch_end(self):
         _train_metrics = self.train_metrics.compute()
