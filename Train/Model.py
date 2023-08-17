@@ -501,7 +501,7 @@ class AfricanSlowfast(pl.LightningModule):
         text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
         t = logit_scale.exp()
         video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
-        video_logits = final_fc(video_logits)
+        video_logits = final_fc(torch.nn.functional.normalize(video_logits))
         return video_logits
 
     def forward(self, batch):
