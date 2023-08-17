@@ -60,7 +60,8 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.video_fps, self.labels = self.process_annotation(target_split_fp, video_fps)
 
     def produce_prompt_embedding(self, clipmodel, force=False):
-        npy_fp = os.path.join("temp", "text_features.npy")
+        base_dir = os.path.dirname(__file__)
+        npy_fp = os.path.join(base_dir, "temp", "text_features.npy")
         if not os.path.exists(npy_fp) or force:
             prompts = self.df_action['prompt'].tolist()
             prompts = tokenize(prompts).to(self.device)       
@@ -73,7 +74,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         else:
             self.text_features_vc = torch.from_numpy(np.load(npy_fp)).to(self.device).float()
 
-        npy_fp_ic = os.path.join("temp", "text_features_ic.npy")
+        npy_fp_ic = os.path.join(base_dir, "temp", "text_features_ic.npy")
         if not os.path.exists(npy_fp_ic) or force:
             from open_clip import load_openai_model, get_tokenizer
             clip_name = os.path.basename(self.ckpt_path_ic).split(".")[0]
