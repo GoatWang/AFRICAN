@@ -584,7 +584,7 @@ class AfricanSlowfast(pl.LightningModule):
             loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
             self.log("train_loss_af", loss_af)
         
-        loss = video_logits.loss_func(video_logits, labels_onehot.type(torch.float32))
+        loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.log("train_loss", loss)
 
         video_pred = torch.sigmoid(video_logits)
@@ -630,7 +630,7 @@ class AfricanSlowfast(pl.LightningModule):
             loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
             self.log("valid_loss_af", loss_af)
 
-        loss = video_logits.loss_func(video_logits, labels_onehot.type(torch.float32))
+        loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
         self.log("valid_loss", loss)
 
         video_pred = torch.sigmoid(video_logits)
