@@ -71,7 +71,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             np.save(npy_fp, text_features.cpu().detach().numpy())
             self.text_features = text_features
         else:
-            self.text_features = torch.from_numpy(np.load(npy_fp)).to(self.device)
+            self.text_features = torch.from_numpy(np.load(npy_fp)).to(self.device).float()
 
         npy_fp_ic = os.path.join("temp", "text_features_ic.npy")
         if not os.path.exists(npy_fp_ic) or force:
@@ -85,7 +85,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             np.save(npy_fp, text_features_ic.cpu().detach().numpy())
             self.text_features_ic = text_features_ic
         else:
-            self.text_features_ic = torch.from_numpy(np.load(npy_fp_ic)).to(self.device)
+            self.text_features_ic = torch.from_numpy(np.load(npy_fp_ic)).to(self.device).float()
 
 
     def __getitem__(self, index):
