@@ -135,10 +135,10 @@ class AfricanSlowfast(pl.LightningModule):
             # self.final_fc_vc
             # self.final_fc_vc = torch.nn.Linear(self.n_classes, self.n_classes)
             self.final_fc_vc = nn.Sequential(
-                nn.Linear(self.transformer_width_vc//1, self.transformer_width_vc//2), # => 768
-                nn.Linear(self.transformer_width_vc//2, self.transformer_width_vc//4), # => 384
-                nn.Linear(self.transformer_width_vc//4, self.transformer_width_vc//8), # => 192
-                nn.Linear(self.transformer_width_vc//8, self.n_classes), # => 140
+                nn.Linear(self.transformer_width_vc *2, self.transformer_width_vc//1), # => 768
+                nn.Linear(self.transformer_width_vc//1, self.transformer_width_vc//2), # => 384
+                nn.Linear(self.transformer_width_vc//2, self.transformer_width_vc//4), # => 192
+                nn.Linear(self.transformer_width_vc//4, self.n_classes), # => 140
             )
             # self.print_requires_grad(self.video_clip)
             
@@ -172,10 +172,10 @@ class AfricanSlowfast(pl.LightningModule):
             # self.final_fc_ic
             # self.final_fc_ic = torch.nn.Linear(self.n_classes, self.n_classes)
             self.final_fc_ic = nn.Sequential(
-                nn.Linear(self.transformer_width_ic//1, self.transformer_width_ic//2), # => 768
-                nn.Linear(self.transformer_width_ic//2, self.transformer_width_ic//4), # => 384
-                nn.Linear(self.transformer_width_ic//4, self.transformer_width_ic//8), # => 192
-                nn.Linear(self.transformer_width_ic//8, self.n_classes), # => 140
+                nn.Linear(self.transformer_width_ic *2, self.transformer_width_ic//1), # => 768
+                nn.Linear(self.transformer_width_ic//1, self.transformer_width_ic//2), # => 384
+                nn.Linear(self.transformer_width_ic//2, self.transformer_width_ic//4), # => 192
+                nn.Linear(self.transformer_width_ic//4, self.n_classes), # => 140
             )            
 
             # weights for ic
@@ -514,7 +514,7 @@ class AfricanSlowfast(pl.LightningModule):
         # video_logits = final_fc(torch.nn.functional.normalize(video_logits))
         frames_feats_repeat = frames_feats.unsqueeze(1).repeat(1, C, 1)
         text_feats_repeat = text_feats.unsqueeze(0).repeat(B, 1, 1)
-        video_logits = torch.cat((frames_feats_repeat, text_feats_repeat), dim=2)
+        video_logits = torch.cat((frames_feats_repeat, text_feats_repeat), dim=2) # (n, 140, 768*2)
         video_logits = final_fc(video_logits.reshape(B*C, 2*W)).reshape(B, C)
         return video_logits
 
