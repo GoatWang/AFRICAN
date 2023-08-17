@@ -200,8 +200,6 @@ class AfricanSlowfast(pl.LightningModule):
 
         if (not self.enable_video_clip) and (not self.enable_image_clip) and (not self.enable_african):
             raise ValueError("at least one stream should be enabled") 
-        else:
-            self.w_bias = nn.Parameter(torch.randn(self.n_classes))
 
     def print_requires_grad(self, model):
         for n, p in model.named_parameters():
@@ -499,11 +497,6 @@ class AfricanSlowfast(pl.LightningModule):
         return frames_feats
 
     def cal_similarity_logit(self, frames_feats, text_feats, logit_scale, final_fc):
-        # video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
-        # text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
-        # t = self.video_clip.logit_scale.exp()
-        # video_logits_vcic = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
-        # video_logits_vcic = self.final_fc(video_logits_vcic)
         video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
         text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
         t = logit_scale.exp()
@@ -515,6 +508,8 @@ class AfricanSlowfast(pl.LightningModule):
         frames_tensor, labels_onehot, index = batch
         
         video_logits = torch.zeros(labels_onehot.shape[0], self.n_classes, device=self.device)
+        video_logits_weights = torch.zeros(self.n_classes, device=self.device)
+
 
         # enable_video_clip
         video_logits_vc = None
@@ -530,6 +525,7 @@ class AfricanSlowfast(pl.LightningModule):
 
             # add to video_logits
             video_logits += video_logits_vc * self.w_vc
+            video_logits_weights += self.w_vc
 
         # enable_image_clip
         video_logits_ic = None
@@ -545,6 +541,7 @@ class AfricanSlowfast(pl.LightningModule):
 
             # add to video_logits
             video_logits += video_logits_ic * self.w_ic
+            video_logits_weights += self.w_ic
 
         # enable_african
         video_logits_af = None
@@ -554,8 +551,9 @@ class AfricanSlowfast(pl.LightningModule):
 
             # add to video_logits
             video_logits += video_logits_af * self.w_af
+            video_logits_weights += self.w_af
             
-        video_logits += self.w_bias
+        video_logits /= video_logits_weights
 
         return video_logits_vc, video_logits_ic, video_logits_af, video_logits, labels_onehot
 
