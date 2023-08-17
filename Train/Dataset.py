@@ -60,21 +60,22 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.video_fps, self.labels = self.process_annotation(target_split_fp, video_fps)
 
     def produce_prompt_embedding(self, clipmodel, force=False):
-        base_dir = os.path.dirname(__file__)
-        npy_fp = os.path.join(base_dir, "temp", "text_features.npy")
-        if not os.path.exists(npy_fp) or force:
+        temp_dir = o.path.join(os.path.dirname(__file__), "temp")
+        Path(temp_dir).mkdir(parents=True, exist_ok=True)
+
+        npy_fp_vc = os.path.join(temp_dir, "text_features_vc.npy")
+        if not os.path.exists(npy_fp_vc) or force:
             prompts = self.df_action['prompt'].tolist()
             prompts = tokenize(prompts).to(self.device)       
             with torch.no_grad():
                 text_features_vc = clipmodel.encode_text(prompts)
                 text_features_vc = torch.nn.functional.normalize(text_features_vc, dim=1)
-            Path(os.path.dirname(npy_fp)).mkdir(parents=True, exist_ok=True)
-            np.save(npy_fp, text_features_vc.cpu().detach().numpy())
+            np.save(npy_fp_vc, text_features_vc.cpu().detach().numpy())
             self.text_features_vc = text_features_vc.float()
         else:
-            self.text_features_vc = torch.from_numpy(np.load(npy_fp)).to(self.device).float()
+            self.text_features_vc = torch.from_numpy(np.load(npy_fp_vc)).to(self.device).float()
 
-        npy_fp_ic = os.path.join(base_dir, "temp", "text_features_ic.npy")
+        npy_fp_ic = os.path.join(temp_dir, "text_features_ic.npy")
         if not os.path.exists(npy_fp_ic) or force:
             from open_clip import load_openai_model, get_tokenizer
             clip_name = os.path.basename(self.ckpt_path_ic).split(".")[0]
