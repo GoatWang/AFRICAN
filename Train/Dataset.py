@@ -60,7 +60,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.video_fps, self.labels = self.process_annotation(target_split_fp, video_fps)
 
     def produce_prompt_embedding(self, clipmodel, force=False):
-        temp_dir = o.path.join(os.path.dirname(__file__), "temp")
+        temp_dir = os.path.join(os.path.dirname(__file__), "temp")
         Path(temp_dir).mkdir(parents=True, exist_ok=True)
 
         npy_fp_vc = os.path.join(temp_dir, "text_features_vc.npy")
