@@ -515,7 +515,7 @@ class AfricanSlowfast(pl.LightningModule):
         video_logits_vc = None
         if self.enable_video_clip:
             # text embedding
-            text_feats_vc = self.text_feats
+            text_feats_vc = self.text_feats_vc
             if self.use_text_proj_vc:
                 text_feats_vc = self.text_proj_vc(text_feats_vc)
 
