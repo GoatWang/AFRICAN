@@ -78,7 +78,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             from open_clip import load_openai_model, get_tokenizer
             clip_name = os.path.basename(self.ckpt_path_ic).split(".")[0]
             clip_ic = load_openai_model(self.ckpt_path_ic).to(self.device)
-            text = get_tokenizer(clip_name)(df_action['prompt']).to(self.device)
+            text = get_tokenizer(clip_name)(self.df_action['prompt']).to(self.device)
             with torch.no_grad():
                 text_features_ic = clip_ic.encode_text(text)
                 text_features_ic = torch.nn.functional.normalize(text_features_ic)
