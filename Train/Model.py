@@ -618,21 +618,20 @@ class AfricanSlowfast(pl.LightningModule):
         self.train_map_class.reset()
 
     def validation_step(self, batch, batch_idx):
-        video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
-
-        if (video_logits_vcic is None) and (video_logits_af is None):
-            assert False, "video_logits_vcic and video_logits_af are both None"
-        elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
-            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            self.log("valid_loss", loss)
-        else: # both of them are not None
-            loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
+        video_logits_vc, video_logits_ic, video_logits_af, video_logits, labels_onehot = self(batch)
+        
+        if video_logits_vc is not None:
+            loss_vc = self.loss_func(video_logits_vc, labels_onehot.type(torch.float32))
+            self.log("valid_loss_vc", loss_vc)
+        if video_logits_ic is not None:
+            loss_ic = self.loss_func(video_logits_ic, labels_onehot.type(torch.float32))
+            self.log("valid_loss_ic", loss_ic)
+        if video_logits_af is not None:
             loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
-            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            loss = (loss_vcic + loss_af + loss_all) / 3
-            self.log("valid_loss_vcic", loss_vcic)
             self.log("valid_loss_af", loss_af)
-            self.log("valid_loss", loss_all)
+
+        loss = video_logits.loss_func(video_logits, labels_onehot.type(torch.float32))
+        self.log("valid_loss", loss)
 
         video_pred = torch.sigmoid(video_logits)
         self.valid_metrics.update(video_pred, labels_onehot)
