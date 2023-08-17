@@ -180,7 +180,7 @@ teic: text embedding image encoder
 - add mAP calculation for head, middle and tail classes
 - Combine the contrastive learning and VideoCLIP result 
 - check the sampling method acceptable 
-- test vision train_laryers (A100)
+- test vision train_layers (A100)
 - contrastive learn on sequence order of the frames (survey & model building)
 
 ## Suspended

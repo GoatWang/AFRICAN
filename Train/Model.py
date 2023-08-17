@@ -351,23 +351,23 @@ class AfricanSlowfast(pl.LightningModule):
         self.video_clip.visual.transformer.dpe.requires_grad_(True)
         self.video_clip.visual.transformer.dec.requires_grad_(True)
 
-    def freeze_vc_layers(self, train_laryers):
-        if train_laryers == "vision":
+    def freeze_vc_layers(self, train_layers):
+        if train_layers == "vision":
             self.freeze_video_clip_text(self.video_clip)
-        elif train_laryers == "vision_proj":
+        elif train_layers == "vision_proj":
             self.freeze_video_clip_evl()
             print("freeze_video_clip_evl")
-        elif train_laryers == "vision_tn4_proj":
+        elif train_layers == "vision_tn4_proj":
             self.freeze_video_clip_evl_exclude_tn4()
             print("freeze_video_clip_evl_exclude_tn4")
-        elif train_laryers == "vision_tn2_proj":
+        elif train_layers == "vision_tn2_proj":
             self.freeze_video_clip_evl_exclude_tn2()
             print("freeze_video_clip_evl_exclude_tn2")
-        elif train_laryers == "vision_dd_proj":
+        elif train_layers == "vision_dd_proj":
             self.freeze_video_clip_evl_exclude_dd()
             print("freeze_video_clip_evl_exclude_dd")
         else:
-            raise ValueError("train_laryers should be one of {vision, vision_proj, vision_tn4_proj, vision_tn2_proj, vision_dd_proj}")
+            raise ValueError("train_layers should be one of {vision, vision_proj, vision_tn4_proj, vision_tn2_proj, vision_dd_proj}")
         
     def freeze_video_clip_text(self, model):
         for n, p in model.named_parameters():
@@ -551,7 +551,7 @@ class AfricanSlowfast(pl.LightningModule):
             video_logits += video_logits_af * self.w_af
             
         video_logits += self.w_bias
-        
+
         return video_logits_vc, video_logits_ic, video_logits_af, video_logits, labels_onehot
 
     # def infer(self, frames_tensor, rames_tensor_fast):
