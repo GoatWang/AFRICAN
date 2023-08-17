@@ -499,7 +499,12 @@ class AfricanSlowfast(pl.LightningModule):
         return frames_feats
 
     def cal_similarity_logit(self, frames_feats, text_feats, logit_scale, final_fc):
-        video_feats = torch.nn.functional.normalize(frames_feats.t(), dim=1) # (n, 768)
+        # video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
+        # text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
+        # t = self.video_clip.logit_scale.exp()
+        # video_logits_vcic = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
+        # video_logits_vcic = self.final_fc(video_logits_vcic)
+        video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
         text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
         t = logit_scale.exp()
         video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)

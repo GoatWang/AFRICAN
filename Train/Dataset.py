@@ -65,13 +65,13 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             prompts = self.df_action['prompt'].tolist()
             prompts = tokenize(prompts).to(self.device)       
             with torch.no_grad():
-                text_features = clipmodel.encode_text(prompts)
-                text_features = torch.nn.functional.normalize(text_features, dim=1)
+                text_features_vc = clipmodel.encode_text(prompts)
+                text_features_vc = torch.nn.functional.normalize(text_features_vc, dim=1)
             Path(os.path.dirname(npy_fp)).mkdir(parents=True, exist_ok=True)
-            np.save(npy_fp, text_features.cpu().detach().numpy())
-            self.text_features = text_features
+            np.save(npy_fp, text_features_vc.cpu().detach().numpy())
+            self.text_features_vc = text_features_vc.float()
         else:
-            self.text_features = torch.from_numpy(np.load(npy_fp)).to(self.device).float()
+            self.text_features_vc = torch.from_numpy(np.load(npy_fp)).to(self.device).float()
 
         npy_fp_ic = os.path.join("temp", "text_features_ic.npy")
         if not os.path.exists(npy_fp_ic) or force:
@@ -83,7 +83,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
                 text_features_ic = clip_ic.encode_text(text)
                 text_features_ic = torch.nn.functional.normalize(text_features_ic)
             np.save(npy_fp, text_features_ic.cpu().detach().numpy())
-            self.text_features_ic = text_features_ic
+            self.text_features_ic = text_features_ic.float()
         else:
             self.text_features_ic = torch.from_numpy(np.load(npy_fp_ic)).to(self.device).float()
 
