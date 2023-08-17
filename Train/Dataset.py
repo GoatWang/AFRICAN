@@ -82,7 +82,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             with torch.no_grad():
                 text_features_ic = clip_ic.encode_text(text)
                 text_features_ic = torch.nn.functional.normalize(text_features_ic)
-            np.save(npy_fp, text_features.cpu().detach().numpy())
+            np.save(npy_fp, text_features_ic.cpu().detach().numpy())
             self.text_features_ic = text_features_ic
         else:
             self.text_features_ic = torch.from_numpy(np.load(npy_fp_ic)).to(self.device)
