@@ -509,7 +509,8 @@ class AfricanSlowfast(pl.LightningModule):
     def forward(self, batch):
         frames_tensor, labels_onehot, index = batch
         
-        video_logits_vc = None
+        video_logits = torch.zeros(labels_onehot.shape[0], self.n_classes, device=self.device)
+
         # enable_video_clip
         video_logits_vc = None
         if self.enable_video_clip:
@@ -523,7 +524,7 @@ class AfricanSlowfast(pl.LightningModule):
             video_logits_vc = self.cal_similarity_logit(self, frames_feats_vc, text_feats_vc, self.logit_scale_vc, self.final_fc_vc)
 
             # add to video_logits
-            video_logits = video_logits_vc * self.w_vc
+            video_logits += video_logits_vc * self.w_vc
 
         # enable_image_clip
         video_logits_ic = None
@@ -538,7 +539,7 @@ class AfricanSlowfast(pl.LightningModule):
             video_logits_ic = self.cal_similarity_logit(self, frames_feats_ic, text_feats_ic, self.logit_scale_ic, self.final_fc_ic)
 
             # add to video_logits
-            video_logits = video_logits_ic * self.w_ic
+            video_logits += video_logits_ic * self.w_ic
 
         # enable_african
         video_logits_af = None
@@ -547,9 +548,10 @@ class AfricanSlowfast(pl.LightningModule):
             video_logits_af = self.mlp_af(frames_feats_af)
 
             # add to video_logits
-            video_logits = video_logits_af * self.w_af
+            video_logits += video_logits_af * self.w_af
             
-        video_logits = video_logits + self.w_bias
+        video_logits += self.w_bias
+        
         return video_logits_vc, video_logits_ic, video_logits_af, video_logits, labels_onehot
 
     # def infer(self, frames_tensor, rames_tensor_fast):
