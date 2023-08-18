@@ -137,7 +137,7 @@ class AfricanSlowfast(pl.LightningModule):
             # self.print_requires_grad(self.video_clip)
             
             # weights for vc
-            self.w_vc = nn.Parameter(torch.randn(self.n_classes))
+            self.w_vc = nn.Parameter(torch.ones(self.n_classes))
 
         # slowfast: enable fast stream
         self.image_encoder_batch_size = config["image_encoder_batch_size"]
@@ -167,7 +167,7 @@ class AfricanSlowfast(pl.LightningModule):
             self.final_fc_ic = torch.nn.Linear(self.n_classes, self.n_classes)
 
             # weights for ic
-            self.w_ic = nn.Parameter(torch.randn(self.n_classes))
+            self.w_ic = nn.Parameter(torch.ones(self.n_classes))
 
         ## enable_african
         self.enable_african = config['enable_african']
@@ -192,9 +192,29 @@ class AfricanSlowfast(pl.LightningModule):
                 nn.Linear(output_width//4, self.n_classes)
             )
             # weights for af
-            self.w_af = nn.Parameter(torch.randn(self.n_classes))
+            self.w_af = nn.Parameter(torch.ones(self.n_classes))
 
-        if (not self.enable_video_clip) and (not self.enable_image_clip) and (not self.enable_african):
+        if sum([self.enable_video_clip, self.enable_image_clip, self.enable_african]) == 3:
+            # with three stream
+            self.w_vc *= 0.45
+            self.w_ic *= 0.45
+            self.w_af *= 0.1
+        elif sum([self.enable_video_clip, self.enable_image_clip, self.enable_african]) == 2:
+            # with two stream
+            if (not self.enable_video_clip):
+                self.w_ic *= 0.9
+                self.w_af *= 0.1
+            elif (not self.enable_image_clip):
+                self.w_vc *= 0.9
+                self.w_af *= 0.1
+            elif (not self.enable_african):
+                self.w_vc *= 0.5
+                self.w_ic *= 0.5
+        elif sum([self.enable_video_clip, self.enable_image_clip, self.enable_african]) == 1:
+            # with one stream
+            self.w_vc, self.w_ic, self.w_af = self.w_vc, self.w_ic, self.w_af
+        elif sum([self.enable_video_clip, self.enable_image_clip, self.enable_african]) == 0:
+            # with no stream
             raise ValueError("at least one stream should be enabled") 
 
     def print_requires_grad(self, model):
