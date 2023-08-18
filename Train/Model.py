@@ -133,14 +133,7 @@ class AfricanSlowfast(pl.LightningModule):
                 self.text_proj_vc = nn.Linear(self.transformer_width_vc, self.transformer_width_vc)
 
             # self.final_fc_vc
-            # self.final_fc_vc = torch.nn.Linear(self.n_classes, self.n_classes)
-            self.final_fc_vc = nn.Sequential(
-                nn.Linear(self.n_classes, self.n_classes),
-                nn.Linear(self.n_classes, self.n_classes),
-                nn.Linear(self.n_classes, self.n_classes),
-                nn.Linear(self.n_classes, self.n_classes),
-                nn.Linear(self.n_classes, self.n_classes),
-            )
+            self.final_fc_vc = torch.nn.Linear(self.n_classes, self.n_classes)
             # self.print_requires_grad(self.video_clip)
             
             # weights for vc
@@ -171,14 +164,7 @@ class AfricanSlowfast(pl.LightningModule):
                 self.text_proj_ic = nn.Linear(self.transformer_width_ic, self.transformer_width_ic)
 
             # self.final_fc_ic
-            # self.final_fc_ic = torch.nn.Linear(self.n_classes, self.n_classes)
-            self.final_fc_ic = nn.Sequential(
-                nn.Linear(self.n_classes, self.n_classes),
-                nn.Linear(self.n_classes, self.n_classes),
-                nn.Linear(self.n_classes, self.n_classes),
-                nn.Linear(self.n_classes, self.n_classes),
-                nn.Linear(self.n_classes, self.n_classes),
-            )
+            self.final_fc_ic = torch.nn.Linear(self.n_classes, self.n_classes)
 
             # weights for ic
             self.w_ic = nn.Parameter(torch.randn(self.n_classes))
@@ -511,7 +497,7 @@ class AfricanSlowfast(pl.LightningModule):
         text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
         t = logit_scale.exp()
         video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
-        video_logits = final_fc(torch.nn.functional.normalize(video_logits))
+        video_logits = final_fc(video_logits)
         return video_logits
 
     def forward(self, batch):
