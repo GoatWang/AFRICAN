@@ -524,8 +524,6 @@ class AfricanSlowfast(pl.LightningModule):
         frames_tensor, labels_onehot, index = batch
         
         video_logits = torch.zeros(labels_onehot.shape[0], self.n_classes, device=self.device)
-        video_logits_weights = torch.zeros(self.n_classes, device=self.device)
-
 
         # enable_video_clip
         video_logits_vc = None
@@ -541,7 +539,6 @@ class AfricanSlowfast(pl.LightningModule):
 
             # add to video_logits
             video_logits += video_logits_vc * self.w_vc
-            video_logits_weights += self.w_vc
 
         # enable_image_clip
         video_logits_ic = None
@@ -557,7 +554,6 @@ class AfricanSlowfast(pl.LightningModule):
 
             # add to video_logits
             video_logits += video_logits_ic * self.w_ic
-            video_logits_weights += self.w_ic
 
         # enable_african
         video_logits_af = None
@@ -567,10 +563,7 @@ class AfricanSlowfast(pl.LightningModule):
 
             # add to video_logits
             video_logits += video_logits_af * self.w_af
-            video_logits_weights += self.w_af
             
-        video_logits /= video_logits_weights
-
         return video_logits_vc, video_logits_ic, video_logits_af, video_logits, labels_onehot
 
     # def infer(self, frames_tensor, rames_tensor_fast):
