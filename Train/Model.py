@@ -196,23 +196,23 @@ class AfricanSlowfast(pl.LightningModule):
 
         if sum([self.enable_video_clip, self.enable_image_clip, self.enable_african]) == 3:
             # with three stream
-            self.w_vc *= 0.45
-            self.w_ic *= 0.45
-            self.w_af *= 0.1
+            self.w_vc = nn.Parameter(torch.ones(self.n_classes) * 0.45)
+            self.w_ic = nn.Parameter(torch.ones(self.n_classes) * 0.45)
+            self.w_af = nn.Parameter(torch.ones(self.n_classes) * 0.1)
         elif sum([self.enable_video_clip, self.enable_image_clip, self.enable_african]) == 2:
             # with two stream
             if (not self.enable_video_clip):
-                self.w_ic *= 0.9
-                self.w_af *= 0.1
+                self.w_ic = nn.Parameter(torch.ones(self.n_classes) * 0.90)
+                self.w_af = nn.Parameter(torch.ones(self.n_classes) * 0.10)
             elif (not self.enable_image_clip):
-                self.w_vc *= 0.9
-                self.w_af *= 0.1
+                self.w_vc = nn.Parameter(torch.ones(self.n_classes) * 0.90)
+                self.w_af = nn.Parameter(torch.ones(self.n_classes) * 0.10)
             elif (not self.enable_african):
-                self.w_vc *= 0.5
-                self.w_ic *= 0.5
+                self.w_vc = nn.Parameter(torch.ones(self.n_classes) * 0.50)
+                self.w_ic = nn.Parameter(torch.ones(self.n_classes) * 0.50)
         elif sum([self.enable_video_clip, self.enable_image_clip, self.enable_african]) == 1:
             # with one stream
-            self.w_vc, self.w_ic, self.w_af = self.w_vc, self.w_ic, self.w_af
+            self.w_vc, self.w_ic, self.w_af = 1, 1, 1
         elif sum([self.enable_video_clip, self.enable_image_clip, self.enable_african]) == 0:
             # with no stream
             raise ValueError("at least one stream should be enabled") 
