@@ -212,7 +212,6 @@ class AfricanSlowfast(pl.LightningModule):
                 self.w_ic = nn.Parameter(torch.ones(self.n_classes) * 0.50)
         elif sum([self.enable_video_clip, self.enable_image_clip, self.enable_african]) == 1:
             # with one stream
-            # self.w_vc, self.w_ic, self.w_af = 1, 1, 1
             self.w_vc = nn.Parameter(torch.ones(self.n_classes))
             self.w_ic = nn.Parameter(torch.ones(self.n_classes))
             self.w_af = nn.Parameter(torch.ones(self.n_classes))
