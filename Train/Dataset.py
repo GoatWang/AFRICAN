@@ -59,7 +59,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         target_split_fp = split_files[self.split]
         self.video_fps, self.labels = self.process_annotation(target_split_fp, video_fps)
 
-    def produce_prompt_embedding(self, clipmodel, force=False):
+    def produce_prompt_embedding(self, video_clip, force=False):
         temp_dir = os.path.join(os.path.dirname(__file__), "temp")
         Path(temp_dir).mkdir(parents=True, exist_ok=True)
 
@@ -68,7 +68,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             prompts = self.df_action['prompt'].tolist()
             prompts = tokenize(prompts).to(self.device)       
             with torch.no_grad():
-                text_features_vc = clipmodel.encode_text(prompts)
+                text_features_vc = video_clip.encode_text(prompts)
                 text_features_vc = torch.nn.functional.normalize(text_features_vc, dim=1)
             np.save(npy_fp_vc, text_features_vc.cpu().detach().numpy())
             self.text_features_vc = text_features_vc.float()
