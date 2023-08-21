@@ -35,4 +35,4 @@ def main(_config):
     plt.bar(x=range(len(df_action_sorted)), height=df_action_sorted['count'], color=df_action_sorted['color'])
     plt.ylabel('Count', size=12)
     plt.xlabel('Action ID', size=12)
-    plt.savefig(os.path.join(os.path.dirname(__file__, "temp", "LongTail.png")))
+    plt.savefig(os.path.join(os.path.dirname(__file__), "temp", "LongTail.png"))
