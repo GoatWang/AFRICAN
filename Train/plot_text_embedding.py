@@ -57,11 +57,11 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     ax.set_xlim(-0.5, 0.5)
     ax.set_ylim(-0.5, 0.5)
 
-    ax.scatter(Comps[:,0], Comps[:,1], c=colors) # , s= # TODO: change size
-    text_objects = [ax.text(Comps[i,0], Comps[i,1], label, size=14) for i, label in enumerate(labels)] # , c=Y[i], ha='center', va='center'
+    ax.scatter(Comps[:,0], Comps[:,1], c=colors)
+    text_objects = [ax.text(Comps[i,0], Comps[i,1], label, fontsize=14) for i, label in enumerate(labels)] # , c=Y[i], ha='center', va='center'
     legend_idxs = check_and_adjust_overlap(text_objects, colors, 10)
     legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
-    ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=14)
+    ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=12)
 
     # legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels)]
     # ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5))
