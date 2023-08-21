@@ -76,7 +76,7 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     # plt.title("Class Embedding Distribution", fontsize=16, x=0.7, y=0.98)  
 
     if fig_fp is None:
-        fig_fp = os.path.join(os.path.dirname(__file__, "temp", "TextEmbedding.png"))
+        fig_fp = os.path.join(os.path.dirname(__file__), "temp", "TextEmbedding.png")
 
     plt.savefig(fig_fp)
 
