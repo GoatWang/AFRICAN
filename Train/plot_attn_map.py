@@ -70,7 +70,7 @@ def main(_config):
     model.eval()
 
     # for idx in [30, 60, 80, 85, 90, 140, 147, 153]:
-    for idx in np.random.choice(range(len(dataset_valid)), 30):
+    for idx in np.random.choice(range(len(dataset_valid)), 200):
         video_fp, video_raw, video_aug, labels_onehot, index = dataset_valid[idx]
         video_raw, video_aug = video_raw.unsqueeze(0), video_aug.unsqueeze(0)
         images_raw, attn_maps, heatmaps_vc = model.draw_att_map(video_raw, video_aug, encoder_type="vc") # heatmaps_vc.shape = []
