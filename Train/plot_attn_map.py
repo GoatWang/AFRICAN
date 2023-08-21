@@ -18,24 +18,24 @@ def turn_off_axis_ticks(ax):
     ax.set_yticks([])  # Turn off the y-axis ticks
 
 def plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig_fp=None):
-    n_rows, n_cols = 4, 8
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 7))
+    n_rows, n_cols = 3, 8
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5))
     
     for ci in range(n_cols):
         image_raw, heatmap_vc, heatmap_ic, heatmap_af = images_raw[ci], heatmaps_vc[ci], heatmaps_ic[ci], heatmaps_af[ci]
         axes[0][ci].imshow(image_raw)
-        axes[1][ci].imshow(heatmap_vc)
-        axes[2][ci].imshow(heatmap_ic)
-        axes[3][ci].imshow(heatmap_af)
+        # axes[1][ci].imshow(heatmap_vc)
+        axes[1][ci].imshow(heatmap_ic)
+        axes[2][ci].imshow(heatmap_af)
 
         axes[0][ci].set_title(f"frame{ci+1}")
         for ri in range(n_rows):
             turn_off_axis_ticks(axes[ri][ci])
 
     axes[0][0].set_ylabel('Raw')
-    axes[1][0].set_ylabel('VideoClip')
-    axes[2][0].set_ylabel('ImageClip')
-    axes[3][0].set_ylabel('African')
+    # axes[1][0].set_ylabel('VideoClip')
+    axes[1][0].set_ylabel('ImageClip')
+    axes[2][0].set_ylabel('African')
     plt.suptitle("Attention Heatmap")
 
     if fig_fp:
