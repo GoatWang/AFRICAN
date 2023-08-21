@@ -73,6 +73,7 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     plt.gca().spines['left'].set_visible(False)
     plt.gca().xaxis.set_ticks([])
     plt.gca().yaxis.set_ticks([])
+    plt.tight_layout()
     # plt.title("Class Embedding Distribution", fontsize=16, x=0.7, y=0.98)  
 
     if fig_fp is None:
