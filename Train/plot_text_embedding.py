@@ -58,7 +58,7 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     ax.set_ylim(-0.5, 0.5)
 
     ax.scatter(Comps[:,0], Comps[:,1], c=colors) # , s= # TODO: change size
-    text_objects = [ax.text(Comps[i,0], Comps[i,1], label, size=XXX) for i, label in enumerate(labels)] # , c=Y[i], ha='center', va='center'
+    text_objects = [ax.text(Comps[i,0], Comps[i,1], label, size=12) for i, label in enumerate(labels)] # , c=Y[i], ha='center', va='center'
     legend_idxs = check_and_adjust_overlap(text_objects, colors, 10)
     legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
     ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5))
