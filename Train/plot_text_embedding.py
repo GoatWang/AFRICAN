@@ -51,7 +51,7 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
         union_area = (bbox1.width * bbox1.height) + (bbox2.width * bbox2.height) - intersection_area
         return intersection_area / union_area
 
-    fig = plt.figure(figsize=(25, 8))
+    fig = plt.figure(figsize=(20, 12))
     # fig, ax = plt.subplots()
     ax = fig.add_subplot()
     ax.set_xlim(-0.5, 0.5)
@@ -61,7 +61,7 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     text_objects = [ax.text(Comps[i,0], Comps[i,1], label, size=14) for i, label in enumerate(labels)] # , c=Y[i], ha='center', va='center'
     legend_idxs = check_and_adjust_overlap(text_objects, colors, 10)
     legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
-    ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.legend(handles=legend_labels, loc='center left')
 
     # legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels)]
     # ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5))
