@@ -79,6 +79,7 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
         fig_fp = os.path.join(os.path.dirname(__file__), "temp", "TextEmbedding.png")
 
     plt.savefig(fig_fp)
+    print("file saved to ", fig_fp)
 
 
 @ex.automain
