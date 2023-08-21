@@ -51,7 +51,7 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
         union_area = (bbox1.width * bbox1.height) + (bbox2.width * bbox2.height) - intersection_area
         return intersection_area / union_area
 
-    fig = plt.figure(figsize=(20, 12))
+    fig = plt.figure(figsize=(20, 20))
     # fig, ax = plt.subplots()
     ax = fig.add_subplot()
     ax.set_xlim(-0.5, 0.5)
