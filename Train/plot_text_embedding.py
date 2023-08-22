@@ -79,7 +79,7 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
         legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
         loc, anchor = loc_anchors[i]
         legend = ax.legend(handles=legend_labels, loc=loc, bbox_to_anchor=anchor, fontsize=20)
-        legend_objects.append(legend_objects)
+        legend_objects.append(legend)
 
     for legend in legend_objects:
         ax.add_artist(legend)
