@@ -89,7 +89,6 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         else:
             self.text_features_ic = torch.from_numpy(np.load(npy_fp_ic)).to(self.device).float()
 
-
     def __getitem__(self, index):
         video_fp = self.video_fps[index]
         frames_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]

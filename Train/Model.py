@@ -185,9 +185,6 @@ class AfricanSlowfast(pl.LightningModule):
 
             output_width = int(config['transformer_width_af'])
             self.mlp_af = nn.Sequential(
-                # TODO remove to three layers
-                nn.Linear(output_width, output_width),
-                nn.Linear(output_width, output_width),
                 nn.Linear(output_width, output_width//2),
                 nn.Linear(output_width//2, output_width//4),
                 nn.Linear(output_width//4, self.n_classes)
