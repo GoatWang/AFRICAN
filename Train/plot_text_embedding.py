@@ -75,10 +75,10 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     loc_anchors = [('upper left', (0, 0)), ('upper right', (1, 0)), ('lower left', (0, 1)), ('lower right', (1, 1))]
     for i in range(4):
         legend_idxs = legend_idxs[i*step_size : (i+1)*step_size]
-        legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs1]
+        legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
         loc, anchor = loc_anchors[i]
-        legend1 = ax.legend(handles=legend_labels, loc=loc, bbox_to_anchor=anchor, fontsize=20)
-        ax.add_artist(legend1)
+        legend = ax.legend(handles=legend_labels, loc=loc, bbox_to_anchor=anchor, fontsize=20)
+        ax.add_artist(legend)
 
     # legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
     # ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=12)
