@@ -113,7 +113,7 @@ class AfricanSlowfast(pl.LightningModule):
         if config['train_laryers'] == "vision":
             self.freeze_video_clip_text(self.video_clip)
         if config['train_laryers'] == "vision_proj":
-            self.freeze_video_clip_evl(self.video_clip)
+            self.freeze_video_clip_evl()
             print("freeze_video_clip_evl")
         if config['train_laryers'] == "vision_tn4_proj":
             self.freeze_video_clip_evl_exclude_tn4()
