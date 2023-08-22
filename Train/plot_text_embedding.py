@@ -78,9 +78,9 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     legend_labels = []
     for i in range(4):
         legend_idxs = legend_idxs[i*step_size : (i+1)*step_size]
-        for i, label in enumerate(labels):
-             if i in legend_idxs:
-                line = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label)
+        for j, label in enumerate(labels):
+             if j in legend_idxs:
+                line = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[j], markersize=10, label="%3d "%j + label)
                 ax.add_line(line)
                 legend_labels.append(line)
         loc, anchor = loc_anchors[i]
