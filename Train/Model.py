@@ -108,8 +108,8 @@ class AfricanSlowfast(pl.LightningModule):
         self.poly_decay_power = config['poly_decay_power']
 
         self.enable_video_clip = config['enable_video_clip']
+        self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
         if self.enable_video_clip:
-            self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
             self.freeze_vc_layers(config['train_layers'])
             self.logit_scale_vc = nn.Parameter(torch.ones([]) * 4.6052) 
 
