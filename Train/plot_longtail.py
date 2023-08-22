@@ -11,6 +11,15 @@ from Model import AfricanSlowfast
 from matplotlib import pyplot as plt
 from Dataset import AnimalKingdomDatasetVisualize
 torch.manual_seed(0)
+import matplotlib
+matplotlib.use("pgf")
+matplotlib.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    'font.family': 'serif',
+    'text.usetex': True,
+    'pgf.rcfonts': False,
+})
+
 
 @ex.automain
 def main(_config):
@@ -36,4 +45,4 @@ def main(_config):
     plt.ylabel('Count', size=12)
     plt.xlabel('Action ID', size=12)
     plt.title("Action Class Frequency", size=14)
-    plt.savefig(os.path.join(os.path.dirname(__file__), "temp", "LongTail.png"))
+    plt.savefig(os.path.join(os.path.dirname(__file__), "temp", "LongTail.pgf"))
