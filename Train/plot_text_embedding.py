@@ -72,7 +72,7 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
 
     legend_idxs = list(legend_idxs)
     step_size = len(legend_idxs) // 4
-    loc_anchors = [('upper left', (0, 0)), ('upper right', (1, 0)), ('lower left', (0, 1)), ('lower right', (1, 1))]
+    loc_anchors = [('upper left', (0, 1)), ('upper right', (1, 1)), ('lower left', (0, 0)), ('lower right', (1, 0))]
     for i in range(4):
         legend_idxs = legend_idxs[i*step_size : (i+1)*step_size]
         legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
@@ -82,9 +82,6 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
 
     # legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
     # ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=12)
-
-    # legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels)]
-    # ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5))
 
     # Turn off the outer boundary (spines) and axis
     plt.gca().spines['top'].set_visible(False)
