@@ -107,7 +107,7 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
             ax.add_line(line)
             legend_labels.append(line)
 
-        loc, anchor = loc_anchors[i]
+        loc, anchor = loc_anchors[i_step]
         legend = ax.legend(handles=legend_labels, loc=loc, bbox_to_anchor=anchor, fontsize=20)
         ax.add_artist(legend)
 
