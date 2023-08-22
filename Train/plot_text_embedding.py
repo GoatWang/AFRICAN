@@ -8,6 +8,7 @@ from config import ex, config
 from datetime import datetime
 import pytorch_lightning as pl
 from Model import AfricanSlowfast
+from matplotlib.legend import Legend
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from Dataset import AnimalKingdomDatasetVisualize
@@ -75,33 +76,13 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     step_size = len(legend_idxs) // 4
     loc_anchors = [('upper left', (0, 1)), ('upper right', (1, 1)), ('lower left', (0, 0)), ('lower right', (1, 0))]
 
-    i = 0
-    legend_idxs = legend_idxs[i*step_size : (i+1)*step_size]
-    legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[j], markersize=10, label="%3d "%j + label) for j, label in enumerate(labels) if j in legend_idxs]
-    loc, anchor = loc_anchors[i]
-    legend0 = ax.legend(handles=legend_labels, loc=loc, bbox_to_anchor=anchor, fontsize=20)
-    ax.add_artist(legend0)
-
-    i = 1
-    legend_idxs = legend_idxs[i*step_size : (i+1)*step_size]
-    legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[j], markersize=10, label="%3d "%j + label) for j, label in enumerate(labels) if j in legend_idxs]
-    loc, anchor = loc_anchors[i]
-    legend1 = ax.legend(handles=legend_labels, loc=loc, bbox_to_anchor=anchor, fontsize=20)
-    ax.add_artist(legend1)
-
-    i = 2
-    legend_idxs = legend_idxs[i*step_size : (i+1)*step_size]
-    legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[j], markersize=10, label="%3d "%j + label) for j, label in enumerate(labels) if j in legend_idxs]
-    loc, anchor = loc_anchors[i]
-    legend2 = ax.legend(handles=legend_labels, loc=loc, bbox_to_anchor=anchor, fontsize=20)
-    ax.add_artist(legend2)
-
-    i = 3
-    legend_idxs = legend_idxs[i*step_size : (i+1)*step_size]
-    legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[j], markersize=10, label="%3d "%j + label) for j, label in enumerate(labels) if j in legend_idxs]
-    loc, anchor = loc_anchors[i]
-    legend3 = ax.legend(handles=legend_labels, loc=loc, bbox_to_anchor=anchor, fontsize=20)
-    ax.add_artist(legend3)
+    for i in range(4):
+        legend_idxs = legend_idxs[i*step_size : (i+1)*step_size]
+        legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
+        loc, anchor = loc_anchors[i]
+        legend = Legend(ax, handles=legend_labels, loc=loc, bbox_to_anchor=anchor, fontsize=20)
+        # legend = ax.legend(handles=legend_labels, loc=loc, bbox_to_anchor=anchor, fontsize=20)
+        ax.add_artist(legend)
 
     # legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
     # ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=12)
