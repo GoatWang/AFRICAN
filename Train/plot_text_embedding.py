@@ -11,14 +11,14 @@ from Model import AfricanSlowfast
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from Dataset import AnimalKingdomDatasetVisualize
-# import matplotlib
-# matplotlib.use("pgf")
-# matplotlib.rcParams.update({
-#     "pgf.texsystem": "pdflatex",
-#     'font.family': 'serif',
-#     'text.usetex': True,
-#     'pgf.rcfonts': False,
-# })
+import matplotlib
+matplotlib.use("pgf")
+matplotlib.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    'font.family': 'serif',
+    'text.usetex': True,
+    'pgf.rcfonts': False,
+})
 
 
 def check_and_adjust_overlap(text_objects, colors, n_iters=30, threshold=0.1, seed=2023):
@@ -70,21 +70,6 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     text_objects = [ax.text(Comps[i,0], Comps[i,1], label, fontsize=20) for i, label in enumerate(labels)] # , c=Y[i], ha='center', va='center'
     legend_idxs = check_and_adjust_overlap(text_objects, colors, 10)
 
-    # legend_idxs = list(legend_idxs)
-    # step_size = len(legend_idxs) // 4
-    # loc_anchors = [('upper left', (0, 1)), ('upper right', (1, 1)), ('lower left', (0, 0)), ('lower right', (1, 0))]
-    # legend_labels = []
-    # for i in range(4):
-    #     legend_idxs = legend_idxs[i*step_size : (i+1)*step_size]
-    #     for j, legend_idx in enumerate(legend_idxs):
-    #         j = i*step_size + j
-    #         line = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[j], markersize=10, label="%3d "%j + label)
-    #         ax.add_line(line)
-    #         legend_labels.append(line)
-    #     loc, anchor = loc_anchors[i]
-    #     legend = ax.legend(handles=legend_labels, loc=loc, bbox_to_anchor=anchor, fontsize=20)
-    #     ax.add_artist(legend)
-
     label_idxs = []
     label_names = []
     label_colors = []
@@ -125,8 +110,8 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     # plt.title("Class Embedding Distribution", fontsize=16, x=0.7, y=0.98)  
 
     if fig_fp is None:
-        fig_fp = os.path.join(os.path.dirname(__file__), "temp", "TextEmbedding.png")
-        # fig_fp = os.path.join(os.path.dirname(__file__), "temp", "TextEmbedding.pgf")
+        # fig_fp = os.path.join(os.path.dirname(__file__), "temp", "TextEmbedding.png")
+        fig_fp = os.path.join(os.path.dirname(__file__), "temp", "TextEmbedding.pgf")
 
     plt.savefig(fig_fp)
     print("file saved to ", fig_fp)
