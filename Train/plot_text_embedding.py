@@ -80,7 +80,8 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
             label_colors.append(colors[i])
 
     step_size = len(label_idxs) // 4
-    loc_anchors = [('upper left', (0, 1)), ('upper right', (1, 1)), ('lower left', (0, 0)), ('lower right', (1, 0))]
+    # loc_anchors = [('upper left', (0, 1)), ('upper right', (1, 1)), ('lower left', (0, 0)), ('lower right', (1, 0))]
+    loc_anchors = [('upper right', (0, 1)), ('upper left', (1, 1)), ('lower right', (0, 0)), ('lower left', (1, 0))]
     for i_step in range(4):
         label_idx_curr = label_idxs[i_step*step_size: (i_step+1)*step_size]
         label_name_curr = label_names[i_step*step_size: (i_step+1)*step_size]
