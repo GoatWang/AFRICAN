@@ -69,8 +69,20 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     ax.scatter(Comps[:,0], Comps[:,1], c=colors)
     text_objects = [ax.text(Comps[i,0], Comps[i,1], label, fontsize=15) for i, label in enumerate(labels)] # , c=Y[i], ha='center', va='center'
     legend_idxs = check_and_adjust_overlap(text_objects, colors, 10)
-    legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
-    ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=12)
+
+    legend_idxs = list(legend_idxs)
+    legend_idxs1 = legend_idxs[:len(legend_idxs)//2]
+    legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs1]
+    legend1 = ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=20)
+    ax.add_artist(legend1)
+
+    legend_idxs2 = legend_idxs[len(legend_idxs)//2:]
+    legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs2]
+    legend2 = ax.legend(handles=legend_labels, loc='center right', bbox_to_anchor=(0, 0.5), fontsize=20)
+    ax.add_artist(legend2)
+
+    # legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels) if i in legend_idxs]
+    # ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=12)
 
     # legend_labels = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[i], markersize=10, label="%3d "%i + label) for i, label in enumerate(labels)]
     # ax.legend(handles=legend_labels, loc='center left', bbox_to_anchor=(1, 0.5))
