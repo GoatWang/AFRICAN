@@ -11,6 +11,15 @@ from Model import AfricanSlowfast
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from Dataset import AnimalKingdomDatasetVisualize
+import matplotlib
+matplotlib.use("pgf")
+matplotlib.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    'font.family': 'serif',
+    'text.usetex': True,
+    'pgf.rcfonts': False,
+})
+
 
 def check_and_adjust_overlap(text_objects, colors, n_iters=30, threshold=0.1, seed=2023):
     np.random.seed(seed)
@@ -77,7 +86,8 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
     # plt.title("Class Embedding Distribution", fontsize=16, x=0.7, y=0.98)  
 
     if fig_fp is None:
-        fig_fp = os.path.join(os.path.dirname(__file__), "temp", "TextEmbedding.png")
+        # fig_fp = os.path.join(os.path.dirname(__file__), "temp", "TextEmbedding.png")
+        fig_fp = os.path.join(os.path.dirname(__file__), "temp", "TextEmbedding.pgf")
 
     plt.savefig(fig_fp)
     print("file saved to ", fig_fp)

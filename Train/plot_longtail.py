@@ -40,7 +40,7 @@ def main(_config):
     # df_action.sort_values('count')[['action', 'count']].plot()
     df_action_sorted = df_action.sort_values('count', ascending=False)
 
-    plt.figure(figsize=(12, 5))
+    plt.figure(figsize=(8, 3))
     plt.bar(x=range(len(df_action_sorted)), height=df_action_sorted['count'], color=df_action_sorted['color'])
     plt.ylabel('Count', size=12)
     plt.xlabel('Action ID', size=12)
