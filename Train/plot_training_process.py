@@ -26,7 +26,9 @@ def plot_progress(df, n_rows, title, xaxis, yaxis, xlabel, ylabel, fig_fp=None):
     plt.legend(loc="lower right")
 
     if fig_fp is None:
-        os.path.join(os.path.dirname(__file__), "temp", "training_progress.png")
+        # os.path.join(os.path.dirname(__file__), "temp", "training_progress.png")
+        os.path.join(os.path.dirname(__file__), "temp", "training_progress.pgf")
+        
     plt.savefig(fig_fp)
     print("file saved to ", fig_fp)
 
@@ -36,7 +38,7 @@ if __name__ == "__main__":
     save_dir = os.path.join(os.path.dirname(__file__), "temp", "training_progress")
     Path(save_dir).mkdir(exist_ok=True, parents=True)
 
-    title = 'mAP performance on each Epochs for VC_Vision, VC_Proj, and IC'
+    title = 'mAP performance on each Epoch for VC_Vision, VC_Proj, and IC'
     fig_fp = os.path.join(save_dir, "BackboneSelection.pgf")
     plot_progress(df, n_rows=70, title=title, xaxis='epoch', yaxis=['VC_Vision', 'VC_Proj', 'IC'], xlabel='Epoch', ylabel='mAP', fig_fp=fig_fp)
 
