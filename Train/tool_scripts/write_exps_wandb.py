@@ -92,7 +92,11 @@ df.to_csv(os.path.join('temp', "insert_wandb_metrics.csv"), index=False)
 yaml_fp = "/Users/jeremywang/BristolCourses/Dissertation/AnimalKingdomCLIP/Train/experiments/1_20230615-190925_414_033/20230616-100856/hparams.yaml"
 with open(yaml_fp, 'r') as f:
     config = yaml.safe_load(f.read())
-wandb.login(key='427974ce1dec11546ede262db4206a90fcf9ce00')
+
+with open("wandb_key.txt", 'r') as f:
+    key = f.read()
+
+wandb.login(key=key)
 wandb.init(project='AnimalKingdom', name='CLIP_BCE_nodecay_128_00015', config=config)
 for idx, row in df.iterrows():
     row_dict = row[row.notna()].to_dict()

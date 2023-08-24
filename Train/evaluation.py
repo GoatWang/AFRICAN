@@ -50,12 +50,12 @@ def main(_config):
 
     # load model
     model = VideoCLIP(_config).to(_config['device'])
-    model.load_ckpt_state_dict(os.path.join(os.path.dirname(__file__), "weights/epoch=355-step=66928.ckpt"))
+    model.load_ckpt_state_dict(_config['ckpt_path'])
     dataset_train = AnimalKingdomDataset(_config, split="train")
-    dataset_train.produce_prompt_embedding(model.clip)
+    dataset_train.produce_prompt_embedding(model.video_clip)
     model.set_text_feats(dataset_train.text_features)
     model.eval()
-
+    
     # load dataset
     path_to_data_dir = os.path.join(_config['data_dir'], "annotation")
     path_prefix = os.path.join(_config['data_dir'], 'dataset', 'image')
