@@ -18,24 +18,24 @@ def turn_off_axis_ticks(ax):
     ax.set_yticks([])  # Turn off the y-axis ticks
 
 def plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig_fp=None):
-    n_rows, n_cols = 4, 8
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 7))
+    n_rows, n_cols = 3, 8
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5))
     
     for ci in range(n_cols):
         image_raw, heatmap_vc, heatmap_ic, heatmap_af = images_raw[ci], heatmaps_vc[ci], heatmaps_ic[ci], heatmaps_af[ci]
         axes[0][ci].imshow(image_raw)
-        axes[1][ci].imshow(heatmap_vc)
-        axes[2][ci].imshow(heatmap_ic)
-        axes[3][ci].imshow(heatmap_af)
+        # axes[1][ci].imshow(heatmap_vc)
+        axes[1][ci].imshow(heatmap_ic)
+        axes[2][ci].imshow(heatmap_af)
 
         axes[0][ci].set_title(f"frame{ci+1}")
         for ri in range(n_rows):
             turn_off_axis_ticks(axes[ri][ci])
 
     axes[0][0].set_ylabel('Raw')
-    axes[1][0].set_ylabel('VideoClip')
-    axes[2][0].set_ylabel('ImageClip')
-    axes[3][0].set_ylabel('African')
+    # axes[1][0].set_ylabel('VideoClip')
+    axes[1][0].set_ylabel('ImageClip')
+    axes[2][0].set_ylabel('African')
     plt.suptitle("Attention Heatmap")
 
     if fig_fp:
@@ -60,7 +60,8 @@ def main(_config):
     dataset_valid.produce_prompt_embedding(model.video_clip)
     df_action = dataset_train.df_action
     model.set_class_names(df_action['action'].values)
-    model.set_text_feats(dataset_train.text_features)
+    model.set_text_feats_vc(dataset_train.text_features_vc)
+    model.set_text_feats_ic(dataset_train.text_features_ic)
     model.set_loss_func(_config['loss'], df_action['count'].tolist())
     model.set_metrics(df_action[df_action['segment'] == 'head'].index.tolist(), 
                       df_action[df_action['segment'] == 'middle'].index.tolist(), 
@@ -69,7 +70,7 @@ def main(_config):
     model.eval()
 
     # for idx in [30, 60, 80, 85, 90, 140, 147, 153]:
-    for idx in np.random.choice(range(len(dataset_valid)), 30):
+    for idx in np.random.choice(range(len(dataset_valid)), 200):
         video_fp, video_raw, video_aug, labels_onehot, index = dataset_valid[idx]
         video_raw, video_aug = video_raw.unsqueeze(0), video_aug.unsqueeze(0)
         images_raw, attn_maps, heatmaps_vc = model.draw_att_map(video_raw, video_aug, encoder_type="vc") # heatmaps_vc.shape = []
