@@ -65,12 +65,12 @@ def config():
     transformer_layers_ic = 6
     transformer_heads_ic = 12
 
-    ## african
-    enable_african = True
-    ckpt_path_af = os.path.abspath(os.path.join(base_dir, "weights", "clip_nodecay_infoNCE_8_rand_augmix_000030_epoch30.ckpt"))
-    transformer_width_af = 768
-    transformer_layers_af = 6
-    transformer_heads_af = 12
+    # ## african
+    # enable_african = True
+    # ckpt_path_af = os.path.abspath(os.path.join(base_dir, "weights", "clip_nodecay_infoNCE_8_rand_augmix_000030_epoch30.ckpt"))
+    # transformer_width_af = 768
+    # transformer_layers_af = 6
+    # transformer_heads_af = 12
 
     # Viusialize Attn Map
     number_of_attn_map = 30
