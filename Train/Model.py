@@ -501,7 +501,7 @@ class AfricanSlowfast(pl.LightningModule):
             # else:
             #     frames_feats = frames_feats * self.w_vc + frames_feats_ic * self.w_ic + self.bias_ic
 
-        query = model.text_feats_vc.unsqueeze(0).repeat(frames_feats.shape[0], 1, 1)
+        query = self.text_feats.unsqueeze(0).repeat(frames_feats.shape[0], 1, 1)
         key = torch.cat([frames_feats.unsqueeze(1), video_all_feats, frames_feats_all_ic], dim=1)  # batch size, sequence length, d_model
         value = key
         vlc_output = self.vlc_transformer(query, key, value)
