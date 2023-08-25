@@ -74,7 +74,10 @@ class TemporalTransformer(nn.Module):
         # pooled, tokens = x[:, 0], x[:, 1:] # use cls token to do classification. # https://chat.openai.com/share/83c1c340-3a53-4366-901f-183fbc05f2a2
         pooled = x.mean(dim=1) # mean over all tokens to do classification. # https://chat.openai.com/share/83c1c340-3a53-4366-901f-183fbc05f2a2
         pooled = pooled @ self.proj
-        return pooled
+
+        B, F, W = x.shape
+        x = torch.bmm(x.view(B*F, W), self.proj.unsqueeze(0).expand(B, 1, 1)).view(B, F, W)
+        return pooled, x
 
 
 class AfricanSlowfast(pl.LightningModule):
@@ -153,12 +156,12 @@ class AfricanSlowfast(pl.LightningModule):
         if self.enable_image_clip:
             self.image_encoder_ic = self.get_image_encoder_fast(config, "ic")
             self.freeze_image_encoder_fast_evl(self.image_encoder_ic)
-            # self.transformer_ic = TemporalTransformer(
-            #     self.num_frames,
-            #     config['transformer_width_ic'],
-            #     config['transformer_layers_ic'],
-            #     config['transformer_heads_ic']
-            # )
+            self.transformer_ic = TemporalTransformer(
+                self.num_frames,
+                config['transformer_width_ic'],
+                config['transformer_layers_ic'],
+                config['transformer_heads_ic']
+            )
             # to be merged on image encoder featers (transformer_width_ic: 768)
             # self.w_vc = nn.Parameter(torch.randn(config['transformer_width_ic']))
             # self.w_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
@@ -449,13 +452,13 @@ class AfricanSlowfast(pl.LightningModule):
                 st, end = idx*self.image_encoder_batch_size, (idx+1)*self.image_encoder_batch_size
                 frames_feats[st:end] = self.image_encoder_ic(frames_tensor[st:end])
             frames_feats = frames_feats.reshape(B, F, self.transformer_width_ic)
-        # frames_feats = self.forward_frames_feats_ic(frames_feats)
+        frames_feats = self.forward_frames_feats_ic(frames_feats)
         return frames_feats
     
-    # def forward_frames_feats_ic(self, frames_feats):
-    #     """apply transformer on image embedding of each frames"""
-    #     frames_feats = self.transformer_ic(frames_feats)
-    #     return frames_feats
+    def forward_frames_feats_ic(self, frames_feats):
+        """apply transformer on image embedding of each frames"""
+        video_feats, frames_feats = self.transformer_ic(frames_feats)
+        return frames_feats
 
     # def forward_frames_af(self, frames_tensor):
     #     """encode image into embedding"""
