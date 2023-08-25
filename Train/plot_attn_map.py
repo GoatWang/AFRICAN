@@ -36,7 +36,7 @@ def plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig
     # axes[1][0].set_ylabel('VideoClip')
     axes[1][0].set_ylabel('ImageClip')
     axes[2][0].set_ylabel('African')
-    plt.suptitle("Attention Heatmap")
+    # plt.suptitle("Attention Heatmap")
 
     if fig_fp:
         plt.savefig(fig_fp)

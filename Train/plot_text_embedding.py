@@ -89,7 +89,7 @@ def plot_text_embedding(X, colors, labels, fig_fp=None):
 
         legend_labels = []
         for label_idx, label_name, label_color in zip(label_idx_curr, label_name_curr, label_color_curr):
-            line = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=label_color, markersize=10, label="%3d "%label_idx + label_name)        
+            line = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=label_color, markersize=10, label="%3d "%label_idx + label_name)
             ax.add_line(line)
             legend_labels.append(line)
 

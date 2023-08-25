@@ -18,7 +18,8 @@ matplotlib.rcParams.update({
     'font.family': 'serif',
     'text.usetex': True,
     'pgf.rcfonts': False,
-})
+})    
+
 
 
 @ex.automain
@@ -44,5 +45,19 @@ def main(_config):
     plt.bar(x=range(len(df_action_sorted)), height=df_action_sorted['count'], color=df_action_sorted['color'])
     plt.ylabel('Count', size=12)
     plt.xlabel('Action ID', size=12)
-    plt.title("Action Class Frequency", size=14)
-    plt.savefig(os.path.join(os.path.dirname(__file__), "temp", "LongTail.pgf"))
+    # plt.title("Action Class Frequency", size=14)
+
+    legend_labels = []
+    legend_labels.append(plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label="Head Actions"))
+    legend_labels.append(plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label="Middle Actions"))
+    legend_labels.append(plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label="Tail Actions"))
+    plt.legend(handles=legend_labels)
+
+    fig_fp = os.path.join(os.path.dirname(__file__), "temp", "LongTail.png")
+    plt.savefig(fig_fp)
+    print("file saved to ", fig_fp)
+
+    plt.savefig(fig_fp.replace('.png', '.pgf'))
+    print("file saved to ", fig_fp.replace('.png', '.pgf'))
+
+
