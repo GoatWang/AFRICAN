@@ -4,3 +4,4 @@ weights
 .DS_Store
 experiments
 wandb
+wandb_key.txt
