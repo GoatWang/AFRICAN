@@ -75,10 +75,10 @@ class TransformerLayer(nn.Module):
         x = self.norm2(x + self.dropout(forward_out))
         return x
 
-class VLCTransformer.py(nn.Module):
+class VLCTransformer(nn.Module):
     """Vision-Language Cross Transformer"""
     def __init__(self, d_model, num_heads, num_layers, forward_expansion, dropout):
-        super(VLCTransformer.py, self).__init__()
+        super(VLCTransformer, self).__init__()
         self.layers = nn.ModuleList([
             TransformerLayer(d_model, num_heads, forward_expansion, dropout)
             for _ in range(num_layers)
