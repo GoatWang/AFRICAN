@@ -506,7 +506,7 @@ class AfricanSlowfast(pl.LightningModule):
         value = key
         vlc_output = self.vlc_transformer(query, key, value)
         B, C, W = vlc_output.shape
-        video_logits = self.ffn(vlc_output.reshape(B*C, vlc_output.shape)).reshape(B, C)
+        video_logits = self.ffn(vlc_output.reshape(B*C, W)).reshape(B, C)
 
         # video_logits_vcic = None
         # if frames_feats is not None:
