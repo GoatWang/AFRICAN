@@ -125,7 +125,7 @@ class AfricanSlowfast(pl.LightningModule):
                 config['transformer_heads_ic']
             )
             # to be merged on image encoder featers (transformer_width_ic: 768)
-            self.w_vc_le = nn.Parameter(torch.ones(config['transformer_width_ic']) * 0.6)
+            self.w_vc_ce = nn.Parameter(torch.ones(config['transformer_width_ic']) * 0.6)
             self.w_vc_oh = nn.Parameter(torch.ones(config['transformer_width_ic']) * 0.6)
 
             self.transformer_ic_oh = TemporalTransformer(
@@ -381,9 +381,9 @@ class AfricanSlowfast(pl.LightningModule):
                 frames_feats[st:end] = self.image_encoder_ic(frames_tensor[st:end])
             frames_feats = frames_feats.reshape(B, F, self.transformer_width_ic)
         frames_feats = self.forward_frames_feats_ic(frames_feats)
-        frames_feats_ic_cl = self.transformer_ic_cl(frames_feats)
+        frames_feats_ic_ce = self.transformer_ic_cl(frames_feats)
         frames_feats_ic_oh = self.transformer_ic_oh(frames_feats)
-        return frames_feats_ic_cl, frames_feats_ic_oh
+        return frames_feats_ic_ce, frames_feats_ic_oh
     
     # def forward_frames_feats_ic(self, frames_feats):
     #     """apply transformer on image embedding of each frames"""
@@ -425,23 +425,23 @@ class AfricanSlowfast(pl.LightningModule):
         frames_feats_vc = self.forward_frames_vc(frames_tensor)
 
         # enable_image_clip        
-        frames_feats_ic_cl, frames_feats_ic_oh = self.forward_frames_memef_ic(frames_tensor)
-        frames_feats_cl = frames_feats_vc * self.w_vc_le + frames_feats_ic_cl * (1 - self.w_vc_le)
+        frames_feats_ic_ce, frames_feats_ic_oh = self.forward_frames_memef_ic(frames_tensor)
+        frames_feats_ce = frames_feats_vc * self.w_vc_ce + frames_feats_ic_ce * (1 - self.w_vc_ce)
         frames_feats_oh = frames_feats_vc * self.w_vc_oh + frames_feats_ic_oh * (1 - self.w_vc_oh)
 
         # class embedding similarity
         text_feats = self.text_feats
-        video_feats = torch.nn.functional.normalize(frames_feats_cl, dim=1) # (n, 768)
+        video_feats = torch.nn.functional.normalize(frames_feats_ce, dim=1) # (n, 768)
         text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
         t = self.video_clip.logit_scale.exp()
-        video_logits_le = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
-        video_logits_le = self.final_fc(video_logits_le)
+        video_logits_ce = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
+        video_logits_ce = self.final_fc(video_logits_ce)
 
         # one-hot encoding mlp
         video_logits_oh = self.mlp_oh(frames_feats_oh)
 
         # final logits
-        video_logits = video_logits_le * self.w_ce + video_logits_oh * (1 - self.w_ce)
+        video_logits = video_logits_ce * self.w_ce + video_logits_oh * (1 - self.w_ce)
 
         return video_logits
     
