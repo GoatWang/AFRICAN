@@ -75,3 +75,6 @@ def config():
     # Viusialize Attn Map
     number_of_attn_map = 30
     attn_map_save_dir = os.path.abspath(os.path.join(base_dir, "temp", "attn_map"))
+
+
+    openclip_VLC = False

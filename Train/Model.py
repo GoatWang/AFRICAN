@@ -16,7 +16,7 @@ from open_clip import Transformer, LayerNorm
 from torch.utils.checkpoint import checkpoint
 from ModelUtil.clip_param_keys import clip_param_keys
 from open_clip import CLIPVisionCfg, _build_vision_tower, create_model_and_transforms
-from VLCTransformer import VLCTransformer
+from VLCTransformer import VLCTransformer, VLCTransformer_OC
 from transformers import (
     get_polynomial_decay_schedule_with_warmup,
     get_cosine_schedule_with_warmup,
@@ -171,7 +171,8 @@ class AfricanSlowfast(pl.LightningModule):
             # self.w_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
             # self.bias_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
         
-
+        if openclip_VLC:
+            VLCTransformer = VLCTransformer_OC
         self.vlc_transformer = VLCTransformer(
                 config['transformer_width_ic'],
                 config['transformer_heads_ic'],
