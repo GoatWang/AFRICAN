@@ -172,14 +172,22 @@ class AfricanSlowfast(pl.LightningModule):
             # self.bias_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
         
         if config['openclip_VLC']:
-            VLCTransformer = VLCTransformer_OC
-        self.vlc_transformer = VLCTransformer(
-                config['transformer_width_ic'],
-                config['transformer_heads_ic'],
-                config['transformer_layers_ic'],
-                forward_expansion=4, 
-                dropout=0.1
-        )
+            vlc_transformer = VLCTransformer_OC(140, 768, 12, 12)
+
+            self.vlc_transformer = VLCTransformer_OC(
+                    self.n_classes,
+                    config['transformer_width_ic'],
+                    config['transformer_heads_ic'],
+                    config['transformer_layers_ic'],
+            )
+        else:
+            self.vlc_transformer = VLCTransformer(
+                    config['transformer_width_ic'],
+                    config['transformer_heads_ic'],
+                    config['transformer_layers_ic'],
+                    forward_expansion=4, 
+                    dropout=0.1
+            )
         self.ffn = nn.Sequential(
             nn.Linear(config['transformer_width_ic'], config['transformer_width_ic']//4), #768 => 192
             nn.Linear(config['transformer_width_ic']//4, config['transformer_width_ic']//16), #192 => 48
