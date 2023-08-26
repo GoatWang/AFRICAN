@@ -514,7 +514,7 @@ class AfricanSlowfast(pl.LightningModule):
                 frames_feats_ic.unsqueeze(1).repeat(1, text_feats.shape[0], 1) # B, 140, 768
                 ], dim=2)  # B, 140, 768*2
             B, C, W2 = video_logits_ic.shape    
-            video_logits_ic = (video_logits_ic.view(B*C, W) @ self.W_que).view(B, C, W2//2)
+            video_logits_ic = (video_logits_ic.view(B*C, W2) @ self.W_que).view(B, C, W2//2)
 
         # VLC Transformer
         query = video_logits_ic # B, 1+F, 768
