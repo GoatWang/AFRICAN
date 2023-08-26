@@ -486,13 +486,14 @@ class AfricanSlowfast(pl.LightningModule):
                 st, end = idx*self.image_encoder_batch_size, (idx+1)*self.image_encoder_batch_size
                 frames_feats[st:end] = self.image_encoder_af(frames_tensor[st:end])
             frames_feats = frames_feats.reshape(B, F, self.transformer_width_af)
-        frames_feats = self.forward_frames_feats_af(frames_feats)
+        frames_feats = torch.mean(frames_feats, dim=1) # mean over all frames, => [B, 768]
+        # frames_feats = self.forward_frames_feats_af(frames_feats)
         return frames_feats
 
-    def forward_frames_feats_af(self, frames_feats):
-        """apply transformer on image embedding of each frames"""
-        frames_feats = self.transformer_af(frames_feats)
-        return frames_feats
+    # def forward_frames_feats_af(self, frames_feats):
+    #     """apply transformer on image embedding of each frames"""
+    #     frames_feats = self.transformer_af(frames_feats)
+    #     return frames_feats
 
     def forward(self, batch):
         frames_tensor, labels_onehot, index = batch
