@@ -508,7 +508,7 @@ class AfricanSlowfast(pl.LightningModule):
             frames_feats_ic, video_all_feats_ic = self.forward_frames_memef_ic(frames_tensor)
             
             video_feats_ic = torch.nn.functional.normalize(frames_feats_ic, dim=1) # (n, 768)
-            text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
+            text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
             video_logits_ic = torch.cat([
                 text_feats.unsqueeze(0).repeat(frames_feats_ic.shape[0], 1, 1), # B, 140, 768 
                 frames_feats_ic.unsqueeze(1).repeat(text_feats.shape[0]) # B, 140, 768
