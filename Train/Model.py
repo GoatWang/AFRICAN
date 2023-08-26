@@ -171,7 +171,7 @@ class AfricanSlowfast(pl.LightningModule):
             # self.w_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
             # self.bias_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
         
-        if openclip_VLC:
+        if config['openclip_VLC']:
             VLCTransformer = VLCTransformer_OC
         self.vlc_transformer = VLCTransformer(
                 config['transformer_width_ic'],
