@@ -110,11 +110,12 @@ class AfricanSlowfast(pl.LightningModule):
         self.end_lr = config['end_lr']
         self.poly_decay_power = config['poly_decay_power']
 
-        self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
 
         self.enable_video_clip = config['enable_video_clip']
         self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
         self.video_frame_visual_proj = nn.Parameter(torch.randn(config['transformer_width_vc'], config['transformer_width_vc']))
+        self.W_que = nn.Parameter(torch.randn(config['transformer_width_vc']*2, config['transformer_width_vc']))
+        # self.final_fc = torch.nn.Linear(self.n_classes, self.n_classes)
         # self.transformer_proj_vc = config['transformer_proj_vc']
         # if self.transformer_proj_vc:
         #     self.transformer_vc = TemporalTransformer(
@@ -162,6 +163,9 @@ class AfricanSlowfast(pl.LightningModule):
                 config['transformer_layers_ic'],
                 config['transformer_heads_ic']
             )
+            # self.query_proj = nn.Parameter(torch.randn(config['transformer_width_ic']*2, config['transformer_width_ic']))
+            # self.final_fc_ic = torch.nn.Linear(self.n_classes, self.n_classes)
+
             # to be merged on image encoder featers (transformer_width_ic: 768)
             # self.w_vc = nn.Parameter(torch.randn(config['transformer_width_ic']))
             # self.w_ic = nn.Parameter(torch.randn(config['transformer_width_ic']))
@@ -452,13 +456,15 @@ class AfricanSlowfast(pl.LightningModule):
                 st, end = idx*self.image_encoder_batch_size, (idx+1)*self.image_encoder_batch_size
                 frames_feats[st:end] = self.image_encoder_ic(frames_tensor[st:end])
             frames_feats = frames_feats.reshape(B, F, self.transformer_width_ic)
-        frames_feats = self.forward_frames_feats_ic(frames_feats)
-        return frames_feats
+        video_all_feats = frames_feats
+        frames_feats = torch.mean(frames_feats, dim=1) # mean over all frames, => [B, 768]
+        # frames_feats, video_all_feats = self.forward_frames_feats_ic(frames_feats)
+        return frames_feats, video_all_feats
     
     def forward_frames_feats_ic(self, frames_feats):
         """apply transformer on image embedding of each frames"""
-        video_feats, frames_feats = self.transformer_ic(frames_feats)
-        return frames_feats
+        frames_feats, video_all_feats = self.transformer_ic(frames_feats)
+        return frames_feats, video_all_feats
 
     # def forward_frames_af(self, frames_tensor):
     #     """encode image into embedding"""
@@ -496,45 +502,29 @@ class AfricanSlowfast(pl.LightningModule):
         if self.enable_video_clip:
             frames_feats, video_all_feats = self.forward_frames_vc(frames_tensor)
 
+
         # enable_image_clip        
         if self.enable_image_clip:
-            frames_feats_all_ic = self.forward_frames_memef_ic(frames_tensor)
-            # if frames_feats is None:
-            #     frames_feats = frames_feats_ic
-            # else:
-            #     frames_feats = frames_feats * self.w_vc + frames_feats_ic * self.w_ic + self.bias_ic
+            frames_feats_ic, video_all_feats_ic = self.forward_frames_memef_ic(frames_tensor)
+            
+            video_feats_ic = torch.nn.functional.normalize(frames_feats_ic, dim=1) # (n, 768)
+            text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
+            video_logits_ic = torch.cat([
+                text_feats.unsqueeze(0).repeat(frames_feats_ic.shape[0], 1, 1), # B, 140, 768 
+                frames_feats_ic.unsqueeze(1).repeat(text_feats.shape[0]) # B, 140, 768
+                ], dim=2)  # B, 140, 768*2
+            B, C, W2 = video_logits_ic.shape    
+            video_logits_ic = (video_logits_ic.view(B*C, W) @ self.W_que).view(B, C, W2//2)
 
-        query = self.text_feats.unsqueeze(0).repeat(frames_feats.shape[0], 1, 1)
-        key = torch.cat([frames_feats.unsqueeze(1), video_all_feats, frames_feats_all_ic], dim=1)  # batch size, sequence length, d_model
+        # VLC Transformer
+        query = video_logits_ic # B, 1+F, 768
+        key = torch.cat([frames_feats.unsqueeze(1), video_all_feats], dim=1)  # B, 1+F, 768
         value = key
         vlc_output = self.vlc_transformer(query, key, value)
+
+        # ffn
         B, C, W = vlc_output.shape
         video_logits = self.ffn(vlc_output.reshape(B*C, W)).reshape(B, C)
-
-        # video_logits_vcic = None
-        # if frames_feats is not None:
-        #     text_feats = self.text_feats
-        #     # if self.use_text_proj:
-        #     #     text_feats = self.text_proj(self.text_feats)
-
-        #     video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
-        #     text_feats = torch.nn.functional.normalize(text_feats, dim=1) # (140, 768)
-        #     t = self.video_clip.logit_scale.exp()
-        #     video_logits_vcic = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
-        #     video_logits_vcic = self.final_fc(video_logits_vcic)
-
-        # # enable_african
-        # video_logits_af = None
-        # if self.enable_african:
-        #     frames_feats_af = self.forward_frames_memef_af(frames_tensor)
-        #     video_logits_af = self.mlp_af(frames_feats_af)
-
-        # if video_logits_vcic is None:
-        #     video_logits = video_logits_af
-        # elif video_logits_af is None:
-        #     video_logits = video_logits_vcic
-        # else:
-        #     video_logits = video_logits_vcic * self.w_vcic + video_logits_af * self.w_af + self.bias_af
 
         return video_logits, labels_onehot
     

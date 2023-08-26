@@ -57,6 +57,7 @@ class TransformerLayer(nn.Module):
     def __init__(self, d_model, num_heads, forward_expansion, dropout):
         super(TransformerLayer, self).__init__()
         self.attention = MultiheadAttention(d_model, num_heads)
+        self.norm0 = nn.LayerNorm(d_model)
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
         self.feed_forward = nn.Sequential(
@@ -67,11 +68,13 @@ class TransformerLayer(nn.Module):
         self.dropout = nn.Dropout(dropout)
     
     def forward(self, query, key, value, mask=None):
+        attention_out = self.attention(query, query, query, mask)
+        query = self.norm0(query + self.dropout(attention_out))
+
         attention_out = self.attention(query, key, value, mask)
-        # Add & Norm
         x = self.norm1(query + self.dropout(attention_out))
+
         forward_out = self.feed_forward(x)
-        # Add & Norm
         x = self.norm2(x + self.dropout(forward_out))
         return x
 
