@@ -140,31 +140,7 @@ class AfricanSlowfast(pl.LightningModule):
                 nn.Linear(output_width//4, self.n_classes)
             )
             self.w_cl = nn.Parameter(torch.ones(self.n_classes) * 0.9)
-
         
-        self.enable_african = config['enable_african']
-        # if self.enable_african:
-        #     self.image_encoder_af = self.get_image_encoder_fast(config, "af")
-        #     self.freeze_image_encoder_fast_evl(self.image_encoder_af)
-        #     self.transformer_af = TemporalTransformer(
-        #         self.num_frames,
-        #         config['transformer_width_af'],
-        #         config['transformer_layers_af'],
-        #         config['transformer_heads_af']
-        #     )
-
-        #     output_width = int(config['transformer_width_af'])
-        #     self.mlp_af = nn.Sequential(
-        #         nn.Linear(output_width, output_width//2),
-        #         nn.Linear(output_width//2, output_width//4),
-        #         nn.Linear(output_width//4, self.n_classes)
-        #     )
-
-        #     # to be merged on final layers (self.n_classes)
-        #     self.w_vcic = nn.Parameter(torch.ones(self.n_classes) * 0.9)
-        #     self.w_af = nn.Parameter(torch.ones(self.n_classes) * 0.1)
-        #     self.bias_af = nn.Parameter(torch.randn(self.n_classes))
-
     def print_requires_grad(self, model):
         for n, p in model.named_parameters():
             print(n, p.requires_grad)
