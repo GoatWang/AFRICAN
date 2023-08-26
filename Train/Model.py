@@ -332,18 +332,6 @@ class AfricanSlowfast(pl.LightningModule):
             frames_tensor, return_all_feats=True, mode='video'
         )
 
-        if self.transformer_proj_vc:
-            # all feature for running temporal transformer
-            x_feats = video_all_feats[1:]
-            x_feats = x_feats.permute(1, 2, 0, 3)
-            B, F, L, W = x_feats.shape
-            x_feats = x_feats.reshape(-1, W) @ self.video_clip.visual_proj
-            x_feats = x_feats.reshape(B, F, L, x_feats.shape[-1])
-            x_feats = torch.sum(x_feats, dim=2)
-            x_feats = self.transformer_vc(x_feats)
-
-            # weighted sum
-            frames_feats = frames_feats * self.w_vc_clstoken + x_feats * self.w_ic_features + self.bias_vc
         return frames_feats
 
     # # memory efficiency: not in use
