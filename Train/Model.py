@@ -140,7 +140,7 @@ class AfricanSlowfast(pl.LightningModule):
                 nn.Linear(output_width//2, output_width//4),
                 nn.Linear(output_width//4, self.n_classes)
             )
-            self.w_cl = nn.Parameter(torch.ones(self.n_classes) * 0.9)
+            self.w_ce = nn.Parameter(torch.ones(self.n_classes) * 0.9)
         
     def print_requires_grad(self, model):
         for n, p in model.named_parameters():
