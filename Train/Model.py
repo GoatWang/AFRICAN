@@ -133,13 +133,12 @@ class AfricanSlowfast(pl.LightningModule):
             self.freeze_video_clip_evl()
             print("freeze_video_clip_evl")
 
-        if config['train_laryers'] == "vision_tn4_proj":
-            self.freeze_video_clip_evl_exclude_tn4()
-            print("freeze_video_clip_evl_exclude_tn4")
-
-        if config['train_laryers'] == "vision_tn2_proj":
-            self.freeze_video_clip_evl_exclude_tn2()
-            print("freeze_video_clip_evl_exclude_tn2")
+        if config['train_laryers'].startswith("vision_tn"):
+            matches = re.find("vision_tn\d+", config['train_laryers'])
+            assert matches > 0, "train_laryers should be one of vision_tn\d+"
+            n = int(matches[0].replace("vision_tn", ""))
+            self.freeze_video_clip_evl_exclude_tnx(n)
+            print(f"freeze last {n} layers of vision transformer")
 
         if config['train_laryers'] == "vision_dd_proj":
             self.freeze_video_clip_evl_exclude_dd()
@@ -302,22 +301,13 @@ class AfricanSlowfast(pl.LightningModule):
             elif "positional_embedding" in n:
                 p.requires_grad = False
 
-    def freeze_video_clip_evl_exclude_tn4(self):
+    def freeze_video_clip_evl_exclude_tnx(self, n=4):
         '''
         exclude last 4 layers in vision transformer
         '''
+        assert n <= 24, "n should be less than 24"
         self.freeze_video_clip_evl()
-        for resblock in self.video_clip.visual.transformer.resblocks[-4:]:
-            resblock.requires_grad_(True)
-        self.video_clip.visual.transformer.dpe.requires_grad_(True)
-        self.video_clip.visual.transformer.dec.requires_grad_(True)
-
-    def freeze_video_clip_evl_exclude_tn2(self):
-        '''
-        exclude last 2 layers in vision transformer
-        '''
-        self.freeze_video_clip_evl()
-        for resblock in self.video_clip.visual.transformer.resblocks[-2:]:
+        for resblock in self.video_clip.visual.transformer.resblocks[-n:]:
             resblock.requires_grad_(True)
         self.video_clip.visual.transformer.dpe.requires_grad_(True)
         self.video_clip.visual.transformer.dec.requires_grad_(True)
