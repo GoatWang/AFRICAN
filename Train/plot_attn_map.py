@@ -34,8 +34,8 @@ def plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig
 
     axes[0][0].set_ylabel('Raw Image', size=14)
     # axes[1][0].set_ylabel('VideoClip')
-    axes[1][0].set_ylabel('IC', size=14)
-    axes[2][0].set_ylabel('AFRICAN', size=14)
+    axes[1][0].set_ylabel('w/o-AFRICAN', size=14)
+    axes[2][0].set_ylabel('with-AFRICAN', size=14)
     # plt.suptitle("Attention Heatmap")
 
     plt.tight_layout()
