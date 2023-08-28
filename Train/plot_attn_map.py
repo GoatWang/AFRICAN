@@ -83,7 +83,7 @@ def main(_config):
         print("file saved to", fig_fp)
         
     # for idx in [30, 60, 80, 85, 90, 140, 147, 153]:
-    targets = ["AQFMKMRN", "ADRIOBSK", "AGXDIPKK", "AJCYBKDQ", "AJJBHNQN", "AKIEHTKX", "AORAGPTK", "APINQPKK"]
+    targets = ["ADRIOBSK", "DONTHVYK", "DSUJLGDO", "EEEGPIYC", "IMDTUSBA", "TPWECUDI"]
     target_idxs = [idx for idx, fp in enumerate(dataset_valid.video_fps) if os.path.basename(fp).split(".")[0] in targets]
     for idx in target_idxs:
         save_dir = _config['attn_map_save_dir'] + "_selected"
