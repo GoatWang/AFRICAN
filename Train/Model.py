@@ -492,7 +492,142 @@ class AfricanSlowfast(pl.LightningModule):
             video_logits = video_logits_vcic * self.w_vcic + video_logits_af * self.w_af + self.bias_af
 
         return video_logits_vcic, video_logits_af, video_logits, labels_onehot
+
+    # def infer(self, frames_tensor, rames_tensor_fast):
+    #     frames_tensor, frames_tensor_fast, labels_onehot, index = batch
+    #     frames_feats_slow = self.forward_frames_slow(frames_tensor)
+    #     frames_feats_fast = self.forward_frames_fast(frames_tensor_fast)
+    #     frames_feats = frames_feats_slow * self.w_slow + frames_feats_fast * self.w_fast + self.bias
+    #     video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
+    #     text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
+    #     t = self.video_clip.logit_scale.exp()
+    #     video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
+    #     video_logits = self.final_fc(video_logits)
+    #     return video_logits
     
+    def training_step(self, batch, batch_idx):
+        video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
+
+        if (video_logits_vcic is None) and (video_logits_af is None):
+            assert False, "video_logits_vcic and video_logits_af are both None"
+        elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
+            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            self.log("train_loss", loss)
+        else: # both of them are not None
+            loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
+            loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
+            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            loss = (loss_vcic + loss_af + loss_all) / 3
+            self.log("train_loss_vcic", loss_vcic)
+            self.log("train_loss_af", loss_af)
+            self.log("train_loss", loss_all)
+
+        video_pred = torch.sigmoid(video_logits)
+        self.train_metrics.update(video_pred, labels_onehot)
+        self.train_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
+        self.train_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
+        self.train_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
+        self.train_map_class.update(video_pred, labels_onehot)
+        return loss
+
+    def on_train_epoch_end(self):
+        _train_metrics = self.train_metrics.compute()
+        self.log_dict(_train_metrics)
+        self.train_metrics.reset()
+
+        _train_map_head = self.train_map_head.compute()
+        self.log("train_map_head", _train_map_head)
+        self.train_map_head.reset()
+
+        _train_map_middle = self.train_map_middle.compute()
+        self.log("train_map_middle", _train_map_middle)
+        self.train_map_middle.reset()
+
+        _train_map_tail = self.train_map_tail.compute()
+        self.log("train_map_tail", _train_map_tail)
+        self.train_map_tail.reset()
+
+        _train_map_class = self.train_map_class.compute()
+        for i in range(self.n_classes):
+            self.log('train_map_' + self.class_names[i], _train_map_class[i])
+        self.train_map_class.reset()
+
+    def validation_step(self, batch, batch_idx):
+        video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
+
+        if (video_logits_vcic is None) and (video_logits_af is None):
+            assert False, "video_logits_vcic and video_logits_af are both None"
+        elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
+            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            self.log("valid_loss", loss)
+        else: # both of them are not None
+            loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
+            loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
+            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
+            loss = (loss_vcic + loss_af + loss_all) / 3
+            self.log("valid_loss_vcic", loss_vcic)
+            self.log("valid_loss_af", loss_af)
+            self.log("valid_loss", loss_all)
+
+        video_pred = torch.sigmoid(video_logits)
+        self.valid_metrics.update(video_pred, labels_onehot)
+        self.valid_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
+        self.valid_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
+        self.valid_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
+        self.valid_map_class.update(video_pred, labels_onehot)
+
+    def on_validation_epoch_end(self):
+        _valid_metrics = self.valid_metrics.compute()
+        self.log_dict(_valid_metrics)
+        self.valid_metrics.reset()
+
+        _valid_map_head = self.valid_map_head.compute()
+        self.log("valid_map_head", _valid_map_head)
+        self.valid_map_head.reset()
+
+        _valid_map_middle = self.valid_map_middle.compute()
+        self.log("valid_map_middle", _valid_map_middle)
+        self.valid_map_middle.reset()
+
+        _valid_map_tail = self.valid_map_tail.compute()
+        self.log("valid_map_tail", _valid_map_tail)
+        self.valid_map_tail.reset()
+
+        _valid_map_class = self.valid_map_class.compute()
+        for i in range(self.n_classes):
+            self.log('valid_map_' + self.class_names[i], _valid_map_class[i])
+        self.valid_map_class.reset()
+
+    def configure_optimizers(self):
+        if self.optimizer == 'adam':
+            optimizer = torch.optim.Adam([p for p in self.parameters() if p.requires_grad], lr=self.lr)
+        elif self.optimizer == 'adamw':
+            optimizer = torch.optim.AdamW([p for p in self.parameters() if p.requires_grad], lr=self.lr, eps=1e-6, betas=(0.9, 0.98))
+        else:
+            assert False, f"Unknown optimizer: {optimizer}"
+
+        if self.decay_power == "no_decay":
+            return optimizer
+        else:
+            if self.decay_power == "cosine":
+                scheduler = get_cosine_schedule_with_warmup(
+                    optimizer,
+                    num_warmup_steps=self.warmup_steps,
+                    num_training_steps=self.max_steps,
+                )
+            elif self.decay_power == "poly":
+                scheduler = get_polynomial_decay_schedule_with_warmup(
+                    optimizer,
+                    num_warmup_steps=self.warmup_steps,
+                    num_training_steps=self.max_steps,
+                    lr_end=self.end_lr,
+                    power=self.poly_decay_power,
+                )
+            sched = {"scheduler": scheduler, "interval": "step"}
+
+            return ([optimizer], [sched])    
+    
+
     def forward_video_encoder_att_map(self, video):
         visual = self.video_clip.visual
 
@@ -635,7 +770,7 @@ class AfricanSlowfast(pl.LightningModule):
             image_raw = images_raw[i]
             attn_map = cv2.resize(attn_maps[i], image_raw.shape[:2])
             heatmap = cv2.applyColorMap((attn_map*255).astype(np.uint8), cv2.COLORMAP_JET)
-            heatmap = cv2.addWeighted(image_raw, 0.7, heatmap, 0.3, 0.0)
+            heatmap = cv2.addWeighted(image_raw, 0.3, heatmap, 0.7, 0.0)
             heatmaps[i] = heatmap
 
         # batch_size first
@@ -649,141 +784,6 @@ class AfricanSlowfast(pl.LightningModule):
     # def get_attn_map_ic(self, frames_feats):
     # def get_attn_map_af(self, frames_feats):
 
-
-    # def infer(self, frames_tensor, rames_tensor_fast):
-    #     frames_tensor, frames_tensor_fast, labels_onehot, index = batch
-    #     frames_feats_slow = self.forward_frames_slow(frames_tensor)
-    #     frames_feats_fast = self.forward_frames_fast(frames_tensor_fast)
-    #     frames_feats = frames_feats_slow * self.w_slow + frames_feats_fast * self.w_fast + self.bias
-    #     video_feats = torch.nn.functional.normalize(frames_feats, dim=1) # (n, 768)
-    #     text_feats = torch.nn.functional.normalize(self.text_feats, dim=1) # (140, 768)
-    #     t = self.video_clip.logit_scale.exp()
-    #     video_logits = ((video_feats @ text_feats.t()) * t)#.softmax(dim=-1) # (n, 140)
-    #     video_logits = self.final_fc(video_logits)
-    #     return video_logits
-    
-    def training_step(self, batch, batch_idx):
-        video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
-
-        if (video_logits_vcic is None) and (video_logits_af is None):
-            assert False, "video_logits_vcic and video_logits_af are both None"
-        elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
-            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            self.log("train_loss", loss)
-        else: # both of them are not None
-            loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
-            loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
-            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            loss = (loss_vcic + loss_af + loss_all) / 3
-            self.log("train_loss_vcic", loss_vcic)
-            self.log("train_loss_af", loss_af)
-            self.log("train_loss", loss_all)
-
-        video_pred = torch.sigmoid(video_logits)
-        self.train_metrics.update(video_pred, labels_onehot)
-        self.train_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
-        self.train_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
-        self.train_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
-        self.train_map_class.update(video_pred, labels_onehot)
-        return loss
-
-    def on_train_epoch_end(self):
-        _train_metrics = self.train_metrics.compute()
-        self.log_dict(_train_metrics)
-        self.train_metrics.reset()
-
-        _train_map_head = self.train_map_head.compute()
-        self.log("train_map_head", _train_map_head)
-        self.train_map_head.reset()
-
-        _train_map_middle = self.train_map_middle.compute()
-        self.log("train_map_middle", _train_map_middle)
-        self.train_map_middle.reset()
-
-        _train_map_tail = self.train_map_tail.compute()
-        self.log("train_map_tail", _train_map_tail)
-        self.train_map_tail.reset()
-
-        _train_map_class = self.train_map_class.compute()
-        for i in range(self.n_classes):
-            self.log('train_map_' + self.class_names[i], _train_map_class[i])
-        self.train_map_class.reset()
-
-    def validation_step(self, batch, batch_idx):
-        video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
-
-        if (video_logits_vcic is None) and (video_logits_af is None):
-            assert False, "video_logits_vcic and video_logits_af are both None"
-        elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
-            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            self.log("valid_loss", loss)
-        else: # both of them are not None
-            loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
-            loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
-            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            loss = (loss_vcic + loss_af + loss_all) / 3
-            self.log("valid_loss_vcic", loss_vcic)
-            self.log("valid_loss_af", loss_af)
-            self.log("valid_loss", loss_all)
-
-        video_pred = torch.sigmoid(video_logits)
-        self.valid_metrics.update(video_pred, labels_onehot)
-        self.valid_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
-        self.valid_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
-        self.valid_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
-        self.valid_map_class.update(video_pred, labels_onehot)
-
-    def on_validation_epoch_end(self):
-        _valid_metrics = self.valid_metrics.compute()
-        self.log_dict(_valid_metrics)
-        self.valid_metrics.reset()
-
-        _valid_map_head = self.valid_map_head.compute()
-        self.log("valid_map_head", _valid_map_head)
-        self.valid_map_head.reset()
-
-        _valid_map_middle = self.valid_map_middle.compute()
-        self.log("valid_map_middle", _valid_map_middle)
-        self.valid_map_middle.reset()
-
-        _valid_map_tail = self.valid_map_tail.compute()
-        self.log("valid_map_tail", _valid_map_tail)
-        self.valid_map_tail.reset()
-
-        _valid_map_class = self.valid_map_class.compute()
-        for i in range(self.n_classes):
-            self.log('valid_map_' + self.class_names[i], _valid_map_class[i])
-        self.valid_map_class.reset()
-
-    def configure_optimizers(self):
-        if self.optimizer == 'adam':
-            optimizer = torch.optim.Adam([p for p in self.parameters() if p.requires_grad], lr=self.lr)
-        elif self.optimizer == 'adamw':
-            optimizer = torch.optim.AdamW([p for p in self.parameters() if p.requires_grad], lr=self.lr, eps=1e-6, betas=(0.9, 0.98))
-        else:
-            assert False, f"Unknown optimizer: {optimizer}"
-
-        if self.decay_power == "no_decay":
-            return optimizer
-        else:
-            if self.decay_power == "cosine":
-                scheduler = get_cosine_schedule_with_warmup(
-                    optimizer,
-                    num_warmup_steps=self.warmup_steps,
-                    num_training_steps=self.max_steps,
-                )
-            elif self.decay_power == "poly":
-                scheduler = get_polynomial_decay_schedule_with_warmup(
-                    optimizer,
-                    num_warmup_steps=self.warmup_steps,
-                    num_training_steps=self.max_steps,
-                    lr_end=self.end_lr,
-                    power=self.poly_decay_power,
-                )
-            sched = {"scheduler": scheduler, "interval": "step"}
-
-            return ([optimizer], [sched])    
-    
 if __name__ == "__main__":    
     # # fast stream
     # from config import config
