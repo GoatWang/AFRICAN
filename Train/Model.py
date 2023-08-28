@@ -770,7 +770,7 @@ class AfricanSlowfast(pl.LightningModule):
             image_raw = images_raw[i]
             attn_map = cv2.resize(attn_maps[i], image_raw.shape[:2])
             heatmap = cv2.applyColorMap((attn_map*255).astype(np.uint8), cv2.COLORMAP_JET)
-            heatmap = cv2.addWeighted(image_raw, 0.3, heatmap, 0.7, 0.0)
+            heatmap = cv2.addWeighted(image_raw, 0.4, heatmap, 0.6, 0.0)
             heatmaps[i] = heatmap
 
         # batch_size first
