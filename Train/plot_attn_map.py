@@ -89,7 +89,7 @@ def main(_config):
         save_dir = _config['attn_map_save_dir'] + "_selected"
         inference_on_idx(idx, save_dir)
 
-    for idx in np.random.choice(range(len(dataset_valid)), 200):
+    for idx in np.random.choice(range(len(dataset_valid)), 30):
         save_dir = _config['attn_map_save_dir']
         inference_on_idx(idx, save_dir)
 
