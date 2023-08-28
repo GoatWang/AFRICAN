@@ -49,6 +49,7 @@ def plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig
 def main(_config):
     _config = copy.deepcopy(_config)
     Path(_config['attn_map_save_dir']).mkdir(exist_ok=True, parents=True)
+    Path(_config['attn_map_save_dir'] + "_selected").mkdir(exist_ok=True, parents=True)
     pl.seed_everything(_config["seed"])
 
     dataset_train = AnimalKingdomDatasetVisualize(_config, split="train")
@@ -69,22 +70,28 @@ def main(_config):
     model.to(_config['device'])
     model.eval()
 
-    # for idx in [30, 60, 80, 85, 90, 140, 147, 153]:
-    for idx in np.random.choice(range(len(dataset_valid)), 200):
+    def inference_on_idx(idx, save_dir):
         video_fp, video_raw, video_aug, labels_onehot, index = dataset_valid[idx]
         video_raw, video_aug = video_raw.unsqueeze(0), video_aug.unsqueeze(0)
         images_raw, attn_maps, heatmaps_vc = model.draw_att_map(video_raw, video_aug, encoder_type="vc") # heatmaps_vc.shape = []
         images_raw, attn_maps, heatmaps_ic = model.draw_att_map(video_raw, video_aug, encoder_type="ic") # heatmaps_ic.shape = []
         images_raw, attn_maps, heatmaps_af = model.draw_att_map(video_raw, video_aug, encoder_type="af") # heatmaps_af.shape = []
         images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af = images_raw[0], heatmaps_vc[0], heatmaps_ic[0], heatmaps_af[0]
-
-        # fig_fp = os.path.join(_config['attn_map_save_dir'], str(idx).zfill(5) + ".png")
         fig_fn = os.path.basename(video_fp).split('.')[0] + ".png"
-        fig_fp = os.path.join(_config['attn_map_save_dir'], fig_fn)
+        fig_fp = os.path.join(save_dir, fig_fn)
         plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig_fp=fig_fp)
         print("file saved to", fig_fp)
+        
+    # for idx in [30, 60, 80, 85, 90, 140, 147, 153]:
+    targets = ["AQFMKMRN.png", "ADRIOBSK.png", "AGXDIPKK.png", "AJCYBKDQ.png", "AJJBHNQN.png", "AKIEHTKX.png", "AORAGPTK.png", "APINQPKK.png"]
+    target_idxs = [idx for idx, fp in enumerate(dataset_valid.img_fps) if os.path.basename(targets) in targets]
+    for idx in target_idxs:
+        save_dir = _config['attn_map_save_dir'] + "_selected"
+        inference_on_idx(idx, save_dir)
 
-
+    for idx in np.random.choice(range(len(dataset_valid)), 200):
+        save_dir = _config['attn_map_save_dir']
+        inference_on_idx(idx, save_dir)
 
 
 # !python3 /notebooks/AnimalKingdomCLIP/Train/plot_attn_map.py with \
