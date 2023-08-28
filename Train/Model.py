@@ -109,7 +109,7 @@ class AfricanSlowfast(pl.LightningModule):
         self.max_steps = config['max_steps']
         self.end_lr = config['end_lr']
         self.poly_decay_power = config['poly_decay_power']
-
+        self.learnable_cls_embedding = config['learnable_cls_embedding']
 
         self.enable_video_clip = config['enable_video_clip']
         self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
@@ -286,7 +286,10 @@ class AfricanSlowfast(pl.LightningModule):
         self.load_state_dict(state_dict, strict=False)
 
     def set_text_feats(self, text_feats):
-        self.text_feats = nn.Parameter(text_feats.clone().requires_grad_(False))
+        if self.learnable_cls_embedding:
+            self.text_feats = nn.Parameter(text_feats.clone().requires_grad_(False))
+        else:
+            self.text_feats = text_feats.clone().requires_grad_(False)
 
     def set_class_names(self, class_names):
         self.class_names = class_names

@@ -78,3 +78,4 @@ def config():
 
 
     openclip_VLC = False
+    learnable_cls_embedding = True
