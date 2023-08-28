@@ -135,7 +135,7 @@ class AfricanSlowfast(pl.LightningModule):
             print("freeze_video_clip_evl")
 
         if config['train_laryers'].startswith("vision_tn"):
-            matches = re.find("vision_tn\d+", config['train_laryers'])
+            matches = re.findall("vision_tn\d+", config['train_laryers'])
             assert matches > 0, "train_laryers should be one of vision_tn\d+"
             n = int(matches[0].replace("vision_tn", ""))
             self.freeze_video_clip_evl_exclude_tnx(n)
