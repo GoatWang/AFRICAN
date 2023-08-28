@@ -19,7 +19,7 @@ def turn_off_axis_ticks(ax):
 
 def plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig_fp=None):
     n_rows, n_cols = 3, 4
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(10, 10))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(10, 6))
     
     for ci in range(n_cols):
         image_raw, heatmap_vc, heatmap_ic, heatmap_af = images_raw[ci], heatmaps_vc[ci], heatmaps_ic[ci], heatmaps_af[ci]
@@ -32,12 +32,13 @@ def plot_attention_map_v2(images_raw, heatmaps_vc, heatmaps_ic, heatmaps_af, fig
         for ri in range(n_rows):
             turn_off_axis_ticks(axes[ri][ci])
 
-    axes[0][0].set_ylabel('Raw')
+    axes[0][0].set_ylabel('Raw Image', size=14)
     # axes[1][0].set_ylabel('VideoClip')
-    axes[1][0].set_ylabel('ImageClip')
-    axes[2][0].set_ylabel('African')
-    plt.suptitle("Attention Heatmap")
+    axes[1][0].set_ylabel('IC', size=14)
+    axes[2][0].set_ylabel('AFRICAN', size=14)
+    # plt.suptitle("Attention Heatmap")
 
+    plt.tight_layout()
     if fig_fp:
         plt.savefig(fig_fp)
         plt.close()
