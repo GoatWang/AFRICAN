@@ -61,8 +61,7 @@ def main(_config):
     dataset_valid.produce_prompt_embedding(model.video_clip)
     df_action = dataset_train.df_action
     model.set_class_names(df_action['action'].values)
-    model.set_text_feats_vc(dataset_train.text_features_vc)
-    model.set_text_feats_ic(dataset_train.text_features_ic)
+    model.set_text_feats(dataset_train.text_features_ic)
     model.set_loss_func(_config['loss'], df_action['count'].tolist())
     model.set_metrics(df_action[df_action['segment'] == 'head'].index.tolist(), 
                       df_action[df_action['segment'] == 'middle'].index.tolist(), 
