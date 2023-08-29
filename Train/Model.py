@@ -417,7 +417,7 @@ class AfricanSlowfast(pl.LightningModule):
         outputs = self.timesformer(frames_tensor)
         last_hidden_states = outputs.last_hidden_state
 
-        B, S, W = last_hidden_states
+        B, S, W = last_hidden_states.shape
         last_hidden_states = last_hidden_states[:, 1:, :].view(B, 8, -1, W)
         frames_tensor = last_hidden_states[:, 0, :]
         video_all_feats = torch.mean(last_hidden_states, sim=2) @ self.video_frame_visual_proj
