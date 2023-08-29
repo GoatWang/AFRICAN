@@ -112,6 +112,7 @@ class AfricanSlowfast(pl.LightningModule):
         self.learnable_cls_embedding = config['learnable_cls_embedding']
 
         self.enable_video_clip = config['enable_video_clip']
+        self.timesformer = TimesformerModel.from_pretrained("facebook/timesformer-base-finetuned-k400")
         self.video_clip = self.get_video_clip_model(config) # video encoder (slow stream)
         self.video_frame_visual_proj = nn.Parameter(torch.randn(config['transformer_width_vc'], config['transformer_width_vc']))
         self.W_que = nn.Parameter(torch.randn(config['transformer_width_vc']*2, config['transformer_width_vc']))
@@ -412,13 +413,20 @@ class AfricanSlowfast(pl.LightningModule):
         return x_feats
 
     def forward_frames_vc(self, frames_tensor):
-        frames_tensor = frames_tensor.contiguous().transpose(1, 2)
+        outputs = self.timesformer(frames_tensor)
+        last_hidden_states = outputs.last_hidden_state
 
-        # cls token (Intern Video Setting)
-        frames_feats, video_all_feats = self.video_clip.encode_video(
-            frames_tensor, return_all_feats=True, mode='video'
-        )
-        video_all_feats = self.pool_patche_to_frame(video_all_feats) # [B, F, 768]
+        B, S, W = last_hidden_states
+        last_hidden_states = last_hidden_states[:, 1:, :].view(B, 8, -1, W)
+        frames_tensor = last_hidden_states[:, 0, :]
+        video_all_feats = torch.mean(last_hidden_states, sim=2)
+        # frames_tensor = frames_tensor.contiguous().transpose(1, 2)
+
+        # # cls token (Intern Video Setting)
+        # frames_feats, video_all_feats = self.video_clip.encode_video(
+        #     frames_tensor, return_all_feats=True, mode='video'
+        # )
+        # video_all_feats = self.pool_patche_to_frame(video_all_feats) # [B, F, 768]
 
         # if self.transformer_proj_vc:
         #     # all feature for running temporal transformer
@@ -514,7 +522,6 @@ class AfricanSlowfast(pl.LightningModule):
         frames_feats = None
         if self.enable_video_clip:
             frames_feats, video_all_feats = self.forward_frames_vc(frames_tensor)
-
 
         # enable_image_clip        
         if self.enable_image_clip:
