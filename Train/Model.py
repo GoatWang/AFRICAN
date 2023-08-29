@@ -15,6 +15,7 @@ from typing import Callable, Sequence, Tuple
 from open_clip import Transformer, LayerNorm
 from torch.utils.checkpoint import checkpoint
 from ModelUtil.clip_param_keys import clip_param_keys
+from transformers import AutoImageProcessor, TimesformerModel
 from open_clip import CLIPVisionCfg, _build_vision_tower, create_model_and_transforms
 from VLCTransformer import VLCTransformer, VLCTransformer_OC
 from transformers import (
