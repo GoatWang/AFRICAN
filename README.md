@@ -71,7 +71,6 @@ openpyxl==3.1.2
     'ckpt_path="<path-to-AFRICAN-AR.ckpt>"'
     ```
 
-
 # Training Script
 1. basic
     ```
