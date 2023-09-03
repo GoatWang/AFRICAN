@@ -5,8 +5,6 @@ from tqdm import tqdm
 from torch import utils
 from config import ex, config
 from Model import AfricanSlowfast
-from slowfast.utils.meters import TestMeter
-from slowfast.datasets.charades import Charades
 from Dataset import AnimalKingdomDataset, AnimalKingdomDatasetSlowFast
 
 class TestConfig:
@@ -78,7 +76,8 @@ def main(_config):
     trainer.test(dataloaders=valid_loader, ckpt_path=_config['ckpt_path'])
 
 
-
+# from slowfast.utils.meters import TestMeter
+# from slowfast.datasets.charades import Charades
 # Charades
 # @ex.automain
 # def main(_config):
