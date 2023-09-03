@@ -8,42 +8,8 @@ from config import ex, config
 import pytorch_lightning as pl
 from Model import AfricanSlowfast
 from Dataset import AnimalKingdomDataset, AnimalKingdomDatasetSlowFast
+torch.manual_seed(0)
 
-class TestConfig:
-    def __init__(self):
-        self.NUM_ENSEMBLE_VIEWS = 2
-        self.NUM_SPATIAL_CROPS = 3
-
-class DataConfig:
-    def __init__(self, path_to_data_dir, path_prefix):
-        self.PATH_TO_DATA_DIR = path_to_data_dir  # Set this value accordingly
-        self.PATH_PREFIX = path_prefix  # Set this value accordingly
-        self.NUM_FRAMES = 8
-        self.SAMPLING_RATE = 8
-        self.TRAIN_JITTER_SCALES = [256, 340]
-        self.TRAIN_CROP_SIZE = 224 # 256
-        self.TEST_CROP_SIZE = 224  # 256
-        self.MEAN = [0.48145466, 0.4578275, 0.40821073] # [0.45, 0.45, 0.45]
-        self.STD = [0.26862954, 0.26130258, 0.27577711] # [0.225, 0.225, 0.225]
-        self.RANDOM_FLIP = True
-        self.INV_UNIFORM_SAMPLE = True
-        
-class MultigridConfig:
-    def __init__(self):
-        self.LONG_CYCLE_SAMPLING_RATE = 0
-        self.SHORT_CYCLE_FACTORS = [0.5, 0.5 ** 0.5]
-        self.DEFAULT_S = 0
-
-class ModelConfig:
-    def __init__(self):
-        self.NUM_CLASSES = 140
-
-class Cfg:
-    def __init__(self, path_to_data_dir, path_prefix):
-        self.TEST = TestConfig()
-        self.DATA = DataConfig(path_to_data_dir, path_prefix)
-        self.MULTIGRID = MultigridConfig()
-        self.MODEL = ModelConfig()
 
 
 @ex.automain
@@ -76,6 +42,43 @@ def main(_config):
 
 # from slowfast.utils.meters import TestMeter
 # from slowfast.datasets.charades import Charades
+
+# class TestConfig:
+#     def __init__(self):
+#         self.NUM_ENSEMBLE_VIEWS = 2
+#         self.NUM_SPATIAL_CROPS = 3
+
+# class DataConfig:
+#     def __init__(self, path_to_data_dir, path_prefix):
+#         self.PATH_TO_DATA_DIR = path_to_data_dir  # Set this value accordingly
+#         self.PATH_PREFIX = path_prefix  # Set this value accordingly
+#         self.NUM_FRAMES = 8
+#         self.SAMPLING_RATE = 8
+#         self.TRAIN_JITTER_SCALES = [256, 340]
+#         self.TRAIN_CROP_SIZE = 224 # 256
+#         self.TEST_CROP_SIZE = 224  # 256
+#         self.MEAN = [0.48145466, 0.4578275, 0.40821073] # [0.45, 0.45, 0.45]
+#         self.STD = [0.26862954, 0.26130258, 0.27577711] # [0.225, 0.225, 0.225]
+#         self.RANDOM_FLIP = True
+#         self.INV_UNIFORM_SAMPLE = True
+        
+# class MultigridConfig:
+#     def __init__(self):
+#         self.LONG_CYCLE_SAMPLING_RATE = 0
+#         self.SHORT_CYCLE_FACTORS = [0.5, 0.5 ** 0.5]
+#         self.DEFAULT_S = 0
+
+# class ModelConfig:
+#     def __init__(self):
+#         self.NUM_CLASSES = 140
+
+# class Cfg:
+#     def __init__(self, path_to_data_dir, path_prefix):
+#         self.TEST = TestConfig()
+#         self.DATA = DataConfig(path_to_data_dir, path_prefix)
+#         self.MULTIGRID = MultigridConfig()
+#         self.MODEL = ModelConfig()
+
 # Charades
 # @ex.automain
 # def main(_config):
