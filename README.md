@@ -78,17 +78,17 @@ openpyxl==3.1.2
     ```
 
 2. example
-```
-import wandb
-wandb.login(key=<wandb_key>)
+    ```
+    import wandb
+    wandb.login(key=<wandb_key>)
 
-python3 Train/train.py with 'name="<experiment_name>"' \
-'data_dir="<path_to_dataset>/action_recognition"' \
-'train_laryers="vision_proj"' 'transformer_proj_vc=False' \
-'max_epochs=100' 'device="cuda"' 'data_workers=12' \
-'enable_video_clip=False' 'enable_image_clip=True' 'enable_african=True' \
-'loss="BCE"' 'decay_power="no_decay"' 'batch_size=128' 'lr=0.00015' 
-```
+    python3 Train/train.py with 'name="<experiment_name>"' \
+    'data_dir="<path_to_dataset>/action_recognition"' \
+    'train_laryers="vision_proj"' 'transformer_proj_vc=False' \
+    'max_epochs=100' 'device="cuda"' 'data_workers=12' \
+    'enable_video_clip=False' 'enable_image_clip=True' 'enable_african=True' \
+    'loss="BCE"' 'decay_power="no_decay"' 'batch_size=128' 'lr=0.00015' 
+    ```
 
 3. configurations:
     - loss: select from {"BCE", "FOCAL", "LDAM", "EQL"}
@@ -112,3 +112,24 @@ python3 Train/train.py with 'name="<experiment_name>"' \
 3. VCICAFLs1at_crossattn: MSQNet architecture with VideoCLip backbone.
 4. timesformer_crossattn: MSQNet architecture with TimeSformer backbone.
 5. VCICAFL_preaug: preprocess video into embeddings for ImageCLIP.
+
+# plot text embedding
+1. install pdflatex
+    ```
+    sudo apt-get update
+    sudo apt-get install -y texlive-latex-base
+    sudo apt-get install -y texlive-fonts-recommended
+    sudo apt-get install -y texlive-fonts-extra
+    sudo apt-get install -y texlive-latex-extra
+    ```
+
+2. scripts
+    ```
+    python3 AnimalKingdomCLIP/Train/plot_text_embedding.py with 'device="cuda"' \
+    'data_dir="/storage/AnimalKingdom/action_recognition"'
+    ```
+
+3. convert pgf to pdf 
+    ```
+    bash Train/tool_scripts/convert_pgf_to_pdf.sh 
+    ```
