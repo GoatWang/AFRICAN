@@ -5,6 +5,7 @@ import torchmetrics
 from tqdm import tqdm
 from torch import utils
 from config import ex, config
+import pytorch_lightning as pl
 from Model import AfricanSlowfast
 from Dataset import AnimalKingdomDataset, AnimalKingdomDatasetSlowFast
 
