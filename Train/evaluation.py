@@ -36,7 +36,7 @@ def main(_config):
     train_loader = utils.data.DataLoader(dataset_train, batch_size=_config['batch_size'], shuffle=True, num_workers=_config["data_workers"])
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"])
 
-    trainer = Trainer()
+    trainer = pl.Trainer()
     trainer.test(dataloaders=valid_loader, ckpt_path=_config['ckpt_path'])
 
 
