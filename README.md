@@ -59,11 +59,12 @@ pytorchvideo==0.1.5
 torchmetrics
 openpyxl==3.1.2
 ```
-
+# Pretrained Weight
+- AFRICAN_AR: s3://animal-kingdom-jeremy/checkoutpointsVCICAF/ICAFLs1_F_nodecay_128_00015_008/20230810-225245/
 # Training Script
 1. basic
     ```
-    python3 train.py with <hyper parameters>
+    python3 Train/train.py with <hyper_parameters>
     ```
 
 2. example
@@ -81,14 +82,14 @@ python3 Train/train.py with 'name="<experiment_name>"' \
 
 3. configurations:
     - loss: select from {"BCE", "FOCAL", "LDAM", "EQL"}
-    - enable_video_clip: for stream controlling
-    - enable_image_clip: for stream controlling
-    - enable_african: for stream controlling
     - train_laryers: 
         - vision: all video encoders trainable
         - vision_proj: only project layers trainable
         - vision_dd_proj: vision_proj with two more Uniformer V2 modules trainable (C_MHRA and DPE)
         - vision_tn4_proj: vision_dd_proj with ViT's last 4 laters trainable.
+    - enable_video_clip: for stream controlling
+    - enable_image_clip: for stream controlling
+    - enable_african: for stream controlling
     - transformer_proj_vc: add post-transformer layers after ViT.
     - ckpt_path_ic: path to ViT-L-14.pt
     - ckpt_path_af: path to africa_pretrain.ckpt
