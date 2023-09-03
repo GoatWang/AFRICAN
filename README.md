@@ -60,7 +60,18 @@ torchmetrics
 openpyxl==3.1.2
 ```
 # Pretrained Weight
-- AFRICAN_AR: s3://animal-kingdom-jeremy/checkoutpointsVCICAF/ICAFLs1_F_nodecay_128_00015_008/20230810-225245/
+- AFRICAN-AR: https://drive.google.com/file/d/1-13Spd3yWsFON21TRLLqVWue5s1rOpmA/view?usp=sharing
+- Scripts
+    ```
+    !python3 Train/evaluation.py with \
+    'data_dir="<path_to_dataset>/action_recognition"' \
+    'train_laryers="vision_proj"' \
+    'device="cuda"' 'data_workers=8' 'transformer_proj_vc=False' \
+    'enable_video_clip=False' 'enable_image_clip=True' 'enable_african=True' \
+    'ckpt_path="<path-to-AFRICAN-AR.ckpt>"'
+    ```
+
+
 # Training Script
 1. basic
     ```
@@ -74,7 +85,7 @@ wandb.login(key=<wandb_key>)
 
 python3 Train/train.py with 'name="<experiment_name>"' \
 'data_dir="<path_to_dataset>/action_recognition"' \
-'train_laryers="vision_proj"' \
+'train_laryers="vision_proj"' 'transformer_proj_vc=False' \
 'max_epochs=100' 'device="cuda"' 'data_workers=12' \
 'enable_video_clip=False' 'enable_image_clip=True' 'enable_african=True' \
 'loss="BCE"' 'decay_power="no_decay"' 'batch_size=128' 'lr=0.00015' 
