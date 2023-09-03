@@ -59,8 +59,10 @@ pytorchvideo==0.1.5
 torchmetrics
 openpyxl==3.1.2
 ```
-# Pretrained Weight
+
+# Evaluation
 - AFRICAN-AR: https://drive.google.com/file/d/1-13Spd3yWsFON21TRLLqVWue5s1rOpmA/view?usp=sharing
+
 - Scripts
     ```
     !python3 Train/evaluation.py with \
@@ -69,6 +71,20 @@ openpyxl==3.1.2
     'device="cuda"' 'data_workers=8' 'transformer_proj_vc=False' \
     'enable_video_clip=False' 'enable_image_clip=True' 'enable_african=True' \
     'ckpt_path="<path-to-AFRICAN-AR.ckpt>"'
+    ```
+
+- Output
+    ```
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃           Test metric            ┃           DataLoader 0           ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │          test_map_head           │        0.7298517824051208        │
+    │         test_map_middle          │        0.6446024182173462        │
+    │          test_map_tail           │        0.4854412388937378        │
+    │     valid_MultilabelAccuracy     │        0.9909518957138062        │
+    │ valid_MultilabelAveragePrecision │        0.5545015342655334        │
+    │    valid_MultilabelExactMatch    │        0.2834679840878906        │
+    └──────────────────────────────────┴──────────────────────────────────┘    
     ```
 
 # Training Script
@@ -113,8 +129,8 @@ openpyxl==3.1.2
 4. timesformer_crossattn: MSQNet architecture with TimeSformer backbone.
 5. VCICAFL_preaug: preprocess video into embeddings for ImageCLIP.
 
-# plot text embedding
-1. install pdflatex
+# Visualization
+## install pdflatex
     ```
     sudo apt-get update
     sudo apt-get install -y texlive-latex-base
@@ -123,13 +139,27 @@ openpyxl==3.1.2
     sudo apt-get install -y texlive-latex-extra
     ```
 
-2. scripts
-    ```
-    python3 AnimalKingdomCLIP/Train/plot_text_embedding.py with 'device="cuda"' \
-    'data_dir="/storage/AnimalKingdom/action_recognition"'
-    ```
+## plot text embedding
+```
+python3 AnimalKingdomCLIP/Train/plot_text_embedding.py with 'device="cuda"' \
+'data_dir="<path_to_dataset>/action_recognition"'
+bash Train/tool_scripts/convert_pgf_to_pdf.sh Train/temp/TextEmbedding.pgf
+```
+![TextEmbedding](assets/TextEmbedding.png)
 
-3. convert pgf to pdf 
-    ```
-    bash Train/tool_scripts/convert_pgf_to_pdf.sh 
-    ```
+
+## plot long tail
+```
+python3 AnimalKingdomCLIP/Train/plot_longtail.py with 'device="cuda"' \
+'data_dir="path_to_dataset>/action_recognition"'
+bash Train/tool_scripts/convert_pgf_to_pdf.sh Train/temp/LongTail.pgf
+```
+![LongTail](assets/LongTail.png)
+
+## plot attention map
+```
+python3 /notebooks/AnimalKingdomCLIP/Train/plot_attn_map.py with \
+'data_dir="/storage/AnimalKingdom/action_recognition"' \
+'device="cuda"' 'enable_video_clip=True' 'enable_image_clip=True' 'enable_african=True'
+```
+![AttnMap](assets/AttnMap.png)

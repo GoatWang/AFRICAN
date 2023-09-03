@@ -20,8 +20,6 @@ matplotlib.rcParams.update({
     'pgf.rcfonts': False,
 })    
 
-
-
 @ex.automain
 def main(_config):
     _config = copy.deepcopy(_config)
@@ -54,9 +52,6 @@ def main(_config):
     plt.legend(handles=legend_labels)
 
     fig_fp = os.path.join(os.path.dirname(__file__), "temp", "LongTail.png")
-    plt.savefig(fig_fp)
-    print("file saved to ", fig_fp)
-
     plt.savefig(fig_fp.replace('.png', '.pgf'))
     print("file saved to ", fig_fp.replace('.png', '.pgf'))
 
