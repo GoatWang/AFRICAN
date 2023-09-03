@@ -1,4 +1,5 @@
 import os
+import json
 import glob
 import torch
 import numpy as np
@@ -6,10 +7,11 @@ import pandas as pd
 from pathlib import Path
 from InternVideo import tokenize
 from PromptEngineer import generate_prompt
-from VideoReader import read_frames_decord
 from Transform import VideoTransformTorch, video_aug
+from VideoReader import read_frames_decord, read_feats_fast
 
 class AnimalKingdomDataset(torch.utils.data.Dataset):
+    """single sampling of video for two streams of model"""
     def __init__(self, config, split=""):
         assert split in ["train", "val"], "split must be train or val"
         self.split = split
@@ -21,7 +23,7 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
         self.num_frames = config['num_frames']
         self.video_sampling = config['video_sampling']
         self.functional_test_size = config['functional_test_size']
-
+            
         # self.text_column_name = "questions"
         self.video_transform = VideoTransformTorch(mode=self.split)  # train or val model
         self.video_aug = video_aug
@@ -71,50 +73,90 @@ class AnimalKingdomDataset(torch.utils.data.Dataset):
             self.text_features = torch.from_numpy(np.load(npy_fp)).to(self.device)
 
     def __getitem__(self, index):
-        ret = None
         video_fp = self.video_fps[index]
-        video_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
-        # try:
-        #     video_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
-        # except:
-        #     print(video_fp)
-        #     assert False, "video_fp not exist"
-        video_tensor = self.video_aug(video_tensor, self.video_transform)
+        frames_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
+        frames_tensor = self.video_aug(frames_tensor, self.video_transform)            
         labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
         labels_onehot[self.labels[index]] = 1
-        return video_tensor, labels_onehot, index
+
+        return frames_tensor, labels_onehot, index
     
     def __len__(self):
         return len(self.video_fps)
+    
+class AnimalKingdomDatasetSlowFast(AnimalKingdomDataset):
+    """two samplings of video for two streams of model"""
+    def __init__(self, config, split=""):
+        super().__init__(config, split)
 
+        # slow stream
+        self.enable_video_clip = config['enable_video_clip']
+
+        # fast stream
+        self.enable_image_clip = config['enable_image_clip']
+        self.enable_african = config['enable_african']
+
+        at_least_one_source = self.enable_video_clip or self.enable_image_clip or self.enable_african
+        assert at_least_one_source, "at least one data source should be enabled"
+
+    def __getitem__(self, index):
+        video_fp = self.video_fps[index]
+        labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
+        labels_onehot[self.labels[index]] = 1
+        frames_tensor = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
+        frames_tensor = self.video_aug(frames_tensor, self.video_transform)            
+        return frames_tensor, labels_onehot, index
+             
+class AnimalKingdomDatasetVisualize(AnimalKingdomDataset):
+    """two samplings of video for two streams of model"""
+    def __init__(self, config, split=""):
+        super().__init__(config, split)
+        self.video_transform = VideoTransformTorch(mode='val')  # train or val model
+
+    def __getitem__(self, index):
+        video_fp = self.video_fps[index]
+        labels_onehot = torch.zeros(self.n_classes, dtype=torch.int32)
+        labels_onehot[self.labels[index]] = 1
+        video_raw = read_frames_decord(video_fp, num_frames=self.num_frames, sample=self.video_sampling)[0]
+        video_aug = self.video_aug(video_raw, self.video_transform)            
+        return video_fp, video_raw, video_aug, labels_onehot, index
+                          
 if __name__  == "__main__":
+    from torch import utils
     from config import config
     _config = config()
-    # # ===============run all data test
-    # from torch import utils
-    # dataset_train = AnimalKingdomDataset(_config, split="train")
-    # dataset_valid = AnimalKingdomDataset(_config, split="val")
-    # train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
-    # valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False, num_workers=_config['data_workers']) # TODO: DEBUG num_workers=4, maybe MACOS bug
-    # print(len(train_loader))
-    # for batch_idx, (video_tensor, labels_onehot) in enumerate(train_loader):
-    #   print(batch_idx, "success")
+
+    dataset_train = AnimalKingdomDataset(_config, split="train")
+    dataset_valid = AnimalKingdomDataset(_config, split="val")
+    train_loader = utils.data.DataLoader(dataset_train, batch_size=4, shuffle=False, num_workers=_config['data_workers'])
+    valid_loader = utils.data.DataLoader(dataset_valid, batch_size=4, shuffle=False, num_workers=_config['data_workers'])
+    print("len(train_loader)", len(train_loader))
+
+    for batch_idx, batch in enumerate(train_loader):
+      video_tensor, video_feats_fast, labels_onehot, index = batch
+      print("video_tensor.shape", video_tensor.shape)
+      print("video_feats_fast.shape", video_feats_fast.shape)
+      print("labels_onehot.shape", labels_onehot.shape)
+      print("index", index)
+      print(batch_idx, "success")
+      break
 
     # print(len(valid_loader))
     # for batch_idx, (video_tensor, labels_onehot) in enumerate(valid_loader):
     #   print(batch_idx, "success")
-    # # ===============
+    #   break
 
     dataset = AnimalKingdomDataset(_config, split="train")
     df_action = dataset.df_action
-    video_tensor, labels_onehot = dataset[0]
+    video_tensor, video_feats_fast, labels_onehot, index = dataset[0]
     print(video_tensor.shape)
     print(labels_onehot.shape)
     for idx, prompt in df_action.loc[np.where(labels_onehot)[0], 'prompt'].items():
         print(str(idx).zfill(3) + ":", prompt)
     
     from Model import VideoCLIP
+    _config['max_steps'] = _config['max_epochs'] * len(dataset_train) // _config['batch_size']
     model = VideoCLIP(_config)
-    dataset.produce_prompt_embedding(model.clip)
+    dataset.produce_prompt_embedding(model.video_clip)
     print(dataset.text_features.shape)
 

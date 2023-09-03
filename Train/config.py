@@ -7,38 +7,41 @@ base_dir = os.path.dirname(__file__)
 def config():
     # basic
     name = "AnimalKingdomCLIPVisionProj"
+    version = None
+    device = 'cuda'
     seed = 2023
-    device = 'cpu'
 
     # for save
     log_dir = os.path.abspath(os.path.join(base_dir, "logs"))
     model_dir = os.path.abspath(os.path.join(base_dir, "ckpts"))
     data_dir = os.path.join(base_dir, "..", "..", "data", "AnimalKingdom", "action_recognition")
 
+    # for dataset
+    n_classes = 140
+    batch_size = 128
+    video_sampling = 'rand' # 'rand', 'uniform', 'sequence_rand'
+
     # for training
-    video_sampling = 'sequence_rand'
-    batch_size = 32
-    max_epochs = 100
+    loss = "BCE" # "BCE", "FOCAL_2", "LDAM", "EQL"
     lr = 0.0001
+    max_epochs = 100
     optimizer = "adamw" # adam or adamw
-    decay_power = "cosine" # no_decay, poly, cosine
+    decay_power = "no_decay" # no_decay, poly, cosine
     warmup_steps = 10000
     end_lr = 0.0 # for poly decay
     poly_decay_power = 1 # for poly decay
 
-
-    version = None
-    data_workers = 4
+    data_workers = 12
     functional_test_size = None
     
     # for model
-    loss = "BCE" # "BCE", "FOCAL_2", "LDAM", "EQL"
-    n_classes = 140
-    train_laryers = "vision_proj" # vision or vision_proj
+    ckpt_path = None # for resume training
 
-    clip = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
-    load_path = os.path.abspath(os.path.join(base_dir, "weights", "InternVideo-MM-L-14.ckpt"))
-    animal_kingdom_clip_path = None
+    # fast stream: Video Clip model
+    enable_video_clip = True
+    train_laryers = "vision_proj" # vision or vision_proj or vision_tn4_proj
+    ckpt_path_imageclip_vc = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
+    ckpt_path_videoclip_vc = os.path.abspath(os.path.join(base_dir, "weights", "InternVideo-MM-L-14.ckpt"))
     num_frames = 8
     clip_evl_dropout = 0.0
     clip_no_pretrain = False
@@ -46,3 +49,29 @@ def config():
     clip_dpr = 0.0
     clip_use_checkpoint = False
     clip_checkpoint_num = [0, 0, 0]
+    transformer_proj_vc = True
+    transformer_width_vc = 768
+    transformer_layers_vc = 6
+    transformer_heads_vc = 12
+    use_text_proj = False
+
+    # second stream
+    image_encoder_batch_size = 512
+
+    ## image clip
+    enable_image_clip = True
+    ckpt_path_ic = os.path.abspath(os.path.join(base_dir, "weights", "ViT-L-14.pt"))
+    transformer_width_ic = 768
+    transformer_layers_ic = 6
+    transformer_heads_ic = 12
+
+    ## african
+    enable_african = True
+    ckpt_path_af = os.path.abspath(os.path.join(base_dir, "weights", "clip_nodecay_infoNCE_8_rand_augmix_000030_epoch30.ckpt"))
+    transformer_width_af = 768
+    transformer_layers_af = 6
+    transformer_heads_af = 12
+
+    # Viusialize Attn Map
+    number_of_attn_map = 30
+    attn_map_save_dir = os.path.abspath(os.path.join(base_dir, "temp", "attn_map"))
