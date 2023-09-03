@@ -600,27 +600,11 @@ class AfricanSlowfast(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
-
-        if (video_logits_vcic is None) and (video_logits_af is None):
-            assert False, "video_logits_vcic and video_logits_af are both None"
-        elif (video_logits_vcic is None) or (video_logits_af is None): # one of them is None
-            loss = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            self.log("test_loss", loss)
-        else: # both of them are not None
-            loss_vcic = self.loss_func(video_logits_vcic, labels_onehot.type(torch.float32))
-            loss_af = self.loss_func(video_logits_af, labels_onehot.type(torch.float32))
-            loss_all = self.loss_func(video_logits, labels_onehot.type(torch.float32))
-            loss = (loss_vcic + loss_af + loss_all) / 3
-            self.log("test_loss_vcic", loss_vcic)
-            self.log("test_loss_af", loss_af)
-            self.log("test_loss", loss_all)
-
         video_pred = torch.sigmoid(video_logits)
         self.valid_metrics.update(video_pred, labels_onehot)
         self.valid_map_head.update(video_pred[:, self.classes_head], labels_onehot[:, self.classes_head])
         self.valid_map_middle.update(video_pred[:, self.classes_middle], labels_onehot[:, self.classes_middle])
         self.valid_map_tail.update(video_pred[:, self.classes_tail], labels_onehot[:, self.classes_tail])
-        self.valid_map_class.update(video_pred, labels_onehot)
 
     def on_test_epoch_end(self):
         _valid_metrics = self.valid_metrics.compute()
@@ -638,15 +622,6 @@ class AfricanSlowfast(pl.LightningModule):
         _valid_map_tail = self.valid_map_tail.compute()
         self.log("test_map_tail", _valid_map_tail)
         self.valid_map_tail.reset()
-
-        _valid_map_class = self.valid_map_class.compute()
-        for i in range(self.n_classes):
-            self.log('test_map_' + self.class_names[i], _valid_map_class[i])
-        self.valid_map_class.reset()
-
-
-
-
 
     def configure_optimizers(self):
         if self.optimizer == 'adam':
