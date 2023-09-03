@@ -78,12 +78,12 @@ openpyxl==3.1.2
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃           Test metric            ┃           DataLoader 0           ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │          test_map_head           │        0.7298517824051208        │
+    │          test_map_head           │        0.7298517823219298        │
     │         test_map_middle          │        0.6446024182173462        │
-    │          test_map_tail           │        0.4854412388937378        │
-    │     valid_MultilabelAccuracy     │        0.9909518957138062        │
-    │ valid_MultilabelAveragePrecision │        0.5545015342655334        │
-    │    valid_MultilabelExactMatch    │        0.2834679840878906        │
+    │          test_map_tail           │        0.4854412376880648        │
+    │     valid_MultilabelAccuracy     │        0.9909964203834532        │
+    │ valid_MultilabelAveragePrecision │        0.5545015335083334        │
+    │    valid_MultilabelExactMatch    │        0.2834645807743076        │
     └──────────────────────────────────┴──────────────────────────────────┘    
     ```
 
