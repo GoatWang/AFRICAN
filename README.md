@@ -131,13 +131,13 @@ openpyxl==3.1.2
 
 # Visualization
 ## install pdflatex
-    ```
-    sudo apt-get update
-    sudo apt-get install -y texlive-latex-base
-    sudo apt-get install -y texlive-fonts-recommended
-    sudo apt-get install -y texlive-fonts-extra
-    sudo apt-get install -y texlive-latex-extra
-    ```
+```
+sudo apt-get update
+sudo apt-get install -y texlive-latex-base
+sudo apt-get install -y texlive-fonts-recommended
+sudo apt-get install -y texlive-fonts-extra
+sudo apt-get install -y texlive-latex-extra
+```
 
 ## plot text embedding
 ```
