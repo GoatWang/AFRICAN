@@ -61,7 +61,7 @@ openpyxl==3.1.2
 ```
 
 # Evaluation
-- AFRICAN-AR: https://drive.google.com/file/d/1-13Spd3yWsFON21TRLLqVWue5s1rOpmA/view?usp=sharing
+- Download: [AFRICAN-AR](https://drive.google.com/file/d/1-13Spd3yWsFON21TRLLqVWue5s1rOpmA/view?usp=sharing)
 
 - Scripts
     ```
@@ -70,7 +70,7 @@ openpyxl==3.1.2
     'train_laryers="vision_proj"' \
     'device="cuda"' 'data_workers=8' 'transformer_proj_vc=False' \
     'enable_video_clip=False' 'enable_image_clip=True' 'enable_african=True' \
-    'ckpt_path="<path-to-AFRICAN-AR.ckpt>"'
+    'ckpt_path="<path_to_AFRICAN-AR.ckpt>"'
     ```
 
 - Output
