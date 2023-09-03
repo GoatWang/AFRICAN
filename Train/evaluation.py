@@ -48,10 +48,6 @@ class Cfg:
 @ex.automain
 def main(_config):
     _config = copy.deepcopy(_config)
-    datetime_str = datetime.now().strftime("%Y%m%d-%H%M%S")
-    model_version = _config['version'] if _config['version'] is not None else datetime_str
-    _config['models_dir'] = os.path.join(_config["model_dir"], _config["name"], model_version)
-    Path(_config['models_dir']).mkdir(parents=True, exist_ok=True)
 
     pl.seed_everything(_config["seed"])
     Dataset = AnimalKingdomDatasetSlowFast
