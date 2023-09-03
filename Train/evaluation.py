@@ -37,7 +37,7 @@ def main(_config):
     valid_loader = utils.data.DataLoader(dataset_valid, batch_size=_config['batch_size'], shuffle=False, num_workers=_config["data_workers"])
 
     trainer = pl.Trainer()
-    trainer.test(dataloaders=valid_loader, ckpt_path=_config['ckpt_path'])
+    trainer.test(model, dataloaders=valid_loader, ckpt_path=_config['ckpt_path'])
 
 
 # from slowfast.utils.meters import TestMeter
