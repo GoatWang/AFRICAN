@@ -598,9 +598,6 @@ class AfricanSlowfast(pl.LightningModule):
             self.log('valid_map_' + self.class_names[i], _valid_map_class[i])
         self.valid_map_class.reset()
 
-
-
-
     def test_step(self, batch, batch_idx):
         video_logits_vcic, video_logits_af, video_logits, labels_onehot = self(batch)
 

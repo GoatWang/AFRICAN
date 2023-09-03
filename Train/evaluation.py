@@ -3,8 +3,8 @@ import torch
 import torchmetrics
 from tqdm import tqdm
 from torch import utils
-from Model import VideoCLIP
 from config import ex, config
+from Model import AfricanSlowfast
 from slowfast.utils.meters import TestMeter
 from slowfast.datasets.charades import Charades
 from Dataset import AnimalKingdomDataset, AnimalKingdomDatasetSlowFast
