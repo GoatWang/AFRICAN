@@ -36,6 +36,7 @@
     wget -P <path_to_repo>/Train/weights/ https://openaipublic.azureedge.net/clip/models/b8cca3fd41ae0c99ba7e8951adf17d267cdb84cd88be6f7c2e0eca1737a03836/ViT-L-14.pt
 
     # africa_pretrain.ckpt
+    # this is pretrained by this repo: https://github.com/GoatWang/AFRICANPretrain
     gdown '1C7pNJIyfkPGK0YJcZh94shwa2FhQoojd&confirm=t' -O <path_to_repo>/Train/weights/africa_pretrain.ckpt
     ```
 
@@ -62,7 +63,6 @@ openpyxl==3.1.2
 
 # Evaluation
 - Download: [AFRICAN-AR](https://drive.google.com/file/d/1-13Spd3yWsFON21TRLLqVWue5s1rOpmA/view?usp=sharing)
-
 - Scripts
     ```
     !python3 Train/evaluation.py with \
