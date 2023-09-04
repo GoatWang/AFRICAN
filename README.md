@@ -75,7 +75,7 @@ openpyxl==3.1.2
 
 - Scripts
     ```
-    !python3 Train/evaluation.py with \
+    python3 Train/evaluation.py with \
     'data_dir="<path_to_dataset>/action_recognition"' \
     'train_laryers="vision_proj"' \
     'device="cuda"' 'data_workers=8' 'transformer_proj_vc=False' \
