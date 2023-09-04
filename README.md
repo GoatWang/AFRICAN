@@ -73,7 +73,7 @@ openpyxl==3.1.2
     'ckpt_path="<path_to_AFRICAN-AR.ckpt>"'
     ```
 
-- Output
+<!-- - Output
     ```
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃           Test metric            ┃           DataLoader 0           ┃
@@ -85,7 +85,7 @@ openpyxl==3.1.2
     │ valid_MultilabelAveragePrecision │        0.5545015335083334        │
     │    valid_MultilabelExactMatch    │        0.2834645807743076        │
     └──────────────────────────────────┴──────────────────────────────────┘    
-    ```
+    ``` -->
 
 # Training Script
 1. basic
