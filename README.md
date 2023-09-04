@@ -62,7 +62,16 @@ openpyxl==3.1.2
 ```
 
 # Evaluation
-- Download: [AFRICAN-AR](https://drive.google.com/file/d/1-13Spd3yWsFON21TRLLqVWue5s1rOpmA/view?usp=sharing)
+- Download: 
+    - [AFRICAN-AR](https://drive.google.com/file/d/1-13Spd3yWsFON21TRLLqVWue5s1rOpmA/view?usp=sharing)
+        ```
+        gdown '1-13Spd3yWsFON21TRLLqVWue5s1rOpmA&confirm=t' -O <path_to_repo>/Train/weights/AFRICAN-AR.ckpt
+        ```
+    - [Class Embedding](https://drive.google.com/file/d/1olpofZagjuqdsNfbAIcLHPsXCVxLnMjf/view?usp=sharing)
+        ```
+        gdown '1olpofZagjuqdsNfbAIcLHPsXCVxLnMjf&confirm=t' -O <path_to_repo>/temp/text_features.npy
+        ```
+
 - Scripts
     ```
     !python3 Train/evaluation.py with \
@@ -70,7 +79,7 @@ openpyxl==3.1.2
     'train_laryers="vision_proj"' \
     'device="cuda"' 'data_workers=8' 'transformer_proj_vc=False' \
     'enable_video_clip=False' 'enable_image_clip=True' 'enable_african=True' \
-    'ckpt_path="<path_to_AFRICAN-AR.ckpt>"'
+    'ckpt_path="<path_to_repo>/Train/weights/AFRICAN-AR.ckpt"'
     ```
 
 <!-- - Output
