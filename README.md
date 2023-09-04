@@ -1,5 +1,6 @@
 # Official Implementation of AFRICAN
 ![model structure](assets/3_4_ModelStructureAF.png)
+This repo is the official implementation of AFRICAN. For AFRICAN pretraining, please refer to https://github.com/GoatWang/AFRICANPretrain. 
 
 # Preparation
 1. Download the Dataset from their [official site](https://github.com/sutdcv/Animal-Kingdom), or use the following script with the file_id from the google drive to download.
