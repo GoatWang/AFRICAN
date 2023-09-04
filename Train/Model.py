@@ -254,7 +254,7 @@ class AfricanSlowfast(pl.LightningModule):
         self.load_state_dict(state_dict, strict=False)
 
     def set_text_feats(self, text_feats):
-        self.text_feats = text_feats.clone().requires_grad_(False)
+        self.text_feats = nn.Parameter(text_feats.clone().requires_grad_(False)).requires_grad_(False)
 
     def set_class_names(self, class_names):
         self.class_names = class_names
