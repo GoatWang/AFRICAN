@@ -66,11 +66,11 @@ openpyxl==3.1.2
 - Download: 
     - [AFRICAN-AR](https://drive.google.com/file/d/1-13Spd3yWsFON21TRLLqVWue5s1rOpmA/view?usp=sharing)
         ```
-        gdown '1-13Spd3yWsFON21TRLLqVWue5s1rOpmA&confirm=t' -O <path_to_repo>/Train/weights/AFRICAN-AR.ckpt
+        gdown '1sBkgnkK_f19eZo6Fb_UlMgPMLBQgP1AL&confirm=t' -O <path_to_repo>/Train/weights/AFRICAN-AR.ckpt
         ```
     - [Class Embedding](https://drive.google.com/file/d/1olpofZagjuqdsNfbAIcLHPsXCVxLnMjf/view?usp=sharing)
         ```
-        gdown '1olpofZagjuqdsNfbAIcLHPsXCVxLnMjf&confirm=t' -O <path_to_repo>/temp/text_features.npy
+        gdown '1-1Xul3b8H6sxC8-nfPp77VN-52mKTTTg&confirm=t' -O <path_to_repo>/temp/text_features.npy
         ```
 
 - Scripts
